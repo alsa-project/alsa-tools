@@ -1,10 +1,10 @@
-.TH "envy24control" 1 "6 Oct 2001"
+.TH "envy24control" 1 "6 Mar 2004"
 .SH NAME
 envy24control \- GUI control tool for Envy24 (ice1712) based
 soundcards, under ALSA.
 
 .SH SYNOPSIS
-\fBenvy24control\fP [\fI-c\fP card-number] [\fI-D\fP control-name]
+\fBenvy24control\fP [\fI-c\fP card-number] [\fI-D\fP control-name] [\fI-o\fP 0-num DACs max 8] [\fI-i\fP 0-num ADCs max 8] [\fI-p\fP 0-8] [\fI-s\fP 0-2] [\fI-v\fP 0 or 1]
 
 .SH DESCRIPTION
 \fBenvy24control\fP allows control of the digital mixer, channel gains
@@ -14,7 +14,7 @@ displays a level meter for each input and output channel.
 
 .SH INVOKING
 
-\fBenvy24control\fP [\fI-c\fP card-number] [\fI-D\fP control-name]
+\fBenvy24control\fP [\fI-c\fP card-number] [\fI-D\fP control-name] [\fI-o\fP 0-num DACs max 8] [\fI-i\fP 0-num ADCs max 8] [\fI-p\fP 0-8] [\fI-s\fP 0-2] [\fI-v\fP 0 or 1]
 .TP
 If no control-name is given, then the first sound card is used.
 
@@ -39,7 +39,7 @@ number of output lines.
 .TP
 \fI-i\fP inputs
 Limit number of analog line inputs to display.  Default is the number of
-ADCS in the driver specification. Maximum is 8.
+ADCs in the driver specification. Maximum is 8.
 The number of analog input lines can only be reduced from the available
 number of input lines.
 .TP
@@ -64,3 +64,4 @@ gamix(1)
 .SH AUTHOR
 \fBenvy24control\fP is  by Jaroslav Kysela <perex@suse.cz>
 This document is by James Tappin <james@xena.uklinux.net>.
+Last updated by Dirk Kalis <dirk.kalis@t-online.de>.

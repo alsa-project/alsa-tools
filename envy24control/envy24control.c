@@ -387,7 +387,6 @@ static void create_router_frame(GtkWidget *box, int stream, int pos)
 	GSList *group = NULL;
 	char str[64], str1[64];
 	int idx;
-	int pcm_channel,s_pdif_channel;
 	static char *table[10] = {
 		"S/PDIF In L",
 		"S/PDIF In R",
