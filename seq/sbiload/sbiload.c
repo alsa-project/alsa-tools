@@ -654,12 +654,16 @@ main (int argc, char **argv) {
       finish_client();
       return 1;
     }
+  } else {
+    fprintf(stderr, "Warning: instrument file was not specified\n");
   }
   if (optind < argc) {
     if (load_file (128, argv[optind]) < 0) {
       finish_client();
       return 1;
     }
+  } else {
+    fprintf(stderr, "Warning: drum file was not specified\n");
   }
 
   /* Unsubscribe destination port and close client */
