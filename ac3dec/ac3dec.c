@@ -38,7 +38,7 @@
 void
 init_spdif(void);
 int
-output_spdif(uint_8 *data_start, uint_8 *data_end);
+output_spdif(uint_8 *data_start, uint_8 *data_end, int quiet);
 
 static int quiet = 0;
 
@@ -206,7 +206,7 @@ int main(int argc,char *argv[])
 			signal(SIGTERM, ac3dec_signal_handler);
 			signal(SIGABRT, ac3dec_signal_handler);
 			while (fill_buffer(&start, &end) > 0)
-				if (output_spdif(start, end) < 0)
+				if (output_spdif(start, end, quiet) < 0)
 					break;
 		}
 		output_close();
