@@ -37,7 +37,6 @@ int output_open(output_t *output)
 {
 	const char *pcm_name = output->pcm_name;
 	char devstr[128];
-	int card, dev;
 	snd_pcm_hw_params_t *params;
 	snd_pcm_sw_params_t *swparams;
 	snd_pcm_sframes_t buffer_time;
@@ -52,22 +51,16 @@ int output_open(output_t *output)
 	 * Open the device driver
 	 */
 	if (pcm_name == NULL) {
-		card = snd_defaults_pcm_card();
-		dev = snd_defaults_pcm_device();
-		if (card < 0 || dev < 0) {
-			fprintf(stderr, "defaults are not set\n");
-			return -ENODEV;
-		}
 		switch (output->channels) {
 		case 1:
 		case 2:
 			sprintf(devstr, "default");
 			break;
 		case 4:
-			sprintf(devstr, "surround40:%d,%d", card, dev);
+			strcpy(devstr, "surround40");
 			break;
 		case 6:
-			sprintf(devstr, "surround51:%d,%d", card, dev);
+			strcpy(devstr, "surround51");
 			break;
 		default:
 			fprintf(stderr, "%d channels are not supported\n", output->channels);
