@@ -7,3 +7,8 @@ EXTRA_DIST = cvscompile
 clean:
 	rm -rf .deps *~
 
+alsa-dist: distdir
+	@rm -rf ../distdir/envy24control
+	@mkdir -p ../distdir/envy24control
+	@cp -RLpv $(distdir)/* ../distdir/envy24control
+	@rm -rf $(distdir)

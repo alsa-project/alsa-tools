@@ -12,8 +12,12 @@ ac3dec_SOURCES = ac3dec.c output.c ac3spdif.c
 ac3dec_DEPENDENCIES = libac3/libac3.a
 
 
-EXTRA_DIST = README Changelog TODO plot_spectrum.m autogen.sh\
-       output_linux.c output_irix.c output_solaris.c
+EXTRA_DIST = README Changelog TODO plot_spectrum.m autogen.sh
 
 SUBDIRS = libac3 tools test .
 
+alsa-dist: distdir
+	@rm -rf ../distdir/ac3dec
+	@mkdir -p ../distdir/ac3dec
+	@cp -RLpv $(distdir)/* ../distdir/ac3dec
+	@rm -rf $(distdir)

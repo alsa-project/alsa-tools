@@ -8,4 +8,10 @@ man_MANS = cspctl.1
 
 cspctl_SOURCES = cspctl.c
 
-EXTRA_DIST = README COPYING
+EXTRA_DIST = README COPYING cspctl.1
+
+alsa-dist: distdir
+	@rm -rf ../distdir/sb16_csp
+	@mkdir -p ../distdir/sb16_csp
+	@cp -RLpv $(distdir)/* ../distdir/sb16_csp
+	@rm -rf $(distdir)

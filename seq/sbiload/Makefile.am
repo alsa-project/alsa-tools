@@ -9,3 +9,9 @@ bin_PROGRAMS = sbiload
 sbiload_SOURCES = sbiload.c
 
 EXTRA_DIST = README COPYING
+
+alsa-dist: distdir
+	@rm -rf ../../distdir/seq/sbiload
+	@mkdir -p ../../distdir/seq/sbiload
+	@cp -RLpv $(distdir)/* ../../distdir/seq/sbiload
+	@rm -rf $(distdir)
