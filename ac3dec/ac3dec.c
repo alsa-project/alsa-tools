@@ -131,7 +131,7 @@ int main(int argc,char *argv[])
 	while (1) {
 		int c;
 
-		if ((c = getopt_long(argc, argv, "hvcD:46CPRZq", long_option, NULL)) < 0)
+		if ((c = getopt_long(argc, argv, "hvcD:46CPRZ:q", long_option, NULL)) < 0)
 			break;
 		switch (c) {
 		case 'h':
