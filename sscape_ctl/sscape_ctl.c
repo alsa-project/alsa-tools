@@ -8,7 +8,7 @@
 #include <getopt.h>
 #include <sys/ioctl.h>
 
-#include <sound/sscape_ioctl.h>
+#include <alsa/sound/sscape_ioctl.h>
 #include <alsa/asoundlib.h>
 
 

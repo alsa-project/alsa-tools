@@ -30,7 +30,7 @@
 #include <string.h>
 #include <errno.h>
 #include <linux/ioctl.h>
-#include <sound/sb16_csp.h>
+#include <alsa/sound/sb16_csp.h>
 
 /* --- commands --- */
 enum {

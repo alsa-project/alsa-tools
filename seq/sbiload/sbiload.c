@@ -20,7 +20,7 @@
 
 #include <errno.h>
 #include <getopt.h>
-#include <sound/ainstr_fm.h>
+#include <alsa/sound/ainstr_fm.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

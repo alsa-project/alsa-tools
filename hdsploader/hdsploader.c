@@ -23,7 +23,7 @@
 #include <endian.h>
 #include <sys/ioctl.h>
 #include <alsa/asoundlib.h>
-#include <sound/hdsp.h>
+#include <alsa/sound/hdsp.h>
 
 static u_int32_t code[24413];
 
