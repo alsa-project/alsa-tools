@@ -1144,13 +1144,13 @@ static void create_analog_volume(GtkWidget *main, GtkWidget *notebook, int page)
 
 static void usage(void)
 {
-	fprintf(stderr, "usage: envy24control [-D control-name]\n");
+	fprintf(stderr, "usage: envy24control [-c card#] [-D control-name]\n");
 }
 
 int main(int argc, char **argv)
 {
         GtkWidget *notebook;
-        char *name, title[128];
+        char *name, tmpname[8], title[128];
 	int i, c, err;
 	snd_ctl_card_info_t *hw_info;
 	snd_ctl_elem_value_t *val;
@@ -1159,6 +1159,7 @@ int main(int argc, char **argv)
 	int page;
 	static struct option long_options[] = {
 		{"device", 1, 0, 'D'},
+		{"card", 1, 0, 'c'},
 	};
 
 	snd_ctl_card_info_alloca(&hw_info);
@@ -1168,8 +1169,17 @@ int main(int argc, char **argv)
         gtk_init(&argc, &argv);
 
 	name = "hw:0";
-	while ((c = getopt_long(argc, argv, "D:", long_options, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "D:c:", long_options, NULL)) != -1) {
 		switch (c) {
+		case 'c':
+			i = atoi(optarg);
+			if (i < 0 || i >= 8) {
+				fprintf(stderr, "envy24control: invalid card number %d\n", i);
+				exit(1);
+			}
+			sprintf(tmpname, "hw:%d", i);
+			name = tmpname;
+			break;
 		case 'D':
 			name = optarg;
 			break;
