@@ -38,12 +38,10 @@ int output_open(output_t *output)
 	const char *pcm_name = output->pcm_name;
 	char devstr[128];
 	snd_pcm_hw_params_t *params;
-	snd_pcm_sw_params_t *swparams;
 	snd_pcm_sframes_t buffer_time;
 	snd_pcm_sframes_t period_time, tmp;
 	int err, step;
 	snd_pcm_hw_params_alloca(&params);
-	snd_pcm_sw_params_alloca(&swparams);
 
 	out_config = *output;
 
