@@ -12,5 +12,7 @@ dsp: $(TARGETS)
 clean:
 	rm -f *~ *.emu10k1
 
+install:
+
 distdir:
 	@echo > /dev/null
