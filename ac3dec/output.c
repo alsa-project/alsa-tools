@@ -27,14 +27,15 @@ typedef unsigned int uint_32;
 
 #include "output.h"
 
-static int pcm_channels;
+static output_t out_config;
 static snd_pcm_t *pcm;
 
 /*
  * open the audio device for writing to
  */
-int output_open(int bits, int rate, int channels)
+int output_open(output_t *output)
 {
+	const char *pcm_name = output->pcm_name;
 	char devstr[128];
 	int card, dev;
 	snd_pcm_hw_params_t *params;
@@ -45,33 +46,36 @@ int output_open(int bits, int rate, int channels)
 	snd_pcm_hw_params_alloca(&params);
 	snd_pcm_sw_params_alloca(&swparams);
 
-	pcm_channels = channels;
+	out_config = *output;
 
 	/*
 	 * Open the device driver
 	 */
-	card = snd_defaults_pcm_card();
-	dev = snd_defaults_pcm_device();
-	if (card < 0 || dev < 0) {
-		fprintf(stderr, "defaults are not set\n");
-		return -ENODEV;
+	if (pcm_name == NULL) {
+		card = snd_defaults_pcm_card();
+		dev = snd_defaults_pcm_device();
+		if (card < 0 || dev < 0) {
+			fprintf(stderr, "defaults are not set\n");
+			return -ENODEV;
+		}
+		switch (output->channels) {
+		case 1:
+		case 2:
+			sprintf(devstr, "plug:%d,%d", card, dev);
+			break;
+		case 4:
+			sprintf(devstr, "surround40:%d,%d", card, dev);
+			break;
+		case 6:
+			sprintf(devstr, "surround51:%d,%d", card, dev);
+			break;
+		default:
+			fprintf(stderr, "%d channels are not supported\n", output->channels);
+			return -EINVAL;
+		}
+		pcm_name = devstr;
 	}
-	switch (channels) {
-	case 1:
-	case 2:
-		sprintf(devstr, "plug:%d,%d", card, dev);
-		break;
-	case 4:
-		sprintf(devstr, "surround40:%d,%d", card, dev);
-		break;
-	case 6:
-		sprintf(devstr, "surround51:%d,%d", card, dev);
-		break;
-	default:
-		fprintf(stderr, "%d channels are not supported\n", channels);
-		return -EINVAL;
-	}
-	if ((err = snd_pcm_open(&pcm, devstr, SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
+	if ((err = snd_pcm_open(&pcm, pcm_name, SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
 		fprintf(stderr, "snd_pcm_open: %s\n", snd_strerror(err));
 		return err;
 	}
@@ -87,17 +91,17 @@ int output_open(int bits, int rate, int channels)
 		fprintf(stderr, "Access type not available");
 		goto __close;
 	}
-	err = snd_pcm_hw_params_set_format(pcm, params, bits == 16 ? SND_PCM_FORMAT_S16_LE : SND_PCM_FORMAT_U8);
+	err = snd_pcm_hw_params_set_format(pcm, params, output->bits == 16 ? SND_PCM_FORMAT_S16_LE : SND_PCM_FORMAT_U8);
 	if (err < 0) {
 		fprintf(stderr, "Sample format non available");
 		goto __close;
 	}
-	err = snd_pcm_hw_params_set_channels(pcm, params, channels);
+	err = snd_pcm_hw_params_set_channels(pcm, params, output->channels);
 	if (err < 0) {
 		fprintf(stderr, "Channels count non available");
 		goto __close;
 	}
-	err = snd_pcm_hw_params_set_rate_near(pcm, params, rate, 0);
+	err = snd_pcm_hw_params_set_rate_near(pcm, params, output->rate, 0);
 	if (err < 0) {
 		fprintf(stderr, "Rate not available");
 		goto __close;
@@ -108,12 +112,16 @@ int output_open(int bits, int rate, int channels)
 		fprintf(stderr, "Buffer time not available");
 		goto __close;
 	}
-	period_time = snd_pcm_hw_params_set_period_time_near(pcm, params,
-							     100000, 0);
-	if (period_time < 0) {
-		fprintf(stderr, "Period time not available");
-		goto __close;
-	}
+	period_time = 100000 * 2;
+	do {
+		period_time /= 2;
+		period_time = snd_pcm_hw_params_set_period_time_near(pcm, params,
+								     period_time, 0);
+		if (period_time < 0) {
+			fprintf(stderr, "Period time not available");
+			goto __close;
+		}
+	} while (buffer_time == period_time && period_time > 10000);
 	if (buffer_time == period_time) {
 		fprintf(stderr, "Buffer time and period time match, could not use\n");
 		goto __close;
@@ -121,6 +129,50 @@ int output_open(int bits, int rate, int channels)
 	if ((err = snd_pcm_hw_params(pcm, params)) < 0) {
 		fprintf(stderr, "PCM hw_params failed: %s\n", snd_strerror(err));
 		goto __close;
+	}
+
+	if (output->spdif) {
+		snd_pcm_info_t *info;
+		snd_ctl_elem_value_t *ctl;
+		snd_ctl_t *ctl_handle;
+		char ctl_name[12];
+		int ctl_card;
+		snd_aes_iec958_t spdif;
+
+		memset(&spdif, 0, sizeof(spdif));
+		spdif.status[0] = IEC958_AES0_NONAUDIO |
+				  IEC958_AES0_CON_EMPHASIS_NONE;
+		spdif.status[1] = IEC958_AES1_CON_ORIGINAL |
+				  IEC958_AES1_CON_PCM_CODER;
+		spdif.status[2] = 0;
+		spdif.status[3] = IEC958_AES3_CON_FS_48000;
+		snd_pcm_info_alloca(&info);
+		if ((err = snd_pcm_info(pcm, info)) < 0) {
+			fprintf(stderr, "pcm info error: %s", snd_strerror(err));
+			goto __close;
+		}
+		snd_ctl_elem_value_alloca(&ctl);
+		snd_ctl_elem_value_set_interface(ctl, SND_CTL_ELEM_IFACE_PCM);
+		snd_ctl_elem_value_set_device(ctl, snd_pcm_info_get_device(info));
+		snd_ctl_elem_value_set_subdevice(ctl, snd_pcm_info_get_subdevice(info));
+		snd_ctl_elem_value_set_name(ctl, SND_CTL_NAME_IEC958("",PLAYBACK,PCM_STREAM));
+		snd_ctl_elem_value_set_iec958(ctl, &spdif);
+		ctl_card = snd_pcm_info_get_card(info);
+		if (ctl_card < 0) {
+			fprintf(stderr, "Unable to setup the IEC958 (S/PDIF) interface - PCM has no assigned card\n");
+			goto __diga_end;
+		}
+		sprintf(ctl_name, "hw:%d", ctl_card);
+		if ((err = snd_ctl_open(&ctl_handle, ctl_name, 0)) < 0) {
+			fprintf(stderr, "Unable to open the control interface '%s': %s\n", ctl_name, snd_strerror(err));
+			goto __diga_end;
+		}
+		if ((err = snd_ctl_elem_write(ctl_handle, ctl)) < 0) {
+			fprintf(stderr, "Unable to update the IEC958 control: %s\n", snd_strerror(err));
+			goto __diga_end;
+		}
+		snd_ctl_close(ctl_handle);
+	      __diga_end:
 	}
 
 	return 0;
@@ -134,15 +186,20 @@ int output_open(int bits, int rate, int channels)
 /*
  * play the sample to the already opened file descriptor
  */
-void output_play(sint_16* output_samples, uint_32 num_frames)
+int output_play(sint_16* output_samples, uint_32 num_frames)
 {
-	snd_pcm_sframes_t res;
+	snd_pcm_sframes_t res = 0;
 
-	res = snd_pcm_writei(pcm, (void *)output_samples, num_frames);
+	do {
+		if (res == -EPIPE)
+			res = snd_pcm_prepare(pcm);
+		res = res < 0 ? res : snd_pcm_writei(pcm, (void *)output_samples, num_frames);
+	} while (res == -EPIPE);
 	if (res < 0)
 		fprintf(stderr, "writei returned error: %s\n", snd_strerror(res));
 	else if (res != num_frames)
 		fprintf(stderr, "writei retured %li (expected %li)\n", res, (long)(num_frames));
+	return res < 0 ? (int)res : 0;
 }
 
 

@@ -85,13 +85,42 @@ static const struct frmsize_s frmsizecod_tbl[64] =
 	{ 640 ,{1280 ,1394 ,1920 } }
 };
 
+void
+parse_syncinfo_data(syncinfo_t *syncinfo, uint_8 *data)
+{
+	// Get the sampling rate 
+	syncinfo->fscod  = (data[2] >> 6) & 0x3;
+
+	if(syncinfo->fscod == 3)
+	{
+		//invalid sampling rate code
+		error_flag = 1;	
+		return;
+	}
+	else if(syncinfo->fscod == 2)
+		syncinfo->sampling_rate = 32000;
+	else if(syncinfo->fscod == 1)
+		syncinfo->sampling_rate = 44100;
+	else
+		syncinfo->sampling_rate = 48000;
+
+	// Get the frame size code 
+	syncinfo->frmsizecod = data[2] & 0x3f;
+
+	// Calculate the frame size and bitrate
+	syncinfo->frame_size = 
+		frmsizecod_tbl[syncinfo->frmsizecod].frm_size[syncinfo->fscod];
+	syncinfo->bit_rate = frmsizecod_tbl[syncinfo->frmsizecod].bit_rate;
+}
+
 /* Parse a syncinfo structure, minus the sync word */
 void
 parse_syncinfo(syncinfo_t *syncinfo)
 {
-	uint_32 tmp = 0;
+	uint_8 data[3];
 	uint_16 sync_word = 0;
 	uint_32 time_out = 1<<16;
+	
 
 	// 
 	// Find a ac3 sync frame. Time out if we read 64k without finding
@@ -109,34 +138,11 @@ parse_syncinfo(syncinfo_t *syncinfo)
 	// We need to read in the entire syncinfo struct (0x0b77 + 24 bits)
 	// in order to determine how big the frame is
 	//
-	tmp = (tmp << 8) + bitstream_get_byte();
-	tmp = (tmp << 8) + bitstream_get_byte();
-	tmp = (tmp << 8) + bitstream_get_byte();
+	data[0] = bitstream_get_byte();
+	data[1] = bitstream_get_byte();
+	data[2] = bitstream_get_byte();
 
-	// Get the sampling rate 
-	syncinfo->fscod  = (tmp >> 6) & 0x3;
-
-	if(syncinfo->fscod == 3)
-	{
-		//invalid sampling rate code
-		error_flag = 1;	
-		return;
-	}
-	else if(syncinfo->fscod == 2)
-		syncinfo->sampling_rate = 32000;
-	else if(syncinfo->fscod == 1)
-		syncinfo->sampling_rate = 44100;
-	else
-		syncinfo->sampling_rate = 48000;
-
-	// Get the frame size code 
-	syncinfo->frmsizecod = tmp & 0x3f;
-
-	// Calculate the frame size and bitrate
-	syncinfo->frame_size = 
-		frmsizecod_tbl[syncinfo->frmsizecod].frm_size[syncinfo->fscod];
-	syncinfo->bit_rate = frmsizecod_tbl[syncinfo->frmsizecod].bit_rate;
-
+	parse_syncinfo_data(syncinfo, data);
 
 	// Buffer the entire syncframe 
 	bitstream_buffer_frame(syncinfo->frame_size * 2 - 5);
@@ -144,9 +150,9 @@ parse_syncinfo(syncinfo_t *syncinfo)
 	// Check the crc over the entire frame 
 	crc_init();
 
-	crc_process_byte(tmp>>16);
-	crc_process_byte((tmp>>8) & 0xff);
-	crc_process_byte(tmp & 0xff);
+	crc_process_byte(data[0]);
+	crc_process_byte(data[1]);
+	crc_process_byte(data[2]);
 	crc_process_frame(bitstream_get_buffer_start(),syncinfo->frame_size * 2 - 5);
 
 	if(!crc_validate())
@@ -156,7 +162,8 @@ parse_syncinfo(syncinfo_t *syncinfo)
 		return;
 	}
 
-	stats_print_syncinfo(syncinfo);
+	if (!(ac3_config.flags & AC3_QUIET))
+		stats_print_syncinfo(syncinfo);
 }
 
 /*
@@ -290,7 +297,8 @@ parse_bsi(bsi_t *bsi)
 			bsi->addbsi[i] = bitstream_get(8);
 	}
 
-	stats_print_bsi(bsi);
+	if (!(ac3_config.flags & AC3_QUIET))
+		stats_print_bsi(bsi);
 }
 
 /* More pain inducing parsing */
@@ -598,7 +606,8 @@ parse_audblk(bsi_t *bsi,audblk_t *audblk)
 		}
 	}
 
-	stats_print_audblk(bsi,audblk);
+	if (!(ac3_config.flags & AC3_QUIET))
+		stats_print_audblk(bsi,audblk);
 }
 
 void

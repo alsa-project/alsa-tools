@@ -24,6 +24,15 @@
  *
  */
 
-int output_open(int bits, int rate, int channels);
-void output_play(sint_16* output_samples, uint_32 num_bytes);
+typedef struct {
+	const char *pcm_name;
+	int bits;
+	int rate;
+	int channels;
+	int spdif: 1;
+	int quiet: 1;
+} output_t;
+
+int output_open(output_t *output);
+int output_play(sint_16* output_samples, uint_32 num_bytes);
 void output_close(void);

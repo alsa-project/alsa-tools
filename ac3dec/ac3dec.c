@@ -26,17 +26,39 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <getopt.h>
 #include <sys/errno.h>
 #include <errno.h>
+#include "config.h"
 
 #include "libac3/ac3.h"
 #include "output.h"
+
+void
+init_spdif(void);
+int
+output_spdif(uint_8 *data_start, uint_8 *data_end);
+
+static int quiet = 0;
+
+static void help(void)
+{
+	printf("Usage: ac3dec <options> [file] [[file]] ...\n");
+	printf("\nAvailable options:\n");
+	printf("  -h,--help         this help\n");
+	printf("  -v,--version      print version of this program\n");
+	printf("  -D,--device=NAME  select PCM by NAME\n");
+	printf("  -4,--4ch	    four channels mode\n");
+	printf("  -6,--6ch	    six channels mode\n");
+	printf("  -I,--iec958       raw IEC958 (S/PDIF) mode\n");
+	printf("  -q,--quit         quit mode\n");
+}
 
 #define CHUNK_SIZE 2047
 uint_8 buf[CHUNK_SIZE];
 FILE *in_file;
  
-void fill_buffer(uint_8 **start,uint_8 **end)
+ssize_t fill_buffer(uint_8 **start,uint_8 **end)
 {
 	uint_32 bytes_read;
 
@@ -44,56 +66,125 @@ void fill_buffer(uint_8 **start,uint_8 **end)
 
 	bytes_read = fread(*start,1,CHUNK_SIZE,in_file);
 
-	//FIXME hack...
+	if (feof(in_file))
+		return EOF;
 	if(bytes_read < CHUNK_SIZE)
-		exit(0);
+		return EOF;
 
-	*end= *start + bytes_read;
+	*end = *start + bytes_read;
+	return bytes_read;
 }
 
 int main(int argc,char *argv[])
 {
-	ac3_frame_t *ac3_frame;
+	struct option long_option[] =
+	{
+		{"help", 0, NULL, 'h'},
+		{"version", 0, NULL, 'v'},
+		{"device", 1, NULL, 'D'},
+		{"4ch", 0, NULL, '4'},
+		{"6ch", 0, NULL, '6'},
+		{"iec958", 0, NULL, 'I'},
+		{"spdif", 0, NULL, 'I'},
+		{"quit", 0, NULL, 'q'},
+		{NULL, 0, NULL, 0},
+	};
 	ac3_config_t ac3_config;
-	int idx, channels = 2;
+	output_t out_config;
+	int morehelp, loop = 0;
+	char *pcm_name = NULL;
 
+	bzero(&ac3_config, sizeof(ac3_config));
+	ac3_config.fill_buffer_callback = fill_buffer;
+	ac3_config.num_output_ch = 2;
+	ac3_config.flags = 0;
+	bzero(&out_config, sizeof(out_config));
+	out_config.pcm_name = NULL;
+	out_config.bits = 16;
+	out_config.rate = 48000;
+	out_config.channels = 2;
+	out_config.spdif = 0;
 
-	/* If we get an argument then use it as a filename... otherwise use
-	 * stdin */
-	idx = 1;
-	if (idx < argc && !strcmp(argv[idx], "-4")) {
-		channels = 4; idx++;
-	} else if (idx < argc && !strcmp(argv[idx], "-6")) {
-		channels = 6; idx++;
-	}
-	if (idx < argc && argv[idx] != NULL) {	
-		in_file = fopen(argv[idx],"r");	
-		if(!in_file)
-		{
-			fprintf(stderr,"%s - Couldn't open file %s\n",strerror(errno),argv[1]);
-			exit(1);
+	morehelp = 0;
+	while (1) {
+		int c;
+
+		if ((c = getopt_long(argc, argv, "hvD:46Iq", long_option, NULL)) < 0)
+			break;
+		switch (c) {
+		case 'h':
+			morehelp++;
+			break;
+		case 'v':
+			printf("ac3dec version " VERSION "\n");
+			return 1;
+		case 'D':
+			pcm_name = optarg;
+			break;
+		case '4':
+			if (!out_config.spdif)
+				ac3_config.num_output_ch = 4;
+			break;
+		case '6':
+			if (!out_config.spdif)
+				ac3_config.num_output_ch = 6;
+			break;
+		case 'I':
+			ac3_config.num_output_ch = 2;
+			out_config.spdif = 1;
+			break;
+		case 'q':
+			ac3_config.flags |= AC3_QUIET;
+			out_config.quiet = 1;
+			quiet = 1;
+			break;
+		default:
+			fprintf(stderr, "\07Invalid switch or option needs an argument.\n");
+			morehelp++;
 		}
 	}
-	else
-		in_file = stdin;
-
-	ac3_config.fill_buffer_callback = fill_buffer;
-	ac3_config.num_output_ch = channels;
-	ac3_config.flags = 0;
-
-	ac3_init(&ac3_config);
-	
-	ac3_frame = ac3_decode_frame();
-	output_open(16,ac3_frame->sampling_rate,channels);
-
-	do
-	{
-		//Send the samples to the output device 
-		output_play(ac3_frame->audio_data, 256 * 6);
+	out_config.channels = ac3_config.num_output_ch;
+	if (morehelp) {
+		help();
+		return 1;
 	}
-	while((ac3_frame = ac3_decode_frame()));
 
-	output_close();
-	fclose(in_file);
-	return 0;
+	while (1) {
+		if (argc - optind <= 0) {
+			if (loop)
+				break;
+			in_file = stdin;
+		} else {
+			in_file = fopen(argv[optind],"r");	
+			if(!in_file) {
+				fprintf(stderr,"%s - Couldn't open file %s\n",strerror(errno),argv[optind]);
+				exit(EXIT_FAILURE);
+			}
+			optind++;
+			loop++;
+		}
+		if (!out_config.spdif) {
+			ac3_frame_t *ac3_frame;
+			ac3_init(&ac3_config);
+			ac3_frame = ac3_decode_frame();
+			if (output_open(&out_config) < 0) {
+				fprintf(stderr, "Output open failed\n");
+				exit(EXIT_FAILURE);
+			}
+			do {
+				//Send the samples to the output device 
+				output_play(ac3_frame->audio_data, 256 * 6);
+			} while((ac3_frame = ac3_decode_frame()));
+		} else {
+			uint_8 *start, *end;
+			init_spdif();
+			output_open(&out_config);
+			while (fill_buffer(&start, &end) > 0)
+				if (output_spdif(start, end) < 0)
+					break;
+		}
+		output_close();
+		fclose(in_file);
+	}
+	return EXIT_SUCCESS;
 }

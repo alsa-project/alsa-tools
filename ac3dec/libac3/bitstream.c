@@ -38,7 +38,7 @@ static uint_8 *chunk_start, *chunk_end;
 uint_32 bits_left;
 uint_32 current_word;
 
-void (*bitstream_fill_buffer)(uint_8**,uint_8**);
+ssize_t (*bitstream_fill_buffer)(uint_8**,uint_8**);
 
 uint_8 bitstream_get_byte(void)
 {
@@ -122,7 +122,7 @@ bitstream_get_bh(uint_32 num_bits)
 }
 
 void
-bitstream_init(void(*fill_function)(uint_8**,uint_8**))
+bitstream_init(ssize_t(*fill_function)(uint_8**,uint_8**))
 {
 	// Setup the buffer fill callback 
 	bitstream_fill_buffer = fill_function;

@@ -39,13 +39,14 @@ typedef signed char    sint_8;
 #define AC3_3DNOW_ENABLE      0x2
 #define AC3_MMX_ENABLE        0x4
 #define AC3_ALTIVEC_ENABLE    0x8
+#define AC3_QUIET	      0x10
 
 typedef struct ac3_config_s
 {
 	//Bit flags that enable various things
 	uint_32 flags;
 	//Callback that points the decoder to new stream data
-  void   (*fill_buffer_callback)(uint_8 **, uint_8 **);
+	ssize_t (*fill_buffer_callback)(uint_8 **, uint_8 **);
 	//Number of discrete channels in final output (for downmixing)
 	uint_16 num_output_ch;
 	//Which channel of a dual mono stream to select

@@ -79,7 +79,7 @@ static const char *language[128] =
 
 void stats_print_banner(syncinfo_t *syncinfo,bsi_t *bsi)
 {
-	fprintf(stdout,PACKAGE"-"VERSION" (C) 2000 Aaron Holtzman (aholtzma@ess.engr.uvic.ca)\n");
+	// fprintf(stdout,PACKAGE"-"VERSION" (C) 2000 Aaron Holtzman (aholtzma@ess.engr.uvic.ca)\n");
 
 	fprintf(stdout,"%d.%d Mode ",bsi->nfchans,bsi->lfeon);
 	fprintf(stdout,"%2.1f KHz",syncinfo->sampling_rate * 1e-3);

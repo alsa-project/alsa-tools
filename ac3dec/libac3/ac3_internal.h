@@ -74,7 +74,7 @@ typedef struct syncinfo_s
 {
 	uint_32	magic;
 	/* Sync word == 0x0B77 */
-	/* uint_16   syncword; */
+	uint_16   syncword;
 	/* crc for the first 5/8 of the sync block */
 	/* uint_16   crc1; */
 	/* Stream Sampling Rate (kHz) 0 = 48, 1 = 44.1, 2 = 32, 3 = reserved */

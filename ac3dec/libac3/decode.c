@@ -91,7 +91,7 @@ ac3_decode_frame(void)
 
 	parse_bsi(&bsi);
 
-	if(!done_banner)
+	if(!done_banner && !(ac3_config.flags & AC3_QUIET))
 	{
 		stats_print_banner(&syncinfo,&bsi);
 		done_banner = 1;
