@@ -19,6 +19,7 @@
  */
 
 #pragma implementation
+#define HDSPMIXER_DEFINE_SELECTOR_LABELS
 #include "HDSPMixerSelector.h"
 
 HDSPMixerSelector::HDSPMixerSelector(int x, int y, int w, int h):Fl_Menu_(x, y, w, h)
@@ -142,15 +143,15 @@ void HDSPMixerSelector::setLabels()
     } else if (type == H9632) {
 	switch (sm) {
 	case 0:
-	    max_dest = 6 + (aeb->aebo) ? 2 : 0;
+	    max_dest = 6 + (aeb->aebo ? 2 : 0);
 	    destinations = destinations_h9632_ss;
 	    break;
 	case 1:
-	    max_dest = 4 + (aeb->aebo) ? 2 : 0;
+	    max_dest = 4 + (aeb->aebo ? 2 : 0);
 	    destinations = destinations_h9632_ds;
 	    break;
 	case 2:
-	    max_dest = 2 + (aeb->aebo) ? 2 : 0;
+	    max_dest = 2 + (aeb->aebo ? 2 : 0);
 	    destinations = destinations_h9632_qs;
 	    break;
 	}

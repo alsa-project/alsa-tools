@@ -1,3 +1,8 @@
+Version 1.5 (21/11/2003):
+    * Added a .desktop file
+    * H9632 bug fixes (thanks to Pentti Ala-Vannesluoma)
+    * Fixes presets handling for H9632 cards
+    
 Version 1.4 (01/11/2003):
     * Adds support for H9632 cards
 

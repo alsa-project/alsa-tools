@@ -1,12 +1,12 @@
 AC_INIT(src/hdspmixer.cxx)
-AM_INIT_AUTOMAKE(hdspmixer, 1.4)
+AM_INIT_AUTOMAKE(hdspmixer, 1.5)
 
 AC_PROG_CXX
 AC_PROG_MAKE_SET
 AC_STDC_HEADERS
 AC_PATH_X
 
-AM_PATH_ALSA(0.9.0)
+AM_PATH_ALSA(1.0.0)
 
 dnl kernel header files
 AC_MSG_CHECKING(for kernel header files)
@@ -32,7 +32,7 @@ AC_ARG_WITH(soundbase,
   [soundbasedir="$withval"], [soundbasedir="$kerneldir"])
 if test "$soundbasedir" != "" -a -r "$soundbasedir/sound" ; then
   ALSA_CFLAGS="$ALSA_CFLAGS -I$soundbasedir"
-  CFLAGS="$CFLAGS -I$soundbasedir"
+  CXXFLAGS="$CXXFLAGS -I$soundbasedir"
   AC_MSG_RESULT($ALSA_CFLAGS)
 else
   if test "x$prefix" != xNONE; then
@@ -42,13 +42,33 @@ else
   fi
   if test -z "$soundbasedir" -a -r "$aprefix/include/sound"; then
     ALSA_CFLAGS="$ALSA_CFLAGS -I$aprefix/include"
-    CFLAGS="$CFLAGS -I$aprefix/include"
+    CXXFLAGS="$CXXFLAGS -I$aprefix/include"
     AC_MSG_RESULT($ALSA_CFLAGS)
   else
     AC_MSG_RESULT("not specified - using C compiler defaults")
   fi
 fi
 
+dnl desktop install
+AC_ARG_WITH(desktop-dir,
+  [ --with-desktop-dir  specify the path to install desktop file],
+  [desktopdir="$withval"], [desktopdir=""])
+if test -z "$desktopdir"; then
+  desktopdir=$datadir/applications
+fi
+DESKTOP_DIR="$desktopdir"
+AC_SUBST(DESKTOP_DIR)
+	
+AC_ARG_WITH(pixmap-dir,
+  [ --with-pixmap-dir  specify the path to install desktop pixmap file],
+  [pixmapdir="$withval"], [pixmapdir=""])
+if test -z "$pixmapdir"; then
+  pixmapdir=$datadir/pixmaps
+fi
+PIXMAP_DIR="$pixmapdir"
+AC_SUBST(PIXMAP_DIR)
+
+dnl library check
 AC_PATH_PROG(FLTK_CONFIG, fltk-config, no)
 if test "$FLTK_CONFIG" = "no"; then
     AC_MSG_ERROR(fltk-config is required)

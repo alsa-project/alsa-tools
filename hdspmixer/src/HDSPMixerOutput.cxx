@@ -19,6 +19,7 @@
  */
 
 #pragma implementation
+#define HDSPMIXER_DEFINE_OUTPUT_LABELS
 #include "HDSPMixerOutput.h"
 
 HDSPMixerOutput::HDSPMixerOutput(int x, int y, int w, int h, int num):Fl_Group(x, y, w, h)

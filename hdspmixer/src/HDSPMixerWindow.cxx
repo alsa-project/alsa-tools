@@ -246,7 +246,7 @@ static int handler_cb(int event)
 		break;
 	    }
 	}
-	if (fl_win = Fl::next_window(fl_win)) return 0;
+	if ((fl_win = Fl::next_window(fl_win))) return 0;
     }
     if (!w) return 0;
     int key = Fl::event_key();
@@ -276,7 +276,7 @@ static int handler_cb(int event)
 		w->checkState();
 		return 1;
 	    } else 	if (key == '3' || key == '3'+FL_KP) {
-		/* rms +3B */
+		/* rms +3dB */
 		w->setup->rmsplus3_val = 1;
 		w->checkState();
 		return 1;
@@ -309,7 +309,7 @@ void HDSPMixerWindow::save()
     if (dirty) {
 	inputs->buttons->presets->save_preset(current_preset+1);
     }
-    for (int speed = 0; speed < 2; ++speed) {
+    for (int speed = 0; speed < 3; ++speed) {
 	for (int card = 0; card < 3; ++card) {
 	    for (int preset = 0; preset < 8; ++preset) {
 		for (int channel = 0; channel < HDSP_MAX_CHANNELS; ++channel) {
@@ -399,7 +399,7 @@ void HDSPMixerWindow::load()
     if ((file = fopen(file_name, "r")) == NULL) {
 	fl_alert("Error opening file %s for reading", file_name);
     }
-    for (int speed = 0; speed < 2; ++speed) {
+    for (int speed = 0; speed < 3; ++speed) {
 	for (int card = 0; card < 3; ++card) {
 	    for (int preset = 0; preset < 8; ++preset) {
 		for (int channel = 0; channel < HDSP_MAX_CHANNELS; ++channel) {
@@ -490,8 +490,11 @@ load_error:
 void HDSPMixerWindow::restoreDefaults(int card)
 {
     int phones;
-    int chnls[2];
-    int maxdest[2];
+    int chnls[3];
+    int maxdest[3];
+    int h9632_spdif_submix[3];
+    int h9632_an12_submix[3];
+    int num_modes = 2;
     int ndb = inputs->strips[0]->fader->ndb;
     switch (cards[card]->type) {
     case Multiface:
@@ -515,35 +518,60 @@ void HDSPMixerWindow::restoreDefaults(int card)
 	maxdest[1] = 7;
 	phones = 0;
 	break;
+    case H9632:
+	chnls[0] = 16;
+	chnls[1] = 12;
+	chnls[2] = 8;
+	maxdest[0] = 8;
+	maxdest[1] = 6;
+	maxdest[2] = 4;
+	h9632_spdif_submix[0] = 4;
+	h9632_spdif_submix[1] = 2;
+	h9632_spdif_submix[2] = 0;
+	h9632_an12_submix[0] = 5;
+	h9632_an12_submix[1] = 3;
+	h9632_an12_submix[2] = 1;
+	num_modes = 3;
+	phones = 0;
     }
     for (int preset = 0; preset < 8; ++preset) {
-	for (int speed = 0; speed < 2; ++speed) {
+	for (int speed = 0; speed < num_modes; ++speed) {
 	    for (int i = 0; i < chnls[speed]; i+=2) {
     		for (int z = 0; z < maxdest[speed]; ++z) {
-		    inputs->strips[i]->data[card][speed][preset]->fader_pos[z] =  
-		    ((preset == 6 && z == maxdest[speed]-phones-1) || (i == z*2 && (preset > 1 && preset < 4)) || (((preset > 0 && preset < 4) || preset == 7) && phones && (z == maxdest[speed]-1))) ? ndb : 0;
-		    inputs->strips[i+1]->data[card][speed][preset]->fader_pos[z] = 
-		    ((preset == 6 && z == maxdest[speed]-phones-1) || (i == z*2 && (preset > 1 && preset < 4)) || (((preset > 0 && preset < 4) || preset == 7) && phones && (z == maxdest[speed]-1))) ? ndb : 0;
+		    /* Gain setup */
+		    if (cards[card]->type == H9632) {
+			inputs->strips[i]->data[card][speed][preset]->fader_pos[z] =  
+			((preset == 1 && z == h9632_an12_submix[speed]) || (i == z*2 && ((preset > 1 && preset < 4) || (preset == 7))) || ((preset == 5) && (z == h9632_spdif_submix[speed]))) ? ndb : 0;
+			inputs->strips[i+1]->data[card][speed][preset]->fader_pos[z] = 
+			((preset == 1 && z == h9632_an12_submix[speed]) || (i == z*2 && ((preset > 1 && preset < 4) || (preset == 7))) || ((preset == 5) && (z == h9632_spdif_submix[speed]))) ? ndb : 0;
+			playbacks->strips[i]->data[card][speed][preset]->fader_pos[z] = 
+			((preset == 1 && z == h9632_an12_submix[speed]) || i == z*2 || (preset == 5 && z == h9632_spdif_submix[speed])) ? ndb : 0;
+			playbacks->strips[i+1]->data[card][speed][preset]->fader_pos[z] = 
+			((preset == 1 && z == h9632_an12_submix[speed]) || i == z*2 || (preset == 5 && z == h9632_spdif_submix[speed])) ? ndb : 0;
+		    } else {
+			inputs->strips[i]->data[card][speed][preset]->fader_pos[z] =  
+			((preset == 6 && z == (maxdest[speed]-phones-1)) || (i == z*2 && (preset > 1 && preset < 4)) || (((preset > 0 && preset < 4) || preset == 7) && phones && (z == maxdest[speed]-1))) ? ndb : 0;
+			inputs->strips[i+1]->data[card][speed][preset]->fader_pos[z] = 
+			((preset == 6 && z == (maxdest[speed]-phones-1)) || (i == z*2 && (preset > 1 && preset < 4)) || (((preset > 0 && preset < 4) || preset == 7) && phones && (z == maxdest[speed]-1))) ? ndb : 0;
+			playbacks->strips[i]->data[card][speed][preset]->fader_pos[z] = 
+			((preset > 4 && preset < 7 && z == (maxdest[speed]-phones-1)) || i == z*2 || (phones && (z == maxdest[speed]-1))) ? ndb : 0;
+			playbacks->strips[i+1]->data[card][speed][preset]->fader_pos[z] = 
+			((preset > 4 && preset < 7 && z == (maxdest[speed]-phones-1)) || i == z*2 || (phones && (z == maxdest[speed]-1))) ? ndb : 0;
+		    }
+		    /* Pan setup */
 		    inputs->strips[i]->data[card][speed][preset]->pan_pos[z] = 0;
 		    inputs->strips[i+1]->data[card][speed][preset]->pan_pos[z] = 28*CF;
-		    playbacks->strips[i]->data[card][speed][preset]->fader_pos[z] = 
-		    ((preset > 4 && preset < 7 && z == maxdest[speed]-phones-1) || i == z*2 || (phones && (z == maxdest[speed]-1))) ? ndb : 0;
-		    playbacks->strips[i+1]->data[card][speed][preset]->fader_pos[z] = 
-		    ((preset > 4 && preset < 7 && z == maxdest[speed]-phones-1) || i == z*2 || (phones && (z == maxdest[speed]-1))) ? ndb : 0;
 		    playbacks->strips[i]->data[card][speed][preset]->pan_pos[z] = 0;
 		    playbacks->strips[i+1]->data[card][speed][preset]->pan_pos[z] = 28*CF;
 		}
-		inputs->strips[i]->data[card][speed][preset]->dest = (int)floor(i/2);
-		inputs->strips[i+1]->data[card][speed][preset]->dest = (int)floor(i/2);
-		playbacks->strips[i]->data[card][speed][preset]->dest = (int)floor(i/2);
-		playbacks->strips[i+1]->data[card][speed][preset]->dest = (int)floor(i/2);
-		
+		if (i < (chnls[speed]-(cards[card]->h9632_aeb.aebo ? 2 : 0))) {
+		    inputs->strips[i]->data[card][speed][preset]->dest =
+		    inputs->strips[i+1]->data[card][speed][preset]->dest =
+		    playbacks->strips[i]->data[card][speed][preset]->dest =
+		    playbacks->strips[i+1]->data[card][speed][preset]->dest = (int)floor(i/2);
+		}		
 		outputs->strips[i]->data[card][speed][preset]->fader_pos = (preset != 4) ? 137*CF : 0;
 		outputs->strips[i+1]->data[card][speed][preset]->fader_pos = (preset != 4) ? 137*CF : 0;
-		if (preset > 4 && preset < 7) {
-		    outputs->strips[chnls[speed]-2]->data[card][speed][preset]->fader_pos = ndb;
-		    outputs->strips[chnls[speed]-1]->data[card][speed][preset]->fader_pos = ndb;    
-		}
 		if (preset == 3 || preset == 7) {
 		    inputs->strips[i]->data[card][speed][preset]->mute = 1;
 		    inputs->strips[i+1]->data[card][speed][preset]->mute = 1;
@@ -553,17 +581,31 @@ void HDSPMixerWindow::restoreDefaults(int card)
 		    }
 		}
 	    }
-	    if (phones) {
-		outputs->strips[chnls[speed]]->data[card][speed][preset]->fader_pos = (preset != 4) ? ndb : 0;
-		outputs->strips[chnls[speed]+1]->data[card][speed][preset]->fader_pos = (preset != 4) ? ndb : 0;	
+	    if (cards[card]->type == H9632) {
+		if (preset == 1 || preset == 6) { 
+		    data[card][speed][preset]->submix_value = h9632_an12_submix[speed];
+		    outputs->strips[h9632_an12_submix[speed]*2]->data[card][speed][preset]->fader_pos = ndb;
+		    outputs->strips[h9632_an12_submix[speed]*2+1]->data[card][speed][preset]->fader_pos = ndb;    
+		} else if (preset == 5) {
+		    data[card][speed][preset]->submix_value = h9632_spdif_submix[speed];
+		    outputs->strips[h9632_spdif_submix[speed]*2]->data[card][speed][preset]->fader_pos = ndb;
+		    outputs->strips[h9632_spdif_submix[speed]*2+1]->data[card][speed][preset]->fader_pos = ndb;    
+		} else {
+		    data[card][speed][preset]->submix = 0;
+		}
+	    } else if (preset > 4 && preset < 7) {
+		data[card][speed][preset]->submix_value = maxdest[speed]-phones-1;
+		outputs->strips[chnls[speed]-2]->data[card][speed][preset]->fader_pos = ndb;
+		outputs->strips[chnls[speed]-1]->data[card][speed][preset]->fader_pos = ndb;    
+	    } else {
+		data[card][speed][preset]->submix = 0;
 	    }
 	    if (preset == 3 || preset == 7) {
 		data[card][speed][preset]->mute = 1;
 	    }
-	    if (preset > 4 && preset < 7) {
-		data[card][speed][preset]->submix_value = (maxdest[speed]-phones-1);
-	    } else {
-		data[card][speed][preset]->submix = 0;
+	    if (phones) {
+		outputs->strips[chnls[speed]]->data[card][speed][preset]->fader_pos = (preset != 4) ? ndb : 0;
+		outputs->strips[chnls[speed]+1]->data[card][speed][preset]->fader_pos = (preset != 4) ? ndb : 0;	
 	    }
 	}
     }
@@ -583,6 +625,7 @@ HDSPMixerWindow::HDSPMixerWindow(int x, int y, int w, int h, const char *label, 
 	for (int i = 0; i < 8; ++i) {
 	    data[j][0][i] = new HDSPMixerPresetData();
 	    data[j][1][i] = new HDSPMixerPresetData();
+	    data[j][2][i] = new HDSPMixerPresetData();
 	}
     }
     buttons_removed = 0;
@@ -832,8 +875,8 @@ void HDSPMixerWindow::refreshMixerStrip(int idx, int src)
 void HDSPMixerWindow::resetMixer()
 {
     int i, j;
-    for (i = 0; i < 52 ; ++i) {
-	for (j = 0; j < 28; ++j) {
+    for (i = 0; i < (cards[current_card]->playbacks_offset*2) ; ++i) {
+	for (j = 0; j < (cards[current_card]->playbacks_offset+cards[current_card]->lineouts); ++j) {
 	    setGain(i, j, 0);
 	}
     }
@@ -938,14 +981,14 @@ void HDSPMixerWindow::setMixer(int idx, int src, int dst)
 	right_val = attenuation_r* vol * pan;
 
 muted: 	
-	snd_ctl_elem_value_set_integer(ctl, 0, src*26+cards[current_card]->channel_map[idx-1]);
+	snd_ctl_elem_value_set_integer(ctl, 0, src*cards[current_card]->playbacks_offset+cards[current_card]->channel_map[idx-1]);
 	snd_ctl_elem_value_set_integer(ctl, 1, cards[current_card]->dest_map[dst]);
 	snd_ctl_elem_value_set_integer(ctl, 2, (int)left_val);
 	if ((err = snd_ctl_elem_write(handle, ctl)) < 0) {
 	    fprintf(stderr, "Alsa error: %s\n", snd_strerror(err));
 	    return;
 	}
-	snd_ctl_elem_value_set_integer(ctl, 0, src*26+cards[current_card]->channel_map[idx-1]);
+	snd_ctl_elem_value_set_integer(ctl, 0, src*cards[current_card]->playbacks_offset+cards[current_card]->channel_map[idx-1]);
 	snd_ctl_elem_value_set_integer(ctl, 1, cards[current_card]->dest_map[dst]+1);
 	snd_ctl_elem_value_set_integer(ctl, 2, (int)right_val);
 	if ((err = snd_ctl_elem_write(handle, ctl)) < 0) {

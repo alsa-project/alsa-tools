@@ -19,6 +19,7 @@
  */
 
 #pragma implementation
+#define HDSPMIXER_DEFINE_MAPPINGS
 #include "HDSPMixerCard.h"
 
 static void alsactl_cb(snd_async_handler_t *handler)
@@ -110,6 +111,7 @@ int HDSPMixerCard::getAutosyncSpeed()
     } else if (external_rate <= 2) {
 	return 0;
     }
+    return 0;
 }
 
 int HDSPMixerCard::getSpeed()
@@ -168,7 +170,12 @@ HDSPMixerCard::HDSPMixerCard(HDSP_IO_Type cardtype, int id)
     snprintf(name, 6, "hw:%i", card_id);
     h9632_aeb.aebi = 0;
     h9632_aeb.aebo = 0;
-    if (type == H9632) getAeb();
+    if (type == H9632) {
+	getAeb();
+	playbacks_offset = 16;
+    } else {
+	playbacks_offset = 26;
+    }
     speed_mode = getSpeed();
     if (speed_mode < 0) {
 	fprintf(stderr, "Error trying to determine speed mode for card %s, exiting.\n", name);
@@ -195,6 +202,7 @@ void HDSPMixerCard::getAeb() {
 	snd_hwdep_close(hw);
 	return; 
     }
+    snd_hwdep_close(hw);
 }
 
 void HDSPMixerCard::adjustSettings() {
@@ -255,32 +263,30 @@ void HDSPMixerCard::adjustSettings() {
 	    lineouts = 0;
 	    break;
 	case 2:
+	    /* should never happen */
 	    break;
 	}
     } else if (type == H9632) {
-	/* FIXME :  mapping values are my first guess here 
-		    this needs to be tested
-	*/
 	switch (speed_mode) {
 	case 0:
-	    channels = 12 + (h9632_aeb.aebi || h9632_aeb.aebo) ? 4 : 0;
+	    channels = 12 + ((h9632_aeb.aebi || h9632_aeb.aebo) ? 4 : 0);
 	    channel_map = channel_map_h9632_ss;
 	    dest_map = dest_map_h9632_ss;
 	    meter_map = channel_map_h9632_ss;
 	    lineouts = 0;
 	    break;
 	case 1:
-	    channels = 8 + (h9632_aeb.aebi || h9632_aeb.aebo) ? 4 : 0;
+	    channels = 8 + ((h9632_aeb.aebi || h9632_aeb.aebo) ? 4 : 0);
 	    channel_map = channel_map_h9632_ds;
 	    dest_map = dest_map_h9632_ds;
-	    meter_map = meter_map_h9632_ds;
+	    meter_map = channel_map_h9632_ds;
 	    lineouts = 0;
 	    break;
 	case 2:
-	    channels = 4 + (h9632_aeb.aebi || h9632_aeb.aebo) ? 4 : 0;
+	    channels = 4 + ((h9632_aeb.aebi || h9632_aeb.aebo) ? 4 : 0);
 	    channel_map = channel_map_h9632_qs;
 	    dest_map = dest_map_h9632_qs;
-	    meter_map = dest_map_h9632_qs;
+	    meter_map = channel_map_h9632_qs;
 	    lineouts = 0;
 	    break;
 	}
@@ -355,13 +361,20 @@ void HDSPMixerCard::actualizeStrips()
 	    basew->inputs->empty_aebi[i]->hide();
 	    basew->playbacks->empty_aebo[i]->show();
 	    basew->outputs->empty_aebo[i]->show();
-	}    
+	}
+	for (int i = channels-4; i < channels; ++i) {
+	    basew->playbacks->strips[i]->hide();
+	    basew->outputs->strips[i]->hide();
+	}
     } else if (h9632_aeb.aebo && !h9632_aeb.aebi) { 
 	for (int i = 0; i < 2; ++i) {
 	    basew->inputs->empty_aebi[i]->show();
 	    basew->playbacks->empty_aebo[i]->hide();
 	    basew->outputs->empty_aebo[i]->hide();
 	}        
+	for (int i = channels-4; i < channels; ++i) {
+	    basew->inputs->strips[i]->hide();
+	}
     } else {
 	for (int i = 0; i < 2; ++i) {
 	    basew->inputs->empty_aebi[i]->hide();

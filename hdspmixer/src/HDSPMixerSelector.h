@@ -35,6 +35,7 @@
 class HDSPMixerWindow;
 class HDSPMixerIOMixer;
 
+#ifdef HDSPMIXER_DEFINE_SELECTOR_LABELS
 static char *destinations_mf_ss[10] = {
     "AN 1+2", "AN 3+4", "AN 5+6", "AN 7+8",
     "A 1+2", "A 3+4", "A 5+6", "A 7+8",
@@ -88,6 +89,7 @@ static char *destinations_h9632_ds[6] = {
 static char *destinations_h9632_qs[4] = {
     "SPDIF", "AN 1+2", "AN 3+4", "AN 5+6"    
 };
+#endif
 
 class HDSPMixerSelector:public Fl_Menu_
 {

@@ -26,7 +26,9 @@
 #include <stdio.h>
 #include <alsa/asoundlib.h>
 #include <sound/hdsp.h>
+#ifdef HDSPMIXER_DEFINE_MAPPINGS
 #include "mappings.h"
+#endif
 #include "defines.h"
 #include "HDSPMixerWindow.h"
 
@@ -47,6 +49,7 @@ public:
     char *dest_map;
     char *meter_map;
     int speed_mode;
+    int playbacks_offset;
     void setMode(int mode);
     int initializeCard(HDSPMixerWindow *w);
     int getSpeed();

@@ -82,10 +82,6 @@ static char channel_map_h9632_ss[16] = {
 };
 
 static char channel_map_h9632_ds[12] = {
-    1, 3, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15
-};
-
-static char meter_map_h9632_ds[12] = {
     0, 1, 2, 3, 8, 9, 10, 11, 12, 13, 14, 15
 };
 

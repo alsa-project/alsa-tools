@@ -41,6 +41,7 @@ class HDSPMixerMeter;
 class HDSPMixerOutputData;
 class HDSPMixerWindow;
 
+#ifdef HDSPMIXER_DEFINE_OUTPUT_LABELS
 static char *labels_mf_ss[20] = {
     "AN 1", "AN 2", "AN 3", "AN 4", "AN 5", "AN 6", "AN 7", "AN 8",
     "A 1", "A 2", "A 3", "A 4", "A 5", "A 6", "A 7", "A 8",
@@ -80,6 +81,7 @@ static char *labels_9632_ds[12] = {
 static char *labels_9632_qs[8] = {
     "SP.L", "SP.R", "AN 1", "AN 2", "AN 3", "AN 4", "AN 5", "AN 6"
 };
+#endif
 
 class HDSPMixerOutput:public Fl_Group
 {
