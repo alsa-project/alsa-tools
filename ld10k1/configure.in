@@ -15,6 +15,11 @@ LIBS="$LIBS $ALSA_LIBS"
 effectsdir='$(pkgdatadir)/effects'
 AC_SUBST(effectsdir)
 
+AC_CHECK_PROG(AS10K1, as10k1, as10k1)
+if test -z "$AS10K1"; then
+  AC_MSG_ERROR([as10k1 is not installed])
+fi
+
 #taken from alsa-lib
 dnl Make a symlink for inclusion of lo10k1/xxx.h
 if test ! -L include/lo10k1 ; then

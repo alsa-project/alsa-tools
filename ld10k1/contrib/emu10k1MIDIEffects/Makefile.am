@@ -31,4 +31,4 @@ CLEANFILES = $(dist_effects_DATA)
 SUFFIXEC = .asm .emu10k1
 
 .asm.emu10k1:
-	as10k1 -o $@ $<
+	$(AS10K1) -o $@ $<
