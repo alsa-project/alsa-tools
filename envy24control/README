@@ -1,0 +1,14 @@
+envy24control - Control tool for Envy24 (ice1712) based soundcards
+
+Needs:
+	ALSA, GTK+, an Envy24-based soundcard
+
+To build (from unpacked tarball):
+	./configure
+	make
+	su -c 'make install'
+
+To build (from CVS):
+	./cvscompile
+	su -c 'make install'
+

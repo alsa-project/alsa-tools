@@ -1,0 +1,39 @@
+.TH "envy24control" 1 "6 Oct 2001"
+.SH NAME
+envy24control \- GUI control tool for Envy24 (ice1712) based
+soundcards, under ALSA.
+
+.SH SYNOPSIS
+\fBenvy24control\fP [\fI-D\fP control-name]
+
+.SH DESCRIPTION
+\fBenvy24control\fP allows control of the digital mixer, channel gains
+and other hardware settings for sound cards based on the ice1712
+chipset (Midiman Delta series, Terratec EWS and EWX series). It also
+displays a level meter for each input and output channel.
+
+.SH INVOKING
+
+\fBenvy24control\fP [\fI-D\fP control-name]
+.TP
+If no control-name is given, then the first sound card is used.
+
+.SS Options
+.TP
+\fI-D\fP control-name
+Use the card specified by control-name rather than the first card,
+normally this will be of the form hw:\fIn\fP where \fIn\fP is the sound
+card number (zero-based). This is only needed if you have more than one
+Envy24-based card or if your Envy24 card is not configured as the first
+card in your ALSA driver setup.
+
+.SH SEE ALSO
+\fB
+alsamixer(1),
+amixer(1),
+gamix(1)
+\fP
+
+.SH AUTHOR
+\fBenvy24control\fP is  by Jaroslav Kysela <perex@suse.cz>
+This document is by James Tappin <james@xena.uklinux.net>.
