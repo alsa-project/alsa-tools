@@ -154,7 +154,7 @@ output_spdif(uint8_t *data_start, uint8_t *data_end, int quiet)
         done_banner = 1;
       }
       
-#ifndef WORDS_BIGENDIAN
+#ifndef _a_b_c_d_e_f /* WORDS_BIGENDIAN */
       // extract_ac3 seems to write swabbed data
       swab(&buf[10], &buf[10], syncinfo.frame_size * 2 - 2);
 #endif

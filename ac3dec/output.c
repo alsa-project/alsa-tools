@@ -41,6 +41,7 @@ int output_open(output_t *output)
 	char devstr[128];
 	snd_pcm_hw_params_t *params;
 	unsigned int rate, buffer_time, period_time, tmp;
+	snd_pcm_format_t format = output->bits == 16 ? SND_PCM_FORMAT_S16 : SND_PCM_FORMAT_U8;
 	int err, step;
 	snd_pcm_hw_params_alloca(&params);
 
@@ -76,6 +77,7 @@ int output_open(output_t *output)
 				sprintf(devstr, "iec958:AES0=0x%x,AES1=0x%x,AES2=0x%x,AES3=0x%x", s[0], s[1], s[2], s[3]);
 				if (out_config.card)
 					sprintf(devstr + strlen(devstr), ",CARD=%s", out_config.card);
+				format = SND_PCM_FORMAT_S16_LE;
 			} else {
 				if (out_config.card)
 					sprintf(devstr, "plughw:%s", out_config.card);
@@ -114,29 +116,29 @@ int output_open(output_t *output)
 	err = snd_pcm_hw_params_set_access(pcm, params,
 					   SND_PCM_ACCESS_RW_INTERLEAVED);
 	if (err < 0) {
-		fprintf(stderr, "Access type not available");
+		fprintf(stderr, "Access type not available\n");
 		goto __close;
 	}
-	err = snd_pcm_hw_params_set_format(pcm, params, output->bits == 16 ? SND_PCM_FORMAT_S16_LE : SND_PCM_FORMAT_U8);
+	err = snd_pcm_hw_params_set_format(pcm, params, format);
 	if (err < 0) {
-		fprintf(stderr, "Sample format non available");
+		fprintf(stderr, "Sample format non available\n");
 		goto __close;
 	}
 	err = snd_pcm_hw_params_set_channels(pcm, params, output->channels);
 	if (err < 0) {
-		fprintf(stderr, "Channels count non available");
+		fprintf(stderr, "Channels count non available\n");
 		goto __close;
 	}
 	rate = output->rate;
 	err = snd_pcm_hw_params_set_rate_near(pcm, params, &rate, 0);
 	if (err < 0) {
-		fprintf(stderr, "Rate not available");
+		fprintf(stderr, "Rate not available\n");
 		goto __close;
 	}
 	buffer_time = 500000;
 	err = snd_pcm_hw_params_set_buffer_time_near(pcm, params, &buffer_time, 0);
 	if (err < 0) {
-		fprintf(stderr, "Buffer time not available");
+		fprintf(stderr, "Buffer time not available\n");
 		goto __close;
 	}
 	step = 2;
@@ -146,7 +148,7 @@ int output_open(output_t *output)
 		tmp = period_time;
 		err = snd_pcm_hw_params_set_period_time_near(pcm, params, &tmp, 0);
 		if (err < 0) {
-			fprintf(stderr, "Period time not available");
+			fprintf(stderr, "Period time not available\n");
 			goto __close;
 		}
 		if (tmp == period_time) {
