@@ -5,7 +5,9 @@ TARGETS = blank.emu10k1 chorus.emu10k1 delay.emu10k1 eq2.emu10k1 eq5.emu10k1 \
 %.emu10k1: %.asm
 	../as10k1 $<
 
-all: $(TARGETS)
+all:
+
+dsp: $(TARGETS)
 
 clean:
 	rm -f *~ *.emu10k1

@@ -1,15 +1,14 @@
+SUBDIRS = examples
+
 bin_PROGRAMS = as10k1
 as10k1_SOURCES = as10k1.c parse.c assemble.c macro.c
 noinst_HEADERS = as10k1.h list.h parse.h proto.h types.h
 EXTRA_DIST = cvscompile output.doc examples/Makefile examples/*.asm depcomp
+AM_CFLAGS = -fno-strict-aliasing
 AUTOMAKE_OPTIONS = foreign
 
 dsp:
-	$(MAKE) -C examples
-
-clean:
-	rm -rf .deps *~
-	$(MAKE) -C examples clean
+	$(MAKE) -C examples dsp
 
 alsa-dist: distdir
 	@rm -rf ../distdir/as10k1
