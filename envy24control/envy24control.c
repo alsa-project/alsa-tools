@@ -1029,7 +1029,7 @@ int main(int argc, char **argv)
         char name[32], title[128];
 	int err;
 	unsigned int cards_mask;
-	snd_ctl_elem_t ctl;
+	snd_ctl_elem_value_t ctl;
 	// snd_mixer_filter_t filter;
 
 	/* Go through gtk initialization */

@@ -29,7 +29,7 @@ static int is_active(GtkWidget *widget)
 
 void mixer_update_stream(int stream, int vol_flag, int sw_flag)
 {
-	snd_ctl_elem_t vol, sw;
+	snd_ctl_elem_value_t vol, sw;
 	int err;
 	
 	if (vol_flag) {
@@ -62,7 +62,7 @@ void mixer_update_stream(int stream, int vol_flag, int sw_flag)
 
 static void set_switch1(int stream, int left, int right)
 {
-	snd_ctl_elem_t sw;
+	snd_ctl_elem_value_t sw;
 	int err;
 	
 	memset(&sw, 0, sizeof(sw));
@@ -147,7 +147,7 @@ void mixer_toggled_mute(GtkWidget *togglebutton, gpointer data)
 
 static void set_volume1(int stream, int left, int right)
 {
-	snd_ctl_elem_t vol;
+	snd_ctl_elem_value_t vol;
 	int err;
 	
 	memset(&vol, 0, sizeof(vol));

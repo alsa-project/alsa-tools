@@ -26,7 +26,7 @@ static GdkGC *penOrangeLight[21] = { NULL, };
 static GdkGC *penRedShadow[21] = { NULL, };
 static GdkGC *penRedLight[21] = { NULL, };
 static GdkPixmap *pixmap[21] = { NULL, };
-static snd_ctl_elem_t peaks;
+static snd_ctl_elem_value_t peaks;
 
 static void update_peak_switch(void)
 {

@@ -19,11 +19,11 @@
 
 #include "envy24control.h"
 
-static snd_ctl_elem_t spdif_master;
-static snd_ctl_elem_t word_clock_sync;
-static snd_ctl_elem_t volume_rate;
-static snd_ctl_elem_t spdif_input;
-static snd_ctl_elem_t spdif_output;
+static snd_ctl_elem_value_t spdif_master;
+static snd_ctl_elem_value_t word_clock_sync;
+static snd_ctl_elem_value_t volume_rate;
+static snd_ctl_elem_value_t spdif_input;
+static snd_ctl_elem_value_t spdif_output;
 
 #define toggle_set(widget, state) \
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), state);
@@ -96,7 +96,7 @@ void master_clock_toggled(GtkWidget *togglebutton, gpointer data)
 
 gint master_clock_status_timeout_callback(gpointer data)
 {
-	snd_ctl_elem_t sw;
+	snd_ctl_elem_value_t sw;
 	int err;
 	
 	if (card_eeprom.subvendor != ICE1712_SUBDEVICE_DELTA1010)

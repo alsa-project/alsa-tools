@@ -19,7 +19,7 @@
 
 #include "envy24control.h"
 
-static snd_ctl_elem_t routes;
+static snd_ctl_elem_value_t routes;
 
 #define toggle_set(widget, state) \
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), state);
