@@ -1,0 +1,390 @@
+#!/bin/sh
+#
+# Copyright (c) 2004 Mikael Magnusson <mikma@users.sourceforge.net>
+#
+
+LO10K1=@bindir@/lo10k1
+
+#LO10K1="valgrind --num-callers=6 ../lo10k1"
+
+DEBUG=0
+
+function runlo10k1
+{
+    if test $DEBUG -gt 2 ; then
+	echo $LO10K1 "$@"
+    fi
+
+    $LO10K1 "$@"
+
+    res=$?
+    
+
+    if test $res -ne 0 ; then
+	echo Failed $LO10K1 "$@"
+    fi
+}
+
+function connect
+{
+    from=$1
+    op=$2
+    to=$3
+
+    if test $DEBUG -gt 1 ; then
+	echo "connect  $from $op $to"
+    fi
+
+    runlo10k1 --conadd "$from$op$to"
+}
+
+function copy
+{
+    local name=$1
+    local port=$2
+
+    if test $DEBUG -gt 0 ; then
+	echo "copy              \"$name\" $port"
+    fi
+
+    # Copy
+    runlo10k1 -n --patch_name "$name Copy" -a copy_2.emu10k1
+    # Input
+    connect "PIN($name Copy)" '=' "$port"
+}
+
+function volume
+{
+    local name=$1
+    local port=$2
+    local default=$3
+
+    if test $DEBUG -gt 1 ; then
+	echo "volume            \"$name\" $port default=$default"
+    fi
+
+    # Volume
+    runlo10k1 -n --ctrl "c-Left,Right:$name Volume,t-$name Volume:1,s-$name Volume:$default" --patch_name "$name Volume" -a vol_2.emu10k1
+    # Input
+    connect "PIN($name Volume)" '=' "$port"
+}
+
+function master_volume
+{
+    local name=$1
+    local port=$2
+    local default=$3
+
+    if test $DEBUG -gt 1 ; then
+	echo "master volume \"$name\" $port default=$default"
+    fi
+
+    # Master
+    runlo10k1 -n --ctrl "c-VolM:$name Volume,t-$name Volume:1,s-$name Volume:$default" --patch_name "$name Volume" -a vol_master.emu10k1
+    # Input
+    connect "$port" '=' "PIN($name Volume)"
+}
+
+function switch
+{
+    local name=$1
+    local port=$2
+    local default=$3
+
+    if test $DEBUG -gt 1 ; then
+	echo "switch            \"$name\" $port default=$default"
+    fi
+
+    # Switch
+    runlo10k1 -n --ctrl "c-switchL,switchR:$name Switch,t-$name Switch:4,s-$name Switch:$default" --patch_name "$name Switch" -a switch_2.emu10k1
+    # Input
+    connect "PIN($name Switch)" '>' "$port"
+}
+
+function master_switch
+{
+    local name=$1
+    local port=$2
+    local default=$3
+
+    if test $DEBUG -gt 1 ; then
+	echo "master_switch \"$name\" $port default=$default"
+    fi
+
+    # Master switch
+    runlo10k1 -n --ctrl "c-switch:$name Switch,t-$name Switch:4,s-$name Switch:$default" --patch_name "$name Switch" -a switch_6.emu10k1
+    # Input
+    connect "PIN($name Switch)" '=' "$port"
+}
+
+function playback
+{
+    name=$1
+    port=$2
+
+    if test $DEBUG -gt 0 ; then
+	echo "playback          \"$name\" $port"
+    fi
+
+    # Switch
+    switch "$name Playback" "$port" "1#1"
+    volume "$name Playback" "POUT($name Playback Switch)" "0#0"
+    # Output
+    connect "POUT($name Playback Volume)" '>' "PIN(Wave Stereo To 51,0,1)"
+}
+
+function playback_noswitch
+{
+    name=$1
+    port=$2
+
+    if test $DEBUG -gt 0 ; then
+	echo "playback_noswitch \"$name\" $port"
+    fi
+
+    # Switch
+    volume "$name Playback" "$port" "0#0"
+    # Output
+    connect "POUT($name Playback Volume)" '>' "PIN(Wave Stereo To 51,0,1)"
+}
+
+function capture
+{
+    name=$1
+    port=$2
+
+    if test $DEBUG -gt 0 ; then
+	echo "capture           \"$name\" $port"
+    fi
+
+    # Capture switch
+    switch "$name Capture" "$port" "0#0"
+    volume "$name Capture" "POUT($name Capture Switch)" "100#100"
+    # Output
+    connect "POUT($name Capture Volume)" '>' "OUT(OUT_PCM_Capture_Left,OUT_PCM_Capture_Right)"
+}
+
+function capture_noswitch
+{
+    name=$1
+    port=$2
+
+    if test $DEBUG -gt 0 ; then
+	echo "capture_noswitch  \"$name\" $port"
+    fi
+
+    # Capture switch
+    volume "$name Capture" "$port" "100#100"
+    # Output
+    connect "POUT($name Capture Volume)" '>' "OUT(OUT_PCM_Capture_Left,OUT_PCM_Capture_Right)"
+}
+
+function master
+{
+    local name=$1
+    local port=$2
+
+    if test $DEBUG -gt 0 ; then
+	echo "master \"$name\" $port"
+    fi
+
+    # Switch
+    master_volume "$name Playback" "$port" "100"
+    master_switch "$name Playback" "POUT($name Playback Volume)" "1"
+}
+
+function dump_patches
+{
+    num=$1
+
+    for (( i=0; $i < $num; i=$i+1 )); do
+	p=$(( $i + 100))
+	runlo10k1 --debug $p
+    done
+
+
+    exit
+}
+
+
+function simple_stereo_to_51
+{
+    local name=$1
+    local port=$2
+
+    if test $DEBUG -gt 1 ; then
+	echo "simple_stereo_to_51 \"$name\" $port"
+    fi
+
+# Stereo to 5.1
+    runlo10k1 -n --ctrl "c-Left,Right:$name Playback Volume,t-$name Playback Volume:1,s-$name Playback Volume:100#100,c-LeftSurr,RightSurr:$name Surround Playback Volume,t-$name Surround Playback Volume:1,c-Center:$name Center Playback Volume,t-$name Center Playback Volume:1,c-LFE:$name LFE Playback Volume,t-$name LFE Playback Volume:1" --patch_name "$name Stereo To 51" -a sto51.emu10k1
+# Input
+    connect "$port" '>' "PIN($name Stereo To 51,0,1)"
+
+# Output
+    connect "POUT($name Stereo To 51,0,1,2,3,4)" '>' "PIN(Tone Control,0,1,2,3,4)"
+}
+
+function prologic
+{
+    local name=$1
+    local port=$2
+
+    if test $DEBUG -gt 1 ; then
+	echo "prologic \"$name\" $port"
+    fi
+
+# Stereo to 5.1
+    runlo10k1 -n --ctrl "" --patch_name "$name Stereo To 51" -a prologic.emu10k1
+# Input
+    connect "PIN($name Stereo To 51,0,1)" '>' "$port"
+
+# PCM Multi
+    runlo10k1 -n --ctrl "c-Left,Right:$name Playback Volume,t-$name Playback Volume:1,c-LeftSurr,RightSurr:$name Surround Playback Volume,t-$name Surround Playback Volume:1,c-Center:$name Center Playback Volume,t-$name Center Playback Volume:1,c-LFE:$name LFE Playback Volume,t-LFE Playback Volume:1" --patch_name "$name Multi Volume" -a simple.emu10k1
+# Input
+    connect "POUT($name Stereo To 51)" '=' "PIN($name Multi Volume,0,1,2,3,4)"
+
+# Output
+    connect "POUT($name Multi Volume,0,1,2,3,4)" '>' "PIN(Tone Control,0,1,2,3,4)"
+}
+
+function stereo_to_51
+{
+    local name=$1
+    local port=$2
+
+    if test $DEBUG -gt 0 ; then
+	echo "stereo_to_51 \"$name\" $port"
+    fi
+
+#    simple_stereo_to_51 "$name" "$port"
+    prologic "$name" "$port"
+
+}
+
+function tone
+{
+    local name=$1
+    local port=$2
+
+    if test $DEBUG -gt 0 ; then
+	echo "tone \"$name\" $port"
+    fi
+
+#
+# Tone
+#
+    runlo10k1 -n --ctrl "c-bass0,bass1,bass2,bass3,bass4:$name - Bass,t-$name - Bass:2,v-$name - Bass:1,c-treble0,treble1,treble2,treble3,treble4:$name - Treble,t-$name - Treble:3,v-$name - Treble:1,c-toneonoff:$name - Switch,t-$name - Switch:4" --patch_name "${name}" -a tone.emu10k1
+}
+
+function multi_playback
+{
+    local name=$1
+    local port=$2
+
+    if test $DEBUG -gt 0 ; then
+	echo "multi_playback \"$name\" $port"
+    fi
+
+# PCM Multi
+    runlo10k1 -n --ctrl "c-Left,Right:PCM Front Playback Volume,t-PCM Front Playback Volume:1,c-LeftSurr,RightSurr:Surround Playback Volume,t-Surround Playback Volume:1,c-Center:Center Playback Volume,t-Center Playback Volume:1,c-LFE:LFE Playback Volume,t-LFE Playback Volume:1" --patch_name "$name Multi Volume" -a simple.emu10k1
+# Input
+    connect "PIN($name Multi Volume)" '>' "$port"
+# Output
+    connect "POUT($name Multi Volume)" '>' "PIN(Tone Control)"
+}
+
+function fxbus
+{
+    runlo10k1 --patch_name "FX Bus" -a fxbus.emu10k1
+    connect "PIN(FX Bus)" '=' "FX(FX_PCM_Left,FX_PCM_Right,FX_PCM_Surr_Left,FX_PCM_Surr_Right,FX_MIDI_Left,FX_MIDI_Right,FX_Center,FX_LFE,8,9)"
+
+    fx_multi="POUT(FX Bus,0,1,2,3,6,7)"
+    fx_front="POUT(FX Bus,0,1)"
+    fx_rear="POUT(FX Bus,2,3)"
+    fx_midi="POUT(FX Bus,4,5)"
+    fx_pcm="POUT(FX Bus,8,9)"
+}
+
+#dump_patches 16
+
+runlo10k1 -s 
+
+tone "Tone Control"
+
+fxbus
+
+#copy "FX89" "FX(8,9)"
+stereo_to_51 "Wave" "$fx_pcm"
+
+#
+# FXBUS
+#
+multi_playback "PCM" "$fx_multi"
+
+capture "PCM Front" "$fx_front"
+capture "Wave" "$fx_pcm"
+capture "Surround" "$fx_rear"
+
+playback "Music" "$fx_midi"
+capture "Music" "$fx_midi"
+
+
+#
+# INPUTS
+#
+playback "AC97" "IN(IN_AC97_Left,IN_AC97_Right)"
+capture_noswitch "AC97" "IN(IN_AC97_Left,IN_AC97_Right)"
+
+# playback "IEC958 TTL" "IN(IN_TTL_IEC958_Left,IN_TTL_IEC958_Right)"
+# capture "IEC958 TTL" "IN(IN_TTL_IEC958_Left,IN_TTL_IEC958_Right)"
+
+# playback "Zoom Video" "IN(IN_Zoom_Video_Left,IN_Zoom_Video_Right)"
+# capture "Zoom Video" "IN(IN_Zoom_Video_Left,IN_Zoom_Video_Right)"
+
+# playback "IEC958 LiveDrive" "IN(IN_Optical_IEC958_Left,IN_Optical_IEC958_Right)"
+# capture "IEC958 LiveDrive" "IN(IN_Optical_IEC958_Left,IN_Optical_IEC958_Right)"
+
+# playback "Line LiveDrive" "IN(IN_Line_Mic_1_Left,IN_Line_Mic_1_Right)"
+# capture "Line LiveDrive" "IN(IN_Line_Mic_1_Left,IN_Line_Mic_1_Right)"
+
+# playback "IEC958 Coaxial" "IN(IN_Coax_IEC958_Left,IN_Coax_IEC958_Right)"
+# capture "IEC958 Coaxial" "IN(IN_Coax_IEC958_Left,IN_Coax_IEC958_Right)"
+
+# playback "Line2 LiveDrive" "IN(IN_Line_Mic_2_Left,IN_Line_Mic_2_Right)"
+# capture "Line2 LiveDrive" "IN(IN_Line_Mic_2_Left,IN_Line_Mic_2_Right)"
+
+
+master_volume="Master_2 Playback Volume"
+master_switch="Master_2 Playback Switch"
+
+master "Master_2" "POUT(Tone Control)"
+connect "POUT($master_switch)" '>' "OUT(OUT_AC97_Left,OUT_AC97_Right,OUT_Analog_Surr_Left,OUT_Analog_Surr_Right,OUT_AC97_Center,OUT_AC97_LFE)"
+
+exit
+# Headphone
+
+# Headphone Switch
+runlo10k1 -n --ctrl "c-switchL:Headphone Center Playback Switch,c-switchR:Headphone LFE Playback Switch,t-Headphone Center Playback Switch:4,t-Headphone LFE Playback Switch:4,i-Headphone Center Playback Switch:1,i-Headphone LFE P\
+layback Switch:1" --patch_name "Headphone Center Playback Switch" -a switch_2.emu10k1
+#Input
+#connect "POUT(Headphone Playback Volume)" '' "PIN(Headphone Center Playback Switch)"
+#Output
+#connect "POUT(Headphone Center Playback Switch,0,1)" '' "OUT(OUT_Headphone_Left,OUT_Headphone_Right)"
+
+# Headphone Volume
+runlo10k1 -n --ctrl "c-Left,Right:Headphone Playback Volume,t-Headphone Playback Volume#1:1,i-Headphone Playback Volume:1" --patch_name "Headphone Playback Volume" -a vol_2.emu10k1
+#Input
+#runlo10k1 --conadd "PIN(Headphone Playback Volume,0,1)>PIN(Wave Stereo To 51,0,1)"
+#connect "POUT(Headphone Playback Volume,0,1)" '>' "PIN(Wave Stereo To 51,0,1)"
+#connect "POUT(Tone Control,0,1)" '=' "PIN(Headphone Playback Volume,0,1)"
+#connect "POUT(Headphone Playback SwitchTone Control,0,1)" '=' "PIN(Headphone Playback Volume,0,1)"
+
+#Output
+runlo10k1 -n --ctrl "c-enableL,enableR:IEC958 Optical Raw Playback Switch,t-IEC958 Optical Raw Playback Switch:4" --patch_name "Output" -a output.emu10k1
+#Inputs
+runlo10k1 --conadd "POUT(Master Switch)=PIN(Output,0,1,2,3,4,5)"
+#runlo10k1 --conadd "PIN(Output,6,7)=FX(20,21)"
+#Output
+runlo10k1 --conadd "POUT(Output,0,1,2,3,4,5)=OUT(0,1,8,9,17,18)"
+runlo10k1 --conadd "POUT(Output,6,7,8,9,10,11)=OUT(0,1,2,3,4,5)"
