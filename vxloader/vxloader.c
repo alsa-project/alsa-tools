@@ -369,12 +369,15 @@ int main(int argc, char **argv)
 		return vx_boot(name) != 0;
 	}
 
-	/* probe the cards until found */
+	/* probe the all cards */
 	for (c = 0; c < SND_CARDS; c++) {
 		sprintf(name, "hw:%d", c);
 		if (! vx_boot(name))
-			return 0;
+			card = c;
 	}
-	fprintf(stderr, PROGNAME ": no VX-compatible cards found\n");
-	return 1;
+	if (card < 0) {
+		fprintf(stderr, PROGNAME ": no VX-compatible cards found\n");
+		return 1;
+	}
+	return 0;
 }
