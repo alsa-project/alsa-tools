@@ -70,7 +70,7 @@ static int read_xilinx_image(snd_hwdep_dsp_image_t *img, const char *fname)
 	FILE *fp;
 	char buf[256];
 	int data, c, idx, length;
-	unsigned char *imgbuf;
+	unsigned char *imgbuf = NULL;
 	char *p;
 
 	if ((fp = fopen(fname, "r")) == NULL) {

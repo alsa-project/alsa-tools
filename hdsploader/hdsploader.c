@@ -31,14 +31,13 @@
 
 void upload_firmware(int card)
 {
-    int err, i;
+    int err;
     snd_hwdep_t *hw;
     snd_hwdep_info_t *info;
     char card_name[6];
     hdsp_version_t version;
     
     hdsp_firmware_t firmware;
-    hdsp_config_info_t config_info;
     
     snd_hwdep_info_alloca(&info);
     snprintf(card_name, 6, "hw:%i", card);
@@ -97,7 +96,6 @@ int main(int argc, char **argv)
 
     snd_ctl_card_info_t *info;
     snd_pcm_info_t *pcminfo;
-    int cards = 0;
     
     snd_ctl_card_info_alloca(&info);
     snd_pcm_info_alloca(&pcminfo);    
