@@ -120,7 +120,7 @@ static int parse_portdesc (char *portdesc);
 static int init_client ();
 
 static void
-error_handler (const char *file, int line, const char *function, int err, const char *fmt, ...)
+ignore_errors (const char *file, int line, const char *function, int err, const char *fmt, ...)
 {
   /* ignore */
 }
@@ -131,9 +131,11 @@ error_handler (const char *file, int line, const char *function, int err, const 
 static void
 show_list () {
   snd_seq_client_info_t *cinfo;
+  snd_seq_port_info_t *pinfo;
+
   int client, err;
 
-  snd_lib_error_set_handler (error_handler);
+  snd_lib_error_set_handler (ignore_errors);
   if ((err = snd_seq_open (&seq_handle, "hw", SND_SEQ_OPEN_DUPLEX, 0)) < 0) {
       fprintf (stderr, "Could not open sequencer: %s\n", snd_strerror (err));
       return;
@@ -143,7 +145,6 @@ show_list () {
   snd_seq_client_info_alloca(&cinfo);
   snd_seq_client_info_set_client(cinfo, -1);
   while (snd_seq_query_next_client(seq_handle, cinfo) >= 0) {
-      snd_seq_port_info_t *pinfo;
       client = snd_seq_client_info_get_client(cinfo);
       snd_seq_port_info_alloca(&pinfo);
       snd_seq_port_info_set_client(pinfo, client);
@@ -537,11 +538,35 @@ init_client () {
     snd_seq_close (seq_handle);
     fprintf (stderr, "Unable to subscribe destination port: %s\n",
 	     snd_strerror (errno));
-
     return -1;
   }
 
   return 0;
+}
+
+/*
+ * Unsubscribe client from destination port
+ * and close sequencer
+ */
+static void
+finish_client ()
+{
+  snd_seq_port_subscribe_t *sub;
+  snd_seq_addr_t addr;
+  int err;
+
+  snd_seq_port_subscribe_alloca(&sub);
+  addr.client = seq_client;
+  addr.port = seq_port;
+  snd_seq_port_subscribe_set_sender(sub, &addr);
+  addr.client = seq_dest_client;
+  addr.port = seq_dest_port;
+  snd_seq_port_subscribe_set_dest(sub, &addr);
+  if ((err = snd_seq_unsubscribe_port (seq_handle, sub)) < 0) {
+    fprintf (stderr, "Unable to unsubscribe destination port: %s\n",
+	     snd_strerror (errno));
+  }
+  snd_seq_close (seq_handle);
 }
 
 /*
@@ -622,19 +647,19 @@ main (int argc, char **argv) {
   /* Process instrument and drum file */
   if (optind < argc) {
     if (load_file (0, argv[optind++]) < 0) {
-      snd_seq_close (seq_handle);
+      finish_client();
       return 1;
     }
   }
   if (optind < argc) {
     if (load_file (128, argv[optind]) < 0) {
-      snd_seq_close (seq_handle);
+      finish_client();
       return 1;
     }
   }
 
   /* Unsubscribe destination port and close client */
-  snd_seq_close (seq_handle);
+  finish_client();
 
   return 0;
 }
