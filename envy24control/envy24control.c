@@ -603,7 +603,8 @@ static void create_master_clock(GtkWidget *box)
 
 
 
-	if (card_eeprom.subvendor != ICE1712_SUBDEVICE_DELTA1010)
+	if (card_eeprom.subvendor != ICE1712_SUBDEVICE_DELTA1010 &&
+	    card_eeprom.subvendor != ICE1712_SUBDEVICE_DELTA1010LT)
 		return;
 
 	radiobutton = gtk_radio_button_new_with_label(group, "Word Clock");
