@@ -78,9 +78,7 @@ void upload_firmware(int card)
 	return;
     }	
     
-    for (i = 0; i < 24413; ++i) {
-	firmware.firmware_data[i] = fw[i];
-    }
+    firmware.firmware_data = fw;
     
     if ((err = snd_hwdep_ioctl(hw, SNDRV_HDSP_IOCTL_UPLOAD_FIRMWARE, &firmware)) < 0) {
 	fprintf(stderr, "Hwdep ioctl error on card %s : %s.\n", card_name, snd_strerror(err));
