@@ -21,7 +21,7 @@
 
 int card = 0;
 snd_ctl_t *card_ctl = NULL;
-snd_ctl_hw_info_t hw_info;
+snd_ctl_info_t hw_info;
 ice1712_eeprom_t card_eeprom;
 
 GtkWidget *window;
@@ -1044,8 +1044,8 @@ int main(int argc, char **argv)
 			fprintf(stderr, "snd_ctl_open: %s\n", snd_strerror(err));
 			exit(EXIT_FAILURE);
 		}
-		if ((err = snd_ctl_hw_info(card_ctl, &hw_info)) < 0) {
-			fprintf(stderr, "snd_ctl_hw_info: %s\n", snd_strerror(err));
+		if ((err = snd_ctl_info(card_ctl, &hw_info)) < 0) {
+			fprintf(stderr, "snd_ctl_info: %s\n", snd_strerror(err));
 			exit(EXIT_FAILURE);
 		}
 		if (hw_info.type == SND_CARD_TYPE_ICE1712)
