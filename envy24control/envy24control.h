@@ -25,10 +25,20 @@
 /* Hoontech */
 #define ICE1712_SUBDEVICE_STDSP24       0x12141217      /* Hoontech SoundTrack Audio DSP 24 */
 
+/* max number of cards for alsa */
 #define MAX_CARD_NUMBERS	8
+/* max number of HW input/output channels (analog lines)
+ * the number of available HW input/output channels is defined
+ * at 'adcs/dacs' in the driver
+ */
+/* max number of HW input channels (analog lines) */
 #define MAX_INPUT_CHANNELS	8
+/* max number of HW output channels (analog lines) */
 #define MAX_OUTPUT_CHANNELS	8
+/* max number of spdif input/output channels */
 #define MAX_SPDIF_CHANNELS	2
+/* max number of PCM output channels */
+#define MAX_PCM_OUTPUT_CHANNELS	8
 
 typedef struct {
 	unsigned int subvendor;	/* PCI[2c-2f] */
@@ -143,10 +153,12 @@ void level_meters_reset_peaks(GtkButton *button, gpointer data);
 void level_meters_init(void);
 void level_meters_postinit(void);
 
+int mixer_stream_is_active(int stream);
 void mixer_update_stream(int stream, int vol_flag, int sw_flag);
 void mixer_toggled_solo(GtkWidget *togglebutton, gpointer data);
 void mixer_toggled_mute(GtkWidget *togglebutton, gpointer data);
 void mixer_adjust(GtkAdjustment *adj, gpointer data);
+void mixer_init(void);
 void mixer_postinit(void);
 
 int patchbay_stream_is_active(int stream);

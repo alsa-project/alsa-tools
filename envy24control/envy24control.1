@@ -32,13 +32,27 @@ Envy24-based card or if your Envy24 card is not configured as the first
 card in your ALSA driver setup.
 .TP
 \fI-o\fP outputs
-Limit number of analog line outputs to display.  Default is 8.
+Limit number of analog line outputs to display.  Default is the number of
+DACs in the driver specification. Maximum is 8.
+The number of analog output lines can only be reduced from the available
+number of output lines.
 .TP
 \fI-i\fP inputs
-Limit number of analog line inputs to display.  Default is 8.
+Limit number of analog line inputs to display.  Default is the number of
+ADCS in the driver specification. Maximum is 8.
+The number of analog input lines can only be reduced from the available
+number of input lines.
 .TP
-\fI-s\fP outputs
+\fI-p\fP pcm outputs
+Limit number of PCM outputs to display.  Default is 8.
+.TP
+\fI-s\fP spdif inputs/outputs
 Limit number of SPDIF inputs/outputs to display.  Default is 2.
+.TP
+\fI-v\fP view spdif playback channels in the mixer.
+It is not possible to manage something (muting, volume levels).
+It is only to view the levelmeters.
+Default is '0' - no view. Set to other than '0' to view.
 
 .SH SEE ALSO
 \fB

@@ -26,7 +26,7 @@
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), state);
 
 static int stream_active[MAX_OUTPUT_CHANNELS + MAX_SPDIF_CHANNELS];
-extern int output_channels, input_channels, spdif_channels;
+extern int output_channels, input_channels, pcm_output_channels, spdif_channels;
 
 static int is_active(GtkWidget *widget)
 {
@@ -45,9 +45,9 @@ static int get_toggle_index(int stream)
 	}
 	snd_ctl_elem_value_alloca(&val);
 	snd_ctl_elem_value_set_interface(val, SND_CTL_ELEM_IFACE_MIXER);
-	if (stream >= 8) {
+	if (stream >= MAX_OUTPUT_CHANNELS) {
 		snd_ctl_elem_value_set_name(val, SPDIF_PLAYBACK_ROUTE_NAME);
-		snd_ctl_elem_value_set_index(val, stream - 8);
+		snd_ctl_elem_value_set_index(val, stream - MAX_OUTPUT_CHANNELS);
 	} else {
 		snd_ctl_elem_value_set_name(val, ANALOG_PLAYBACK_ROUTE_NAME);
 		snd_ctl_elem_value_set_index(val, stream);
@@ -55,13 +55,13 @@ static int get_toggle_index(int stream)
 	if ((err = snd_ctl_elem_read(ctl, val)) < 0)
 		return 0;
 	out = snd_ctl_elem_value_get_enumerated(val, 0);
-	if (out >= 11) {
-		if (stream >= 8 || stream < 2)
+	if (out >= MAX_INPUT_CHANNELS + MAX_SPDIF_CHANNELS + 1) {
+		if (stream >= MAX_PCM_OUTPUT_CHANNELS || stream < MAX_SPDIF_CHANNELS)
 			return 1; /* digital mixer */
-	} else if (out >= 9)
-		return out - 9 + 2; /* spdif left (=2) / right (=3) */
+	} else if (out >= MAX_INPUT_CHANNELS + 1)
+		return out - (MAX_INPUT_CHANNELS + 1) + 2; /* spdif left (=2) / right (=3) */
 	else if (out >= 1)
-		return out + 3; /* analog (4-) */
+		return out + spdif_channels + 1; /* analog (4-) */
 
 	return 0; /* pcm */
 }
@@ -70,7 +70,7 @@ void patchbay_update(void)
 {
 	int stream, tidx;
 
-	for (stream = 1; stream <= output_channels; stream++) {
+	for (stream = 1; stream <= (MAX_OUTPUT_CHANNELS + MAX_SPDIF_CHANNELS); stream++) {
 		if (stream_active[stream - 1]) {
 			tidx = get_toggle_index(stream);
 			toggle_set(router_radio[stream - 1][tidx], TRUE);
@@ -93,7 +93,7 @@ static void set_routes(int stream, int idx)
 		return;
 	out = 0;
 	if (idx == 1)
-		out = 11;
+		out = MAX_INPUT_CHANNELS + MAX_SPDIF_CHANNELS + 1;
 	else if (idx == 2 || idx == 3)	/* S/PDIF left & right */
 		out = idx + 7; /* 9-10 */
 	else if (idx >= 4) /* analog */
@@ -101,9 +101,9 @@ static void set_routes(int stream, int idx)
 
 	snd_ctl_elem_value_alloca(&val);
 	snd_ctl_elem_value_set_interface(val, SND_CTL_ELEM_IFACE_MIXER);
-	if (stream >= 8) {
+	if (stream >= MAX_OUTPUT_CHANNELS) {
 		snd_ctl_elem_value_set_name(val, SPDIF_PLAYBACK_ROUTE_NAME);
-		snd_ctl_elem_value_set_index(val, stream - 8);
+		snd_ctl_elem_value_set_index(val, stream - MAX_OUTPUT_CHANNELS);
 	} else {
 		snd_ctl_elem_value_set_name(val, ANALOG_PLAYBACK_ROUTE_NAME);
 		snd_ctl_elem_value_set_index(val, stream);
@@ -131,12 +131,14 @@ int patchbay_stream_is_active(int stream)
 void patchbay_init(void)
 {
 	int i;
+	int nb_active_channels;
 	snd_ctl_elem_value_t *val;
 
 	snd_ctl_elem_value_alloca(&val);
 	snd_ctl_elem_value_set_interface(val, SND_CTL_ELEM_IFACE_MIXER);
 	snd_ctl_elem_value_set_name(val, ANALOG_PLAYBACK_ROUTE_NAME);
 	memset (stream_active, 0, (MAX_OUTPUT_CHANNELS + MAX_SPDIF_CHANNELS) * sizeof(int));
+	nb_active_channels = 0;
 	for (i = 0; i < output_channels; i++) {
 		snd_ctl_elem_value_set_numid(val, 0);
 		snd_ctl_elem_value_set_index(val, i);
@@ -144,15 +146,20 @@ void patchbay_init(void)
 			continue;
 
 		stream_active[i] = 1;
+		nb_active_channels++;
 	}
+	output_channels = nb_active_channels;
 	snd_ctl_elem_value_set_name(val, SPDIF_PLAYBACK_ROUTE_NAME);
+	nb_active_channels = 0;
 	for (i = 0; i < spdif_channels; i++) {
 		snd_ctl_elem_value_set_numid(val, 0);
 		snd_ctl_elem_value_set_index(val, i);
  		if (snd_ctl_elem_read(ctl, val) < 0)
 			continue;
-		stream_active[i + 8] = 1;
+		stream_active[i + MAX_OUTPUT_CHANNELS] = 1;
+		nb_active_channels++;
 	}
+	spdif_channels = nb_active_channels;
 }
 
 void patchbay_postinit(void)

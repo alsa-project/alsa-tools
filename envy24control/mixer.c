@@ -19,10 +19,21 @@
 
 #include "envy24control.h"
 
+#define	MULTI_PLAYBACK_SWITCH		"Multi Playback Switch"
+#define MULTI_PLAYBACK_VOLUME		"Multi Playback Volume"
+
+#define HW_MULTI_CAPTURE_SWITCH		"H/W Multi Capture Switch"
+#define IEC958_MULTI_CAPTURE_SWITCH	"IEC958 Multi Capture Switch"
+
+#define HW_MULTI_CAPTURE_VOLUME		"H/W Multi Capture Volume"
+#define IEC958_MULTI_CAPTURE_VOLUME	"IEC958 Multi Capture Volume"
+
 #define toggle_set(widget, state) \
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), state);
 
-extern int input_channels, output_channels, spdif_channels;
+static int stream_is_active[MAX_PCM_OUTPUT_CHANNELS + MAX_SPDIF_CHANNELS + \
+				MAX_INPUT_CHANNELS + MAX_SPDIF_CHANNELS];
+extern int input_channels, output_channels, pcm_output_channels, spdif_channels, view_spdif_playback;
 
 static int is_active(GtkWidget *widget)
 {
@@ -33,13 +44,16 @@ void mixer_update_stream(int stream, int vol_flag, int sw_flag)
 {
 	int err;
 	
+	if (! stream_is_active[stream - 1])
+		return;
+
 	if (vol_flag) {
 		snd_ctl_elem_value_t *vol;
 		int v[2];
 		snd_ctl_elem_value_alloca(&vol);
 		snd_ctl_elem_value_set_interface(vol, SND_CTL_ELEM_IFACE_MIXER);
-		snd_ctl_elem_value_set_name(vol, stream <= 10 ? "Multi Playback Volume" : "Multi Capture Volume");
-		snd_ctl_elem_value_set_index(vol, (stream - 1) % 10);
+		snd_ctl_elem_value_set_name(vol, stream <= 10 ? MULTI_PLAYBACK_VOLUME : (stream <= 18 ? HW_MULTI_CAPTURE_VOLUME : IEC958_MULTI_CAPTURE_VOLUME));
+		snd_ctl_elem_value_set_index(vol, stream <= 18 ? (stream - 1) % 10 : (stream - 1) % 18 );
 		if ((err = snd_ctl_elem_read(ctl, vol)) < 0)
 			g_print("Unable to read multi playback volume: %s\n", snd_strerror(err));
 		v[0] = snd_ctl_elem_value_get_integer(vol, 0);
@@ -54,8 +68,8 @@ void mixer_update_stream(int stream, int vol_flag, int sw_flag)
 		int v[2];
 		snd_ctl_elem_value_alloca(&sw);
 		snd_ctl_elem_value_set_interface(sw, SND_CTL_ELEM_IFACE_MIXER);
-		snd_ctl_elem_value_set_name(sw, stream <= 10 ? "Multi Playback Switch" : "Multi Capture Switch");
-		snd_ctl_elem_value_set_index(sw, (stream - 1) % 10);
+		snd_ctl_elem_value_set_name(sw, stream <= 10 ? MULTI_PLAYBACK_SWITCH : (stream <= 18 ? HW_MULTI_CAPTURE_SWITCH : IEC958_MULTI_CAPTURE_SWITCH));
+		snd_ctl_elem_value_set_index(sw, stream <= 18 ? (stream - 1) % 10 : (stream - 1) % 18 );
 		if ((err = snd_ctl_elem_read(ctl, sw)) < 0)
 			g_print("Unable to read multi playback switch: %s\n", snd_strerror(err));
 		v[0] = snd_ctl_elem_value_get_boolean(sw, 0);
@@ -74,8 +88,8 @@ static void set_switch1(int stream, int left, int right)
 	
 	snd_ctl_elem_value_alloca(&sw);
 	snd_ctl_elem_value_set_interface(sw, SND_CTL_ELEM_IFACE_MIXER);
-	snd_ctl_elem_value_set_name(sw, stream <= 10 ? "Multi Playback Switch" : "Multi Capture Switch");
-	snd_ctl_elem_value_set_index(sw, (stream - 1) % 10);
+	snd_ctl_elem_value_set_name(sw, stream <= 10 ? MULTI_PLAYBACK_SWITCH : (stream <= 18 ? HW_MULTI_CAPTURE_SWITCH : IEC958_MULTI_CAPTURE_SWITCH));
+	snd_ctl_elem_value_set_index(sw, stream <= 18 ? (stream - 1) % 10 : (stream - 1) % 18 );
 	if ((err = snd_ctl_elem_read(ctl, sw)) < 0)
 		g_print("Unable to read multi switch: %s\n", snd_strerror(err));
 	if (left >= 0 && left != snd_ctl_elem_value_get_boolean(sw, 0)) {
@@ -118,8 +132,8 @@ static void set_volume1(int stream, int left, int right)
 	
 	snd_ctl_elem_value_alloca(&vol);
 	snd_ctl_elem_value_set_interface(vol, SND_CTL_ELEM_IFACE_MIXER);
-	snd_ctl_elem_value_set_name(vol, stream <= 10 ? "Multi Playback Volume" : "Multi Capture Volume");
-	snd_ctl_elem_value_set_index(vol, (stream - 1) % 10);
+	snd_ctl_elem_value_set_name(vol, stream <= 10 ? MULTI_PLAYBACK_VOLUME : (stream <= 18 ? HW_MULTI_CAPTURE_VOLUME : IEC958_MULTI_CAPTURE_VOLUME));
+	snd_ctl_elem_value_set_index(vol, stream <= 18 ? (stream - 1) % 10 : (stream - 1) % 18 );
 	if ((err = snd_ctl_elem_read(ctl, vol)) < 0)
 		g_print("Unable to read multi volume: %s\n", snd_strerror(err));
 	if (left >= 0) {
@@ -151,14 +165,82 @@ void mixer_adjust(GtkAdjustment *adj, gpointer data)
 	set_volume1(stream, vol[0], vol[1]);
 }
 
+int mixer_stream_is_active(int stream)
+{
+	return stream_is_active[stream - 1];
+}
+
+void mixer_init(void)
+{
+	int i;
+	int nb_active_channels;
+	snd_ctl_elem_value_t *val;
+
+	snd_ctl_elem_value_alloca(&val);
+	snd_ctl_elem_value_set_interface(val, SND_CTL_ELEM_IFACE_MIXER);
+	memset (stream_is_active, 0, (MAX_PCM_OUTPUT_CHANNELS + MAX_SPDIF_CHANNELS + MAX_INPUT_CHANNELS + MAX_SPDIF_CHANNELS) * sizeof(int));
+	snd_ctl_elem_value_set_name(val, MULTI_PLAYBACK_SWITCH);
+	nb_active_channels = 0;
+	for (i = 0; i < pcm_output_channels; i++) {
+		snd_ctl_elem_value_set_numid(val, 0);
+		snd_ctl_elem_value_set_index(val, i);
+		if (snd_ctl_elem_read(ctl, val) < 0)
+			continue;
+
+		stream_is_active[i] = 1;
+		nb_active_channels++;
+	}
+	pcm_output_channels = nb_active_channels;
+	for (i = MAX_PCM_OUTPUT_CHANNELS; i < MAX_PCM_OUTPUT_CHANNELS + spdif_channels; i++) {
+		snd_ctl_elem_value_set_numid(val, 0);
+		snd_ctl_elem_value_set_index(val, i);
+ 		if (snd_ctl_elem_read(ctl, val) < 0)
+			continue;
+		stream_is_active[i] = 1;
+	}
+	snd_ctl_elem_value_set_name(val, HW_MULTI_CAPTURE_SWITCH);
+	nb_active_channels = 0;
+	for (i = 0; i < input_channels; i++) {
+		snd_ctl_elem_value_set_numid(val, 0);
+		snd_ctl_elem_value_set_index(val, i);
+		if (snd_ctl_elem_read(ctl, val) < 0)
+			continue;
+
+		stream_is_active[i + MAX_PCM_OUTPUT_CHANNELS + MAX_SPDIF_CHANNELS] = 1;
+		nb_active_channels++;
+	}
+	input_channels = nb_active_channels;
+	snd_ctl_elem_value_set_name(val, IEC958_MULTI_CAPTURE_SWITCH);
+	for (i = 0; i < spdif_channels; i++) {
+		snd_ctl_elem_value_set_numid(val, 0);
+		snd_ctl_elem_value_set_index(val, i);
+ 		if (snd_ctl_elem_read(ctl, val) < 0)
+			continue;
+		stream_is_active[i + MAX_PCM_OUTPUT_CHANNELS + MAX_SPDIF_CHANNELS + MAX_INPUT_CHANNELS] = 1;
+	}
+}
+
 void mixer_postinit(void)
 {
 	int stream;
 
-	for (stream = 1; stream <= output_channels; stream++)
-		mixer_update_stream(stream, 1, 1);
-	for (stream = 11; stream <= input_channels + 10; stream++)
-		mixer_update_stream(stream, 1, 1);
-	for (stream = 19; stream <= spdif_channels + 18; stream++)
-		mixer_update_stream(stream, 1, 1);
+	for (stream = 1; stream <= pcm_output_channels; stream++) {
+		if (stream_is_active[stream - 1])
+			mixer_update_stream(stream, 1, 1);
+	}
+	for (stream = MAX_PCM_OUTPUT_CHANNELS + 1; \
+		stream <= MAX_PCM_OUTPUT_CHANNELS + spdif_channels; stream++) {
+		if (stream_is_active[stream - 1] && view_spdif_playback)
+			mixer_update_stream(stream, 1, 1);
+	}
+	for (stream = MAX_PCM_OUTPUT_CHANNELS + MAX_SPDIF_CHANNELS + 1; \
+		stream <= MAX_PCM_OUTPUT_CHANNELS + MAX_SPDIF_CHANNELS + input_channels; stream++) {
+		if (stream_is_active[stream - 1])
+			mixer_update_stream(stream, 1, 1);
+	}
+	for (stream = MAX_PCM_OUTPUT_CHANNELS + MAX_SPDIF_CHANNELS + MAX_INPUT_CHANNELS + 1; \
+		stream <= MAX_PCM_OUTPUT_CHANNELS + MAX_SPDIF_CHANNELS + MAX_INPUT_CHANNELS + spdif_channels; stream++) {
+		if (stream_is_active[stream - 1])
+			mixer_update_stream(stream, 1, 1);
+	}
 }

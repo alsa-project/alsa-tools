@@ -54,12 +54,16 @@ void control_input_callback(gpointer data, gint source, GdkInputCondition condit
 			rate_reset_update();
 		else if (!strcmp(name, "Multi Playback Volume"))
 			mixer_update_stream(index + 1, 1, 0);
-		else if (!strcmp(name, "Multi Capture Volume"))
+		else if (!strcmp(name, "H/W Multi Capture Volume"))
 			mixer_update_stream(index + 11, 1, 0);
+		else if (!strcmp(name, "IEC958 Multi Capture Volume"))
+			mixer_update_stream(index + 19, 1, 0);
 		else if (!strcmp(name, "Multi Playback Switch"))
 			mixer_update_stream(index + 1, 0, 1);
-		else if (!strcmp(name, "Multi Capture Switch"))
+		else if (!strcmp(name, "H/W Multi Capture Switch"))
 			mixer_update_stream(index + 11, 0, 1);
+		else if (!strcmp(name, "IEC958 Multi Capture Switch"))
+			mixer_update_stream(index + 19, 0, 1);
 		else if (!strcmp(name, "H/W Playback Route"))
 			patchbay_update();
 		else if (!strcmp(name, "IEC958 Playback Route"))

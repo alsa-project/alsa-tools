@@ -24,7 +24,7 @@
 #define _GNU_SOURCE
 #include <getopt.h>
 
-int input_channels, output_channels, spdif_channels;
+int input_channels, output_channels, pcm_output_channels, spdif_channels, view_spdif_playback;
 ice1712_eeprom_t card_eeprom;
 snd_ctl_t *ctl;
 
@@ -131,8 +131,10 @@ static void create_mixer_frame(GtkWidget *box, int stream)
 	GtkWidget *toggle;
 	char str[64], drawname[32];
 
-	if (stream <= 10) {
+	if (stream <= MAX_PCM_OUTPUT_CHANNELS) {
 		sprintf(str, "PCM Out %i", stream);
+	} else if (stream <= (MAX_PCM_OUTPUT_CHANNELS + MAX_SPDIF_CHANNELS)) {
+		sprintf(str, "S/PDIF Out %s", stream & 1 ? "L": "R");
 	} else if ((card_eeprom.subvendor == ICE1712_SUBDEVICE_DMX6FIRE) && (stream == 11)) {
 		sprintf(str, "CD In L");
 	} else if ((card_eeprom.subvendor == ICE1712_SUBDEVICE_DMX6FIRE) && (stream == 12)) {
@@ -145,12 +147,10 @@ static void create_mixer_frame(GtkWidget *box, int stream)
 		sprintf(str, "Phono/Mic In L");
 	} else if ((card_eeprom.subvendor == ICE1712_SUBDEVICE_DMX6FIRE) && (stream == 16)) {
 		sprintf(str, "Phono/Mic In R");
-	} else if (stream <= 18) {
-		sprintf(str, "H/W In %i", stream - 10);
-	} else if (stream == 19) {
-		strcpy(str, "S/PDIF In L");
-	} else if (stream == 20) {
-		strcpy(str, "S/PDIF In R");
+	} else if (stream <= (MAX_PCM_OUTPUT_CHANNELS + MAX_SPDIF_CHANNELS + MAX_INPUT_CHANNELS)) {
+		sprintf(str, "H/W In %i", stream - (MAX_PCM_OUTPUT_CHANNELS + MAX_SPDIF_CHANNELS));
+	} else if (stream <= (MAX_PCM_OUTPUT_CHANNELS + MAX_SPDIF_CHANNELS + MAX_INPUT_CHANNELS + MAX_SPDIF_CHANNELS)) {
+		sprintf(str, "S/PDIF In %s", stream & 1 ? "L": "R");
 	} else {
 		strcpy(str, "???");
 	}
@@ -356,12 +356,25 @@ static void create_mixer(GtkWidget *main, GtkWidget *notebook, int page)
 	gtk_widget_show(hbox);
 	gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, TRUE, 0);
 
-	for(stream = 1; stream <= output_channels; stream ++)
-		create_mixer_frame(hbox, stream);
-	for(stream = 11; stream <= input_channels + 10; stream ++)
-		create_mixer_frame(hbox, stream);
-	for(stream = 19; stream <= spdif_channels + 18; stream ++)
-		create_mixer_frame(hbox, stream);
+	for(stream = 1; stream <= pcm_output_channels; stream ++) {
+		if (mixer_stream_is_active(stream))
+			create_mixer_frame(hbox, stream);
+	}
+	for(stream = (MAX_PCM_OUTPUT_CHANNELS + 1); \
+		stream <= spdif_channels + MAX_PCM_OUTPUT_CHANNELS; stream ++) {
+		if (mixer_stream_is_active(stream) && view_spdif_playback)
+			create_mixer_frame(hbox, stream);
+	}
+	for(stream = (MAX_PCM_OUTPUT_CHANNELS + MAX_SPDIF_CHANNELS + 1); \
+		stream <= input_channels + (MAX_PCM_OUTPUT_CHANNELS + MAX_SPDIF_CHANNELS); stream ++) {
+		if (mixer_stream_is_active(stream))
+			create_mixer_frame(hbox, stream);
+	}
+	for(stream = (MAX_PCM_OUTPUT_CHANNELS + MAX_SPDIF_CHANNELS + MAX_INPUT_CHANNELS + 1); \
+		stream <= spdif_channels + (MAX_PCM_OUTPUT_CHANNELS + MAX_SPDIF_CHANNELS + MAX_INPUT_CHANNELS); stream ++) {
+		if (mixer_stream_is_active(stream))
+			create_mixer_frame(hbox, stream);
+	}
 }
 
 static void create_router_frame(GtkWidget *box, int stream, int pos)
@@ -374,6 +387,7 @@ static void create_router_frame(GtkWidget *box, int stream, int pos)
 	GSList *group = NULL;
 	char str[64], str1[64];
 	int idx;
+	int pcm_channel,s_pdif_channel;
 	static char *table[10] = {
 		"S/PDIF In L",
 		"S/PDIF In R",
@@ -397,16 +411,20 @@ static void create_router_frame(GtkWidget *box, int stream, int pos)
                 table[7] = "Phono/Mic In R";
 	}
 
-	if (stream <= 8) {
+	if (stream <= MAX_OUTPUT_CHANNELS) {
 		sprintf(str, "H/W Out %i (%s)", stream, stream & 1 ? "L" : "R");
-	} else if (stream == 9) {
+	} else if (stream == (MAX_OUTPUT_CHANNELS + 1)) {
 		strcpy(str, "S/PDIF Out (L)");
-	} else if (stream == 10) {
+	} else if (stream == (MAX_OUTPUT_CHANNELS + 2)) {
 		strcpy(str, "S/PDIF Out (R)");
 	} else {
 		strcpy(str, "???");
 	}
-	sprintf(str1, "PCM Out %i", stream);
+	if ((stream == MAX_PCM_OUTPUT_CHANNELS + 1) || (stream == MAX_PCM_OUTPUT_CHANNELS + 2)) {
+		sprintf(str1, "S/PDIF Out (%s)", stream & 1 ? "L" : "R");
+	} else { 
+		sprintf(str1, "PCM Out %i", stream);
+	}
 
 	frame = gtk_frame_new(str);
 	gtk_widget_show(frame);
@@ -418,7 +436,6 @@ static void create_router_frame(GtkWidget *box, int stream, int pos)
 	gtk_widget_show(vbox);
 	gtk_container_add(GTK_CONTAINER(frame), vbox);
 	gtk_container_set_border_width(GTK_CONTAINER(vbox), 6);
-
 
 	radiobutton = gtk_radio_button_new_with_label(group, str1);
 	router_radio[stream-1][0] = radiobutton;
@@ -437,7 +454,7 @@ static void create_router_frame(GtkWidget *box, int stream, int pos)
 	label = gtk_label_new("");
 	gtk_widget_show(label);
 
-	if(stream == 1 || stream == 2 || stream == 9 || stream == 10) {
+	if(stream <= MAX_OUTPUT_CHANNELS + MAX_SPDIF_CHANNELS) {
 		radiobutton = gtk_radio_button_new_with_label(group, stream & 1 ? "Digital Mix L" : "Digital Mix R");
 		router_radio[stream-1][1] = radiobutton;
 		group = gtk_radio_button_group(GTK_RADIO_BUTTON(radiobutton));
@@ -506,7 +523,7 @@ static void create_router(GtkWidget *main, GtkWidget *notebook, int page)
 		if (patchbay_stream_is_active(stream))
 			create_router_frame(hbox, stream, pos++);
 	}
-	for (stream = 8; stream <= 8 + spdif_channels; stream++) {
+	for (stream = MAX_OUTPUT_CHANNELS + 1; stream <= MAX_OUTPUT_CHANNELS + spdif_channels; stream++) {
 		if (patchbay_stream_is_active(stream))
 			create_router_frame(hbox, stream, pos++);
 	}
@@ -1643,12 +1660,14 @@ static void create_analog_volume(GtkWidget *main, GtkWidget *notebook, int page)
 
 static void usage(void)
 {
-	fprintf(stderr, "usage: envy24control [-c card#] [-D control-name] [-o num-outputs] [-i num-inputs]\n");
+	fprintf(stderr, "usage: envy24control [-c card#] [-D control-name] [-o num-outputs] [-i num-inputs] [-p num-pcm-outputs] [-s num-spdif-in/outs] [-v]\n");
 	fprintf(stderr, "\t-c, --card\tAlsa card number to control\n");
 	fprintf(stderr, "\t-D, --device\tcontrol-name\n");
-	fprintf(stderr, "\t-o, --outputs\tLimit number of outputs to display\n");
-	fprintf(stderr, "\t-i, --input\tLimit number of inputs to display\n");
-	fprintf(stderr, "\t-s, --spdif\tLimit number of spdif outputs to display\n");
+	fprintf(stderr, "\t-o, --outputs\tLimit number of analog line outputs to display\n");
+	fprintf(stderr, "\t-i, --input\tLimit number of analog line inputs to display\n");
+	fprintf(stderr, "\t-p, --pcm_output\tLimit number of PCM outputs to display\n");
+	fprintf(stderr, "\t-s, --spdif\tLimit number of spdif inputs/outputs to display\n");
+	fprintf(stderr, "\t-v, --view_spdif_playback\tshows the spdif playback channels in the mixer\n");
 }
 
 int main(int argc, char **argv)
@@ -1661,15 +1680,16 @@ int main(int argc, char **argv)
 	int npfds;
 	struct pollfd *pfds;
 	int page;
-	int output_channels_set = 0;
 	int input_channels_set = 0;
+	int output_channels_set = 0;
 	static struct option long_options[] = {
 		{"device", 1, 0, 'D'},
 		{"card", 1, 0, 'c'},
 		{"inputs", 1, 0, 'i'},
 		{"outputs", 1, 0, 'o'},
+		{"pcm_outputs", 1, 0, 'p'},
 		{"spdif", 1, 0, 's'},
-		{0, 0, 0, 0}
+		{"view_spdif_playback", 1, 0, 'v'}
 	};
 
 
@@ -1682,8 +1702,10 @@ int main(int argc, char **argv)
 	name = "hw:0";
 	input_channels = MAX_INPUT_CHANNELS;
 	output_channels = MAX_OUTPUT_CHANNELS;
+	pcm_output_channels = MAX_PCM_OUTPUT_CHANNELS;
 	spdif_channels = MAX_SPDIF_CHANNELS;
-	while ((c = getopt_long(argc, argv, "D:c:i:o:s:", long_options, NULL)) != -1) {
+	view_spdif_playback = 0;
+	while ((c = getopt_long(argc, argv, "D:c:i:o:p:s:v:", long_options, NULL)) != -1) {
 		switch (c) {
 		case 'c':
 			i = atoi(optarg);
@@ -1710,7 +1732,14 @@ int main(int argc, char **argv)
 			if (output_channels < 0 || output_channels > MAX_OUTPUT_CHANNELS) {
 				fprintf(stderr, "envy24control: must have 0-%i outputs\n", MAX_OUTPUT_CHANNELS);
 				exit(1);
+			}
 			output_channels_set = 1;
+			break;
+		case 'p':
+			pcm_output_channels = atoi(optarg);
+			if (pcm_output_channels < 0 || pcm_output_channels > MAX_PCM_OUTPUT_CHANNELS) {
+				fprintf(stderr, "envy24control: must have 0-%i pcm outputs\n", MAX_PCM_OUTPUT_CHANNELS);
+				exit(1);
 			}
 			break;
 		case 's':
@@ -1719,6 +1748,9 @@ int main(int argc, char **argv)
 				fprintf(stderr, "envy24control: must have 0-%i spdifs\n", MAX_SPDIF_CHANNELS);
 				exit(1);
 			}
+			break;
+		case 'v':
+			view_spdif_playback = atoi(optarg);
 			break;
 		default:
 			usage();
@@ -1763,9 +1795,13 @@ int main(int argc, char **argv)
 
 	/* Initialize code */
 	level_meters_init();
+	mixer_init();
 	patchbay_init();
 	hardware_init();
 	analog_volume_init();
+
+	fprintf(stderr, "using\t --- input_channels: %i\n\t --- output_channels: %i\n\t --- pcm_output_channels: %i\n\t --- spdif in/out channels: %i\n", \
+		input_channels, output_channels, pcm_output_channels, spdif_channels);
 
         /* Make the title */
         sprintf(title, "Envy24 Control Utility %s (%s)", VERSION, snd_ctl_card_info_get_longname(hw_info));
