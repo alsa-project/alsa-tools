@@ -129,9 +129,7 @@ error_handler (const char *file, int line, const char *function, int err, const 
  */
 static void
 show_list () {
-  snd_seq_client_info_t cinfo;
-  snd_seq_port_info_t pinfo;
-  snd_seq_system_info_t sysinfo;
+  snd_seq_client_info_t *cinfo;
   int client, port, err;
 
   snd_lib_error_set_handler (error_handler);
@@ -140,28 +138,24 @@ show_list () {
       return;
   }
 
-  if ((err = snd_seq_system_info (seq_handle, &sysinfo)) < 0) {
-      snd_seq_close (seq_handle);
-      fprintf (stderr, "Could not get sequencer information: %s\n",
-	       snd_strerror (err));
-      return;
-  }
-
   printf (" Port     %-30.30s    %s\n", "Client name", "Port name");
-  for (client = 0; client < sysinfo.clients; client++) {
-      if (snd_seq_get_any_client_info (seq_handle, client, &cinfo) < 0)
-	continue;
-
-      for (port = 0; port < sysinfo.ports; port++) {
+  snd_seq_client_info_alloca(&cinfo);
+  snd_seq_client_info_set_client(cinfo, -1);
+  while (snd_seq_query_next_client(seq_handle, cinfo) >= 0) {
+      snd_seq_port_info_t *pinfo;
+      client = snd_seq_client_info_get_client(cinfo);
+      snd_seq_port_info_alloca(&pinfo);
+      snd_seq_port_info_set_client(pinfo, client);
+      snd_seq_port_info_set_port(pinfo, -1);
+      while (snd_seq_query_next_port(seq_handle, pinfo) >= 0) {
 	  int cap;
 
-	  if (snd_seq_get_any_port_info (seq_handle, client, port, &pinfo) < 0)
-	    continue;
-
 	  cap = (SND_SEQ_PORT_CAP_SUBS_WRITE | SND_SEQ_PORT_CAP_WRITE);
-	  if ((pinfo.capability & cap) == cap) {
+	  if ((snd_seq_port_info_get_capability(pinfo) & cap) == cap) {
 	      printf ("%3d:%-3d   %-30.30s    %s\n",
-		      pinfo.client, pinfo.port, cinfo.name, pinfo.name);
+		      client, snd_seq_port_info_get_port(pinfo),
+		      snd_seq_client_info_get_name(cinfo),
+		      snd_seq_port_info_get_name(pinfo));
 	  }
       }
   }
@@ -265,7 +259,8 @@ check_result (int evtype) {
  */
 static int
 load_patch (fm_instrument_t * fm_instr, int bank, int prg, char *name) {
-  snd_seq_instr_put_t *put;
+  snd_instr_header_t *put;
+  snd_seq_instr_t id;
   snd_seq_event_t ev;
 
   size_t size;
@@ -281,9 +276,11 @@ load_patch (fm_instrument_t * fm_instr, int bank, int prg, char *name) {
 	     prg, snd_strerror (err));
     return -1;
   }
-  put->id.std = SND_SEQ_INSTR_TYPE2_OPL2_3;
-  put->id.prg = prg;
-  put->id.bank = bank;
+  memset(&id, 0, sizeof(id));
+  id.std = SND_SEQ_INSTR_TYPE2_OPL2_3;
+  id.prg = prg;
+  id.bank = bank;
+  snd_instr_header_set_id(put, &id);
 
   /* build event */
   memset (&ev, 0, sizeof (ev));
@@ -318,16 +315,16 @@ __again:
       printf ("Loaded instrument %.3i, bank %.3i: %s\n", prg, bank, name);
     return 0;
   } else if (err == -EBUSY) {
-    snd_seq_instr_free_t remove;
+    snd_instr_header_t *remove;
 
-    memset (&remove, 0, sizeof (remove));
-    remove.cmd = SNDRV_SEQ_INSTR_FREE_CMD_SINGLE;
-    remove.data.instr = put->id;
+    snd_instr_header_alloca(&remove);
+    snd_instr_header_set_cmd(remove, SNDRV_SEQ_INSTR_FREE_CMD_SINGLE);
+    snd_instr_header_set_id(remove, snd_instr_header_get_id(put));
 
     /* remove instrument */
     ev.type = SND_SEQ_EVENT_INSTR_FREE;
-    ev.data.ext.len = sizeof (remove);
-    ev.data.ext.ptr = &remove;
+    ev.data.ext.len = snd_instr_header_sizeof();
+    ev.data.ext.ptr = remove;
 
     if ((err = snd_seq_event_output (seq_handle, &ev)) < 0) {
       fprintf (stderr, "Unable to write an instrument %.3i free event: %s\n",
@@ -483,9 +480,9 @@ parse_portdesc (char *portdesc) {
  */
 static int
 init_client () {
-  snd_seq_client_info_t cinfo;
-  snd_seq_port_info_t port;
-  snd_seq_port_subscribe_t sub;
+  char name[64];
+  snd_seq_port_subscribe_t *sub;
+  snd_seq_addr_t addr;
   int err;
 
   if ((err = snd_seq_open (&seq_handle, "hw", SND_SEQ_OPEN_DUPLEX, 0)) < 0) {
@@ -501,37 +498,33 @@ init_client () {
     return -1;
   }
 
-  memset (&cinfo, 0, sizeof (cinfo));
-  cinfo.client = seq_client;
-  cinfo.type = USER_CLIENT;
-  snprintf (cinfo.name, sizeof (cinfo.name), "sbiload - %i", getpid ());
-  if ((err = snd_seq_set_client_info (seq_handle, &cinfo)) < 0) {
+  sprintf (name, "sbiload - %i", getpid ());
+  if ((err = snd_seq_set_client_name (seq_handle, name)) < 0) {
     snd_seq_close (seq_handle);
     fprintf (stderr, "Unable to set client info: %s\n",
 	     snd_strerror (err));
     return -1;
   }
 
-  memset (&port, 0, sizeof (port));
-  strcpy (port.name, "Output");
-  port.capability |= SND_SEQ_PORT_CAP_READ | SND_SEQ_PORT_CAP_WRITE;
-  if ((err = snd_seq_create_port (seq_handle, &port)) < 0) {
+  if ((seq_port = snd_seq_create_simple_port (seq_handle, "Output",
+					      SND_SEQ_PORT_CAP_READ | SND_SEQ_PORT_CAP_WRITE,
+					      SND_SEQ_PORT_TYPE_SPECIFIC)) < 0) {
     snd_seq_close (seq_handle);
     fprintf (stderr, "Unable to create a client port: %s\n",
-	     snd_strerror (err));
+	     snd_strerror (seq_port));
     return -1;
   }
 
-  seq_port = port.port;
+  snd_seq_port_subscribe_alloca(&sub);
+  addr.client = seq_client;
+  addr.port = seq_port;
+  snd_seq_port_subscribe_set_sender(sub, &addr);
+  addr.client = seq_dest_client;
+  addr.port = seq_dest_port;
+  snd_seq_port_subscribe_set_dest(sub, &addr);
+  snd_seq_port_subscribe_set_exclusive(sub, 1);
 
-  memset (&sub, 0, sizeof (sub));
-  sub.sender.client = seq_client;
-  sub.sender.port = seq_port;
-  sub.dest.client = seq_dest_client;
-  sub.dest.port = seq_dest_port;
-  sub.exclusive = 1;
-
-  if ((err = snd_seq_subscribe_port (seq_handle, &sub)) < 0) {
+  if ((err = snd_seq_subscribe_port (seq_handle, sub)) < 0) {
     snd_seq_close (seq_handle);
     fprintf (stderr, "Unable to subscribe destination port: %s\n",
 	     snd_strerror (errno));
@@ -539,12 +532,6 @@ init_client () {
     return -1;
   }
 
-  if ((err = snd_seq_get_any_port_info (seq_handle, seq_dest_client, seq_dest_port, &port)) < 0) {
-    snd_seq_close (seq_handle);
-    fprintf (stderr, "Unable to get destination port: %s\n",
-	     snd_strerror (err));
-    return -1;
-  }
   return 0;
 }
 
