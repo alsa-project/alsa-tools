@@ -27,7 +27,7 @@ void swab(const void*, void*, size_t);
 
 #define BLOCK_SIZE 6144
 
-static char buf[BLOCK_SIZE];
+static unsigned char buf[BLOCK_SIZE];
 static uint32_t sbuffer_size;
 static syncinfo_t syncinfo;
 static char *sbuffer;
@@ -141,7 +141,7 @@ output_spdif(uint8_t *data_start, uint8_t *data_end, int quiet)
       buf[0] = 0x72; buf[1] = 0xf8;	// spdif syncword
       buf[2] = 0x1f; buf[3] = 0x4e;	// ..............
       buf[4] = 0x01;			// AC3 data
-      buf[5] = buf[10] >> 5;		// bsmod, stream = 0
+      buf[5] = buf[13] & 7;		// bsmod, stream = 0
       buf[6] = (syncinfo.frame_size * 16) & 0xff;
       buf[7] = ((syncinfo.frame_size * 16) >> 8) & 0xff;
       buf[8] = 0x77; buf[9] = 0x0b;	// AC3 syncwork
