@@ -19,65 +19,45 @@
 
 #include "envy24control.h"
 
-static void control_value(snd_ctl_t *handle, void *private_data, snd_ctl_elem_id_t *id)
-{
-	if (id->iface == SND_CTL_ELEM_IFACE_PCM) {
-		if (!strcmp(id->name, "Multi Track Route")) {
-			patchbay_update();
-			return;
-		}
-		if (!strcmp(id->name, "Multi Track S/PDIF Master")) {
-			master_clock_update();
-			return;
-		}
-		if (!strcmp(id->name, "Word Clock Sync")) {
-			master_clock_update();
-			return;
-		}
-		if (!strcmp(id->name, "Multi Track Volume Rate")) {
-			volume_change_rate_update();
-			return;
-		}
-		if (!strcmp(id->name, "S/PDIF Input Optical")) {
-			spdif_input_update();
-			return;
-		}
-		if (!strcmp(id->name, "Delta S/PDIF Output Defaults")) {
-			spdif_output_update();
-			return;
-		}
-	}
-	if (id->iface == SND_CTL_ELEM_IFACE_MIXER) {
-		if (!strcmp(id->name, "Multi Playback Volume")) {
-			mixer_update_stream(id->index + 1, 1, 0);
-			return;
-		}
-		if (!strcmp(id->name, "Multi Capture Volume")) {
-			mixer_update_stream(id->index + 11, 1, 0);
-			return;
-		}	
-		if (!strcmp(id->name, "Multi Playback Switch")) {
-			mixer_update_stream(id->index + 1, 0, 1);
-			return;
-		}
-		if (!strcmp(id->name, "Multi Capture Switch")) {
-			mixer_update_stream(id->index + 11, 0, 1);
-			return;
-		}
-	}
-}
-
-static snd_ctl_callbacks_t control_callbacks = {
-	private_data: NULL,
-	rebuild: NULL,		/* FIXME!! */
-	value: control_value,
-	change: NULL,
-	add: NULL,
-	remove: NULL,
-	reserved: { NULL, }
-};
-
 void control_input_callback(gpointer data, gint source, GdkInputCondition condition)
 {
-	snd_ctl_read(card_ctl, &control_callbacks);
+	snd_ctl_t *ctl = (snd_ctl_t *)data;
+	snd_ctl_event_t *ev;
+	const char *name;
+	int index;
+
+	snd_ctl_event_alloca(&ev);
+	if (snd_ctl_read(ctl, ev) < 0)
+		return;
+	name = snd_ctl_event_elem_get_name(ev);
+	index = snd_ctl_event_elem_get_index(ev);
+	switch (snd_ctl_event_elem_get_interface(ev)) {
+	case SND_CTL_ELEM_IFACE_PCM:
+		if (!strcmp(name, "Multi Track Route"))
+			patchbay_update();
+		else if (!strcmp(name, "Multi Track S/PDIF Master"))
+			master_clock_update();
+		else if (!strcmp(name, "Word Clock Sync"))
+			master_clock_update();
+		else if (!strcmp(name, "Multi Track Volume Rate"))
+			volume_change_rate_update();
+		else if (!strcmp(name, "S/PDIF Input Optical"))
+			spdif_input_update();
+		else if (!strcmp(name, "Delta S/PDIF Output Defaults"))
+			spdif_output_update();
+		break;
+	case SND_CTL_ELEM_IFACE_MIXER:
+		if (!strcmp(name, "Multi Playback Volume"))
+			mixer_update_stream(index + 1, 1, 0);
+		else if (!strcmp(name, "Multi Capture Volume"))
+			mixer_update_stream(index + 11, 1, 0);
+		else if (!strcmp(name, "Multi Playback Switch"))
+			mixer_update_stream(index + 1, 0, 1);
+		else if (!strcmp(name, "Multi Capture Switch"))
+			mixer_update_stream(index + 11, 0, 1);
+		break;
+	default:
+		break;
+	}
 }
+

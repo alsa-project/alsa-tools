@@ -18,11 +18,11 @@
 ******************************************************************************/
 
 #include "envy24control.h"
+#define _GNU_SOURCE
+#include <getopt.h>
 
-int card = 0;
-snd_ctl_t *card_ctl = NULL;
-snd_ctl_card_info_t hw_info;
 ice1712_eeprom_t card_eeprom;
+snd_ctl_t *ctl;
 
 GtkWidget *window;
 
@@ -1023,64 +1023,65 @@ static void create_about(GtkWidget *main, GtkWidget *notebook, int page)
 	gtk_widget_set_usize(label, 736, 16);
 }
 
+static void usage(void)
+{
+	fprintf(stderr, "usage: envy24control [-D control-name]\n");
+}
+
 int main(int argc, char **argv)
 {
         GtkWidget *notebook;
-        char name[32], title[128];
-	int err;
-	unsigned int cards_mask;
-	snd_ctl_elem_value_t ctl;
+        char *name, title[128];
+	int i, c, err;
+	//snd_ctl_t *ctl; // global
+	snd_ctl_card_info_t *hw_info;
+	snd_ctl_elem_value_t *val;
+	int npfds;
+	struct pollfd *pfds;
 	// snd_mixer_filter_t filter;
+	static struct option long_options[] = {
+		{"device", 1, 0, 'D'},
+	};
+
+	snd_ctl_card_info_alloca(&hw_info);
+	snd_ctl_elem_value_alloca(&val);
 
 	/* Go through gtk initialization */
         gtk_init(&argc, &argv);
 
-	card = snd_defaults_card();
-	cards_mask = snd_cards_mask();
-	
-	while (1) {
-		sprintf(name, "envy24control%d", card);
-		if ((err = snd_ctl_hw_open(&card_ctl, name, card)) < 0) {
-			fprintf(stderr, "snd_ctl_open: %s\n", snd_strerror(err));
-			exit(EXIT_FAILURE);
-		}
-		if ((err = snd_ctl_card_info(card_ctl, &hw_info)) < 0) {
-			fprintf(stderr, "snd_ctl_card_info: %s\n", snd_strerror(err));
-			exit(EXIT_FAILURE);
-		}
-		if (hw_info.type == SND_CARD_TYPE_ICE1712)
+	name = "hw:0";
+	while ((c = getopt_long(argc, argv, "D:", long_options, NULL)) != -1) {
+		switch (c) {
+		case 'D':
+			name = optarg;
 			break;
-		snd_ctl_close(card_ctl);
-		card_ctl = NULL;
-		cards_mask &= ~(1 << card);
-		for (card = 0; card < 32; card++)
-			if ((1 << card) & cards_mask)
-				break;
-		if (card >= 32)
+		default:
+			usage();
+			exit(1);
 			break;
+		}
 	}
-	if (card_ctl == NULL) {
-		fprintf(stderr, "Unable to find ICE1712 soundcard...\n");
+
+	if ((err = snd_ctl_open(&ctl, name, 0)) < 0) {
+		fprintf(stderr, "snd_ctl_open: %s\n", snd_strerror(err));
+		exit(EXIT_FAILURE);
+	}
+	if ((err = snd_ctl_card_info(ctl, hw_info)) < 0) {
+		fprintf(stderr, "snd_ctl_card_info: %s\n", snd_strerror(err));
+		exit(EXIT_FAILURE);
+	}
+	if (snd_ctl_card_info_get_type(hw_info) != SND_CARD_TYPE_ICE1712) {
+		fprintf(stderr, "invalid card type %d\n", snd_ctl_card_info_get_type(hw_info));
 		exit(EXIT_FAILURE);
 	}
 
-#if 0
-	memset(&filter, 0, sizeof(filter));
-	snd_mixer_set_bit(filter.read_cmds, SND_MIXER_READ_ELEM_VALUE, 1);
-	if ((err = snd_mixer_put_filter(card_mixer, &filter)) < 0) {
-		fprintf(stderr, "snd_mixer_set_filter: %s\n", snd_strerror(err));
-		exit(EXIT_FAILURE);
-	}
-#endif
-
-	memset(&ctl, 0, sizeof(ctl));
-	ctl.id.iface = SND_CTL_ELEM_IFACE_CARD;
-	strcpy(ctl.id.name, "ICE1712 EEPROM");
-	if ((err = snd_ctl_elem_read(card_ctl, &ctl)) < 0) {
+	snd_ctl_elem_value_set_interface(val, SND_CTL_ELEM_IFACE_CARD);
+	snd_ctl_elem_value_set_name(val, "ICE1712 EEPROM");
+	if ((err = snd_ctl_elem_read(ctl, val)) < 0) {
 		fprintf(stderr, "Unable to read EEPROM contents: %s\n", snd_strerror(err));
 		exit(EXIT_FAILURE);
 	}
-	memcpy(&card_eeprom, ctl.value.bytes.data, 32);
+	memcpy(&card_eeprom, snd_ctl_elem_value_get_bytes(val), 32);
 
 	/* Initialize code */
 	level_meters_init();
@@ -1088,7 +1089,7 @@ int main(int argc, char **argv)
 	hardware_init();
 
         /* Make the title */
-        sprintf(title, "Envy24 Control Utility %s (%s)", VERSION, hw_info.longname);
+        sprintf(title, "Envy24 Control Utility %s (%s)", VERSION, snd_ctl_card_info_get_longname(hw_info));
 
         /* Create the main window */
         window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -1111,10 +1112,16 @@ int main(int argc, char **argv)
 	create_hardware(window, notebook, 2);
 	create_about(window, notebook, 3);
 
-	gdk_input_add(snd_ctl_poll_descriptor(card_ctl),
-		      GDK_INPUT_READ,
-		      control_input_callback,
-		      NULL);
+	npfds = snd_ctl_poll_descriptors_count(ctl);
+	if (npfds > 0) {
+		pfds = alloca(sizeof(*pfds) * npfds);
+		npfds = snd_ctl_poll_descriptors(ctl, pfds, npfds);
+		for (i = 0; i < npfds; i++)
+			gdk_input_add(pfds[i].fd,
+				      GDK_INPUT_READ,
+				      control_input_callback,
+				      ctl);
+	}
 	gtk_timeout_add(40, level_meters_timeout_callback, NULL);
 	gtk_timeout_add(100, master_clock_status_timeout_callback, NULL);
 
@@ -1126,7 +1133,7 @@ int main(int argc, char **argv)
 	gtk_widget_show(window);
 	gtk_main();
 
-	snd_ctl_close(card_ctl);
+	snd_ctl_close(ctl);
 
 	return EXIT_SUCCESS;
 }

@@ -19,11 +19,11 @@
 
 #include "envy24control.h"
 
-static snd_ctl_elem_value_t spdif_master;
-static snd_ctl_elem_value_t word_clock_sync;
-static snd_ctl_elem_value_t volume_rate;
-static snd_ctl_elem_value_t spdif_input;
-static snd_ctl_elem_value_t spdif_output;
+static snd_ctl_elem_value_t *spdif_master;
+static snd_ctl_elem_value_t *word_clock_sync;
+static snd_ctl_elem_value_t *volume_rate;
+static snd_ctl_elem_value_t *spdif_input;
+static snd_ctl_elem_value_t *spdif_output;
 
 #define toggle_set(widget, state) \
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), state);
@@ -37,14 +37,14 @@ void master_clock_update(void)
 {
 	int err;
 	
-	if ((err = snd_ctl_elem_read(card_ctl, &spdif_master)) < 0)
+	if ((err = snd_ctl_elem_read(ctl, spdif_master)) < 0)
 		g_print("Unable to read S/PDIF master state: %s\n", snd_strerror(err));
 	if (card_eeprom.subvendor == ICE1712_SUBDEVICE_DELTA1010) {
-		if ((err = snd_ctl_elem_read(card_ctl, &word_clock_sync)) < 0)
+		if ((err = snd_ctl_elem_read(ctl, word_clock_sync)) < 0)
 			g_print("Unable to read word clock sync selection: %s\n", snd_strerror(err));
 	}
-	if (spdif_master.value.integer.value[0]) {
-		if (word_clock_sync.value.integer.value[0]) {
+	if (snd_ctl_elem_value_get_boolean(spdif_master, 0)) {
+		if (snd_ctl_elem_value_get_boolean(word_clock_sync, 0)) {
 			toggle_set(hw_master_clock_word_radio, TRUE);
 		} else {
 			toggle_set(hw_master_clock_spdif_radio, TRUE);
@@ -59,8 +59,8 @@ static void master_clock_spdif_master(int on)
 {
 	int err;
 
-	spdif_master.value.integer.value[0] = on ? 1 : 0;
-	if ((err = snd_ctl_elem_write(card_ctl, &spdif_master)) < 0)
+	snd_ctl_elem_value_set_boolean(spdif_master, 0, on ? 1 : 0);
+	if ((err = snd_ctl_elem_write(ctl, spdif_master)) < 0)
 		g_print("Unable to write S/PDIF master state: %s\n", snd_strerror(err));
 }
 
@@ -70,8 +70,8 @@ static void master_clock_word_select(int on)
 
 	if (card_eeprom.subvendor != ICE1712_SUBDEVICE_DELTA1010)
 		return;
-	word_clock_sync.value.integer.value[0] = on ? 1 : 0;
-	if ((err = snd_ctl_elem_write(card_ctl, &word_clock_sync)) < 0)
+	snd_ctl_elem_value_set_boolean(word_clock_sync, 0, on ? 1 : 0);
+	if ((err = snd_ctl_elem_write(ctl, word_clock_sync)) < 0)
 		g_print("Unable to write word clock sync selection: %s\n", snd_strerror(err));
 }
 
@@ -96,18 +96,18 @@ void master_clock_toggled(GtkWidget *togglebutton, gpointer data)
 
 gint master_clock_status_timeout_callback(gpointer data)
 {
-	snd_ctl_elem_value_t sw;
+	snd_ctl_elem_value_t *sw;
 	int err;
 	
 	if (card_eeprom.subvendor != ICE1712_SUBDEVICE_DELTA1010)
 		return FALSE;
-	memset(&sw, 0, sizeof(sw));
-	sw.id.iface = SND_CTL_ELEM_IFACE_PCM;
-	strcpy(sw.id.name, "Word Clock Status");
-	if ((err = snd_ctl_elem_read(card_ctl, &sw)) < 0)
+	snd_ctl_elem_value_alloca(&sw);
+	snd_ctl_elem_value_set_interface(sw, SND_CTL_ELEM_IFACE_PCM);
+	snd_ctl_elem_value_set_name(sw, "Word Clock Status");
+	if ((err = snd_ctl_elem_read(ctl, sw)) < 0)
 		g_print("Unable to determine word clock status: %s\n", snd_strerror(err));
 	gtk_label_set_text(GTK_LABEL(hw_master_clock_status_label),
-			   sw.value.integer.value[0] ? "Locked" : "No signal");
+			   snd_ctl_elem_value_get_boolean(sw, 0) ? "Locked" : "No signal");
 	return TRUE;
 }
 
@@ -115,17 +115,18 @@ void volume_change_rate_update(void)
 {
 	int err;
 	
-	if ((err = snd_ctl_elem_read(card_ctl, &volume_rate)) < 0)
+	if ((err = snd_ctl_elem_read(ctl, volume_rate)) < 0)
 		g_print("Unable to read volume change rate: %s\n", snd_strerror(err));
-	gtk_adjustment_set_value(GTK_ADJUSTMENT(hw_volume_change_adj), volume_rate.value.integer.value[0]);
+	gtk_adjustment_set_value(GTK_ADJUSTMENT(hw_volume_change_adj),
+				 snd_ctl_elem_value_get_integer(volume_rate, 0));
 }
 
 void volume_change_rate_adj(GtkAdjustment *adj, gpointer data)
 {
 	int err;
 	
-	volume_rate.value.integer.value[0] = adj->value;
-	if ((err = snd_ctl_elem_write(card_ctl, &volume_rate)) < 0)
+	snd_ctl_elem_value_set_integer(volume_rate, 0, adj->value);
+	if ((err = snd_ctl_elem_write(ctl, volume_rate)) < 0)
 		g_print("Unable to write volume change rate: %s\n", snd_strerror(err));
 }
 
@@ -135,9 +136,9 @@ void spdif_output_update(void)
 	
 	if (card_eeprom.subvendor == ICE1712_SUBDEVICE_DELTA44)
 		return;
-	if ((err = snd_ctl_elem_read(card_ctl, &spdif_output)) < 0)
+	if ((err = snd_ctl_elem_read(ctl, spdif_output)) < 0)
 		g_print("Unable to read Delta S/PDIF output state: %s\n", snd_strerror(err));
-	val = spdif_output.value.integer.value[0];
+	val = snd_ctl_elem_value_get_integer(spdif_output, 0);
 	if (val & 1) {		/* consumer */
 		toggle_set(hw_spdif_consumer_radio, TRUE);
 		if (val & 8) {
@@ -186,14 +187,14 @@ static void spdif_output_write(void)
 {
 	int err;
 
-	if ((err = snd_ctl_elem_write(card_ctl, &spdif_output)) < 0)
+	if ((err = snd_ctl_elem_write(ctl, spdif_output)) < 0)
 		g_print("Unable to write Delta S/PDIF Output Defaults: %s\n", snd_strerror(err));
 }
 
 void profi_data_toggled(GtkWidget *togglebutton, gpointer data)
 {
 	char *str = (char *)data;
-	int val = spdif_output.value.integer.value[0];
+	int val = snd_ctl_elem_value_get_integer(spdif_output, 0);
 	
 	if (!is_active(togglebutton))
 		return;
@@ -204,14 +205,14 @@ void profi_data_toggled(GtkWidget *togglebutton, gpointer data)
 	} else if (!strcmp(str, "Non-audio")) {
 		val &= ~0x02;
 	}
-	spdif_output.value.integer.value[0] = val;
+	snd_ctl_elem_value_set_integer(spdif_output, 0, val);
 	spdif_output_write();
 }
 
 void profi_stream_toggled(GtkWidget *togglebutton, gpointer data)
 {
 	char *str = (char *)data;
-	int val = spdif_output.value.integer.value[0];
+	int val = snd_ctl_elem_value_get_integer(spdif_output, 0);
 	
 	if (!is_active(togglebutton))
 		return;
@@ -222,14 +223,14 @@ void profi_stream_toggled(GtkWidget *togglebutton, gpointer data)
 	} else if (!strcmp(str, "Stereo")) {
 		val &= ~0x80;
 	}
-	spdif_output.value.integer.value[0] = val;
+	snd_ctl_elem_value_set_integer(spdif_output, 0, val);
 	spdif_output_write();
 }
 
 void profi_emphasis_toggled(GtkWidget *togglebutton, gpointer data)
 {
 	char *str = (char *)data;
-	int val = spdif_output.value.integer.value[0];
+	int val = snd_ctl_elem_value_get_integer(spdif_output, 0);
 	
 	if (!is_active(togglebutton))
 		return;
@@ -246,14 +247,14 @@ void profi_emphasis_toggled(GtkWidget *togglebutton, gpointer data)
 	} else if (!strcmp(str, "NOTID")) {
 		val |= 0x60;
 	}
-	spdif_output.value.integer.value[0] = val;
+	snd_ctl_elem_value_set_integer(spdif_output, 0, val);
 	spdif_output_write();
 }
 
 void consumer_copyright_toggled(GtkWidget *togglebutton, gpointer data)
 {
 	char *str = (char *)data;
-	int val = spdif_output.value.integer.value[0];
+	int val = snd_ctl_elem_value_get_integer(spdif_output, 0);
 	
 	if (!is_active(togglebutton))
 		return;
@@ -264,14 +265,14 @@ void consumer_copyright_toggled(GtkWidget *togglebutton, gpointer data)
 	} else if (!strcmp(str, "Permitted")) {
 		val &= ~0x08;
 	}
-	spdif_output.value.integer.value[0] = val;
+	snd_ctl_elem_value_set_integer(spdif_output, 0, val);
 	spdif_output_write();
 }
 
 void consumer_copy_toggled(GtkWidget *togglebutton, gpointer data)
 {
 	char *str = (char *)data;
-	int val = spdif_output.value.integer.value[0];
+	int val = snd_ctl_elem_value_get_integer(spdif_output, 0);
 	
 	if (!is_active(togglebutton))
 		return;
@@ -282,14 +283,14 @@ void consumer_copy_toggled(GtkWidget *togglebutton, gpointer data)
 	} else if (!strcmp(str, "Original")) {
 		val &= ~0x80;
 	}
-	spdif_output.value.integer.value[0] = val;
+	snd_ctl_elem_value_set_integer(spdif_output, 0, val);
 	spdif_output_write();
 }
 
 void consumer_emphasis_toggled(GtkWidget *togglebutton, gpointer data)
 {
 	char *str = (char *)data;
-	int val = spdif_output.value.integer.value[0];
+	int val = snd_ctl_elem_value_get_integer(spdif_output, 0);
 	
 	if (!is_active(togglebutton))
 		return;
@@ -300,14 +301,14 @@ void consumer_emphasis_toggled(GtkWidget *togglebutton, gpointer data)
 	} else if (!strcmp(str, "5015")) {
 		val &= ~0x10;
 	}
-	spdif_output.value.integer.value[0] = val;
+	snd_ctl_elem_value_set_integer(spdif_output, 0, val);
 	spdif_output_write();
 }
 
 void consumer_category_toggled(GtkWidget *togglebutton, gpointer data)
 {
 	char *str = (char *)data;
-	int val = spdif_output.value.integer.value[0];
+	int val = snd_ctl_elem_value_get_integer(spdif_output, 0);
 	
 	if (!is_active(togglebutton))
 		return;
@@ -324,7 +325,7 @@ void consumer_category_toggled(GtkWidget *togglebutton, gpointer data)
 	} else if (!strcmp(str, "General")) {
 		val |= 0x60;
 	}
-	spdif_output.value.integer.value[0] = val;
+	snd_ctl_elem_value_set_integer(spdif_output, 0, val);
 	spdif_output_write();
 }
 
@@ -335,15 +336,15 @@ void spdif_output_toggled(GtkWidget *togglebutton, gpointer data)
 
 	if (is_active(togglebutton)) {
 		if (!strcmp(str, "Professional")) {
-			if (spdif_output.value.integer.value[0] & 0x01) {
+			if (snd_ctl_elem_value_get_integer(spdif_output, 0) & 0x01) {
 				/* default setup: audio, no emphasis */
-				spdif_output.value.integer.value[0] = 0x22;
+				snd_ctl_elem_value_set_integer(spdif_output, 0, 0x22);
 			}
 			page = 0;
 		} else {
-			if (!(spdif_output.value.integer.value[0] & 0x01)) {
+			if (!(snd_ctl_elem_value_get_integer(spdif_output, 0) & 0x01)) {
 				/* default setup: no emphasis, PCM encoder */
-				spdif_output.value.integer.value[0] = 0x31;
+				snd_ctl_elem_value_set_integer(spdif_output, 0, 0x31);
 			}
 			page = 1;
 		}
@@ -359,9 +360,9 @@ void spdif_input_update(void)
 	
 	if (card_eeprom.subvendor != ICE1712_SUBDEVICE_DELTADIO2496)
 		return;
-	if ((err = snd_ctl_elem_read(card_ctl, &spdif_input)) < 0)
+	if ((err = snd_ctl_elem_read(ctl, spdif_input)) < 0)
 		g_print("Unable to read S/PDIF input switch: %s\n", snd_strerror(err));
-	if (spdif_input.value.integer.value[0]) {
+	if (snd_ctl_elem_value_get_boolean(spdif_input, 0)) {
 		toggle_set(hw_spdif_input_optical_radio, TRUE);
 	} else {
 		toggle_set(hw_spdif_input_coaxial_radio, TRUE);
@@ -376,34 +377,38 @@ void spdif_input_toggled(GtkWidget *togglebutton, gpointer data)
 	if (!is_active(togglebutton))
 		return;
 	if (!strcmp(str, "Optical"))
-		spdif_input.value.integer.value[0] = 1;
+		snd_ctl_elem_value_set_boolean(spdif_input, 0, 1);
 	else
-		spdif_input.value.integer.value[0] = 0;
-	if ((err = snd_ctl_elem_write(card_ctl, &spdif_input)) < 0)
+		snd_ctl_elem_value_set_boolean(spdif_input, 0, 0);
+	if ((err = snd_ctl_elem_write(ctl, spdif_input)) < 0)
 		g_print("Unable to write S/PDIF input switch: %s\n", snd_strerror(err));
 }
 
 void hardware_init(void)
 {
-	memset(&spdif_master, 0, sizeof(spdif_master));
-	spdif_master.id.iface = SND_CTL_ELEM_IFACE_PCM;
-	strcpy(spdif_master.id.name, "Multi Track S/PDIF Master");
+	if (snd_ctl_elem_value_malloc(&spdif_master) < 0 ||
+	    snd_ctl_elem_value_malloc(&word_clock_sync) < 0 ||
+	    snd_ctl_elem_value_malloc(&volume_rate) < 0 ||
+	    snd_ctl_elem_value_malloc(&spdif_input) < 0 ||
+	    snd_ctl_elem_value_malloc(&spdif_output) < 0) {
+		g_print("Cannot allocate memory\n");
+		exit(1);
+	}
 
-	memset(&word_clock_sync, 0, sizeof(spdif_master));
-	word_clock_sync.id.iface = SND_CTL_ELEM_IFACE_PCM;
-	strcpy(word_clock_sync.id.name, "Word Clock Sync");
+	snd_ctl_elem_value_set_interface(spdif_master, SND_CTL_ELEM_IFACE_PCM);
+	snd_ctl_elem_value_set_name(spdif_master, "Multi Track IEC958 Master");
 
-	memset(&volume_rate, 0, sizeof(volume_rate));
-	spdif_master.id.iface = SND_CTL_ELEM_IFACE_PCM;
-	strcpy(volume_rate.id.name, "Multi Track Volume Rate");
+	snd_ctl_elem_value_set_interface(word_clock_sync, SND_CTL_ELEM_IFACE_PCM);
+	snd_ctl_elem_value_set_name(word_clock_sync, "Word Clock Sync");
 
-	memset(&spdif_input, 0, sizeof(spdif_input));
-	spdif_master.id.iface = SND_CTL_ELEM_IFACE_PCM;
-	strcpy(spdif_input.id.name, "S/PDIF Input Optical");
+	snd_ctl_elem_value_set_interface(volume_rate, SND_CTL_ELEM_IFACE_PCM);
+	snd_ctl_elem_value_set_name(volume_rate, "Multi Track Volume Rate");
 
-	memset(&spdif_output, 0, sizeof(spdif_output));
-	spdif_master.id.iface = SND_CTL_ELEM_IFACE_PCM;
-	strcpy(spdif_output.id.name, "Delta S/PDIF Output Defaults");
+	snd_ctl_elem_value_set_interface(spdif_input, SND_CTL_ELEM_IFACE_PCM);
+	snd_ctl_elem_value_set_name(spdif_input, "IEC958 Input Optical");
+
+	snd_ctl_elem_value_set_interface(spdif_output, SND_CTL_ELEM_IFACE_PCM);
+	snd_ctl_elem_value_set_name(spdif_output, "IEC958 Playback Default");
 }
 
 void hardware_postinit(void)

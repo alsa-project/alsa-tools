@@ -31,7 +31,7 @@ typedef struct {
 	unsigned char extra[4];
 } ice1712_eeprom_t;
 
-extern snd_ctl_t *card_ctl;
+extern snd_ctl_t *ctl;
 extern ice1712_eeprom_t card_eeprom;
 
 extern GtkWidget *mixer_mix_drawing;

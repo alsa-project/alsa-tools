@@ -26,16 +26,13 @@ static GdkGC *penOrangeLight[21] = { NULL, };
 static GdkGC *penRedShadow[21] = { NULL, };
 static GdkGC *penRedLight[21] = { NULL, };
 static GdkPixmap *pixmap[21] = { NULL, };
-static snd_ctl_elem_value_t peaks;
+static snd_ctl_elem_value_t *peaks;
 
 static void update_peak_switch(void)
 {
 	int err;
 
-	memset(&peaks, 0, sizeof(peaks));
-	peaks.id.iface = SND_CTL_ELEM_IFACE_MIXER;
-	strcpy(peaks.id.name, "Multi Track Peak");
-	if ((err = snd_ctl_elem_read(card_ctl, &peaks)) < 0)
+	if ((err = snd_ctl_elem_read(ctl, peaks)) < 0)
 		g_print("Unable to read peaks: %s\n", snd_strerror(err));
 }
 
@@ -44,10 +41,10 @@ static void get_levels(int idx, int *l1, int *l2)
 	*l1 = *l2 = 0;
 	
 	if (idx == 0) {
-		*l1 = peaks.value.integer.value[4 + 20];
-		*l2 = peaks.value.integer.value[4 + 21];
+		*l1 = snd_ctl_elem_value_get_integer(peaks, 20);
+		*l2 = snd_ctl_elem_value_get_integer(peaks, 21);
 	} else {
-		*l1 = *l2 = peaks.value.integer.value[4 + idx - 1];
+		*l1 = *l2 = snd_ctl_elem_value_get_integer(peaks, idx - 1);
 	}
 }
 
@@ -220,7 +217,9 @@ void level_meters_reset_peaks(GtkButton *button, gpointer data)
 
 void level_meters_init(void)
 {
-	memset(&peaks, 0, sizeof(peaks));
+	snd_ctl_elem_value_malloc(&peaks);
+	snd_ctl_elem_value_set_interface(peaks, SND_CTL_ELEM_IFACE_MIXER);
+	snd_ctl_elem_value_set_name(peaks, "Multi Track Peak");
 }
 
 void level_meters_postinit(void)

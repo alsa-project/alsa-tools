@@ -19,7 +19,7 @@
 
 #include "envy24control.h"
 
-static snd_ctl_elem_value_t routes;
+static snd_ctl_elem_value_t *routes;
 
 #define toggle_set(widget, state) \
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), state);
@@ -31,14 +31,14 @@ static int is_active(GtkWidget *widget)
 
 static int get_toggle_index(int stream)
 {
-	unsigned short psdout = routes.value.bytes.data[0] |
-				(routes.value.bytes.data[1] << 8);
-	unsigned short spdout = routes.value.bytes.data[2] |
-				(routes.value.bytes.data[3] << 8);
-	unsigned int capture = routes.value.bytes.data[4] |
-			       (routes.value.bytes.data[5] << 8) |
-			       (routes.value.bytes.data[6] << 16) |
-			       (routes.value.bytes.data[7] << 24);
+	unsigned short psdout = snd_ctl_elem_value_get_byte(routes, 0) |
+				(snd_ctl_elem_value_get_byte(routes, 1) << 8);
+	unsigned short spdout = snd_ctl_elem_value_get_byte(routes, 2) |
+				(snd_ctl_elem_value_get_byte(routes, 3) << 8);
+	unsigned int capture = snd_ctl_elem_value_get_byte(routes, 4) |
+			       (snd_ctl_elem_value_get_byte(routes, 5) << 8) |
+			       (snd_ctl_elem_value_get_byte(routes, 6) << 16) |
+			       (snd_ctl_elem_value_get_byte(routes, 7) << 24);
 	int right = (stream - 1) & 1;
 	int source = (stream - 1) >> 1;
 
@@ -95,7 +95,7 @@ void patchbay_update(void)
 {
 	int stream, tidx, err;
 
-	if ((err = snd_ctl_elem_read(card_ctl, &routes)) < 0) {
+	if ((err = snd_ctl_elem_read(ctl, routes)) < 0) {
 		g_print("Multi track routes read error: %s\n", snd_strerror(err));
 		return;
 	}
@@ -107,14 +107,14 @@ void patchbay_update(void)
 
 static void set_routes(int stream, int idx)
 {
-	unsigned short psdout = routes.value.bytes.data[0] |
-				(routes.value.bytes.data[1] << 8);
-	unsigned short spdout = routes.value.bytes.data[2] |
-				(routes.value.bytes.data[3] << 8);
-	unsigned int capture = routes.value.bytes.data[4] |
-			       (routes.value.bytes.data[5] << 8) |
-			       (routes.value.bytes.data[6] << 16) |
-			       (routes.value.bytes.data[7] << 24);
+	unsigned short psdout = snd_ctl_elem_value_get_byte(routes, 0) |
+				(snd_ctl_elem_value_get_byte(routes, 1) << 8);
+	unsigned short spdout = snd_ctl_elem_value_get_byte(routes, 2) |
+				(snd_ctl_elem_value_get_byte(routes, 3) << 8);
+	unsigned int capture = snd_ctl_elem_value_get_byte(routes, 4) |
+			       (snd_ctl_elem_value_get_byte(routes, 5) << 8) |
+			       (snd_ctl_elem_value_get_byte(routes, 6) << 16) |
+			       (snd_ctl_elem_value_get_byte(routes, 7) << 24);
 	int right = (stream - 1) & 1;
 	int source = (stream - 1) >> 1;
 	int err;
@@ -160,16 +160,17 @@ static void set_routes(int stream, int idx)
 			spdout |= ((idx - 4) & 7) << spdout_shift1;
 		}
 	}
-	routes.value.bytes.data[0] = psdout & 0xff;
-	routes.value.bytes.data[1] = (psdout >> 8) & 0xff;
-	routes.value.bytes.data[2] = spdout & 0xff;
-	routes.value.bytes.data[3] = (spdout >> 8) & 0xff;
-	routes.value.bytes.data[4] = capture & 0xff;
-	routes.value.bytes.data[5] = (capture >> 8) & 0xff;
-	routes.value.bytes.data[6] = (capture >> 16) & 0xff;
-	routes.value.bytes.data[7] = (capture >> 24) & 0xff;
+	snd_ctl_elem_value_set_byte(routes, 0, psdout & 0xff);
+	snd_ctl_elem_value_set_byte(routes, 1, (psdout >> 8) & 0xff);
+	snd_ctl_elem_value_set_byte(routes, 2, spdout & 0xff);
+	snd_ctl_elem_value_set_byte(routes, 3, (spdout >> 8) & 0xff);
+	snd_ctl_elem_value_set_byte(routes, 4, capture & 0xff);
+	snd_ctl_elem_value_set_byte(routes, 5, (capture >> 8) & 0xff);
+	snd_ctl_elem_value_set_byte(routes, 6, (capture >> 16) & 0xff);
+	snd_ctl_elem_value_set_byte(routes, 7, (capture >> 24) & 0xff);
 	// g_print("psdout = 0x%x, spdout = 0x%x, capture = 0x%x\n", psdout, spdout, capture);
-	if ((err = snd_ctl_elem_write(card_ctl, &routes)) < 0)
+
+	if ((err = snd_ctl_elem_write(ctl, routes)) < 0)
 		g_print("Multi track route write error: %s\n", snd_strerror(err));
 }
 
@@ -184,9 +185,9 @@ void patchbay_toggled(GtkWidget *togglebutton, gpointer data)
 
 void patchbay_init(void)
 {
-	memset(&routes, 0, sizeof(routes));
-	routes.id.iface = SND_CTL_ELEM_IFACE_MIXER;
-	strcpy(routes.id.name, "Multi Track Route");
+	snd_ctl_elem_value_malloc(&routes);
+	snd_ctl_elem_value_set_interface(routes, SND_CTL_ELEM_IFACE_MIXER);
+	snd_ctl_elem_value_set_name(routes, "Multi Track Route");
 }
 
 void patchbay_postinit(void)
