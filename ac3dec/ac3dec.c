@@ -70,6 +70,8 @@ ssize_t fill_buffer(uint_8 **start,uint_8 **end)
 
 	if (feof(in_file))
 		return EOF;
+	if (ferror(in_file))
+		return EOF;
 	if(bytes_read < CHUNK_SIZE)
 		return EOF;
 
