@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
 	if(card<0)
 		err="No RME Digi Soundcard found...";
 	gtk_init(&argc, &argv);	
-	window=gtk_window_new(GTK_WINDOW_DIALOG);
+	window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_signal_connect(GTK_OBJECT(window),"destroy",GTK_SIGNAL_FUNC(destroy),NULL);
 	if(err)
 	{

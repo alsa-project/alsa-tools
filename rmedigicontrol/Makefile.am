@@ -1,10 +1,10 @@
-AM_CFLAGS = @GTK_CFLAGS@
+AM_CFLAGS = @RMEDIGICONTROL_CFLAGS@
 bin_PROGRAMS = rmedigicontrol
 rmedigicontrol_SOURCES = rmedigicontrol.c rmedigicontrol.h level.c loopback.c
 
-rmedigicontrol_LDFLAGS = @GTK_LIBS@
+rmedigicontrol_LDFLAGS = @RMEDIGICONTROL_LIBS@
 
-EXTRA_DIST = depcomp
+EXTRA_DIST = depcomp configure.in-gtk2
 AUTOMAKE_OPTIONS = foreign
 
 alsa-dist: distdir
