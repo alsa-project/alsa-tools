@@ -23,24 +23,79 @@
 
 #include "Cus428_ctls.h"
 
-class Cus428State: public us428_lights, public Cus428_ctls{
+class Cus428State: public us428_lights{
  public:
 	Cus428State(struct us428ctls_sharedmem* Pus428ctls_sharedmem)
 		:us428ctls_sharedmem(Pus428ctls_sharedmem)
+		,MuteInputMonitor(0)
+		,Mute(0)
+		,us428_ctls(0)
 		{
 			init_us428_lights();
+			for (int v = 0; v < 5; ++v) {
+				Volume[v].init(v);
+			}
 		}
 	enum eKnobs{
-		eK_RECORD = 72,
-		eK_PLAY = 73,
+		eK_RECORD =	72,
+		eK_PLAY,
 		eK_STOP,
-		eK_InputMonitor = 80
+		eK_FFWD,
+		eK_REW,
+		eK_SOLO,
+		eK_REC,
+		eK_NULL,
+		eK_InputMonitor,	// = 80
+		eK_BANK_L,
+		eK_BANK_R,
+		eK_LOCATE_L,
+		eK_LOCATE_R,
+		eK_SET =	85,
+		eK_INPUTCD =	87,
+		eK_HIGH =	90,
+		eK_HIMID,
+		eK_LOWMID,
+		eK_LOW,
+		eK_Select0 =	96,
+		eK_Mute0 =	104,
+		eK_Mute1,
+		eK_Mute2,
+		eK_Mute3,
+		eK_Mute4,
+		eK_Mute5,
+		eK_Mute6,
+		eK_Mute7,
+		eK_AUX1 =	120,
+		eK_AUX2,
+		eK_AUX3,
+		eK_AUX4,
+		eK_ASGN,
+		eK_F1,
+		eK_F2,
+		eK_F3,
 	};
+	void InitDevice(void);
 	void KnobChangedTo(eKnobs K, bool V);
 	void SliderChangedTo(int S, unsigned char New);
+	void WheelChangedTo(E_In84 W, char Diff);
+	Cus428_ctls *Set_us428_ctls(Cus428_ctls *New) {
+		Cus428_ctls *Old = us428_ctls;
+		us428_ctls = New;
+		return Old;
+	}
  private:
 	int LightSend();
+	void SendVolume(usX2Y_volume &V);
 	struct us428ctls_sharedmem* us428ctls_sharedmem;
+	bool   StateInputMonitor() {
+		return  LightIs(eL_InputMonitor);
+	}
+	usX2Y_volume_t	Volume[5];
+	char		MuteInputMonitor,
+			Mute,
+			SelectInputMonitor,
+			Select;
+	Cus428_ctls	*us428_ctls;
 };
 
 extern Cus428State* OneState;

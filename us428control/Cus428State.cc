@@ -20,12 +20,14 @@
 
 #include <stdio.h>
 #include <string.h>
-#include "Cus428State.h"
+#include <alsa/asoundlib.h>
+#include "Cus428Midi.h"
 
 extern int verbose;
 
-void
-us428_lights::init_us428_lights()
+
+
+void us428_lights::init_us428_lights()
 {
 	int i = 0;
 	memset(this, 0, sizeof(*this));
@@ -33,8 +35,14 @@ us428_lights::init_us428_lights()
 		Light[ i].Offset = i + 0x19;
 }
 
-int 
-Cus428State::LightSend()
+
+void Cus428State::InitDevice(void)
+{
+	SliderChangedTo(eFaderM, ((unsigned char*)(us428ctls_sharedmem->CtlSnapShot + us428ctls_sharedmem->CtlSnapShotLast))[eFaderM]);
+}
+
+
+int Cus428State::LightSend()
 {
 	int Next = us428ctls_sharedmem->p4outLast + 1;
 	if(Next < 0  ||  Next >= N_us428_p4out_BUFS)
@@ -44,14 +52,8 @@ Cus428State::LightSend()
 	return us428ctls_sharedmem->p4outLast = Next;
 }
 
-void 
-Cus428State::SliderChangedTo(int S, unsigned char New)
+void Cus428State::SendVolume(usX2Y_volume &V)
 {
-	if ((S >= eFader4 || S < 0) && S != eFaderM)
-		return;
-
-	usX2Y_volume V;
-	V.SetTo(S, New);
 	int Next = us428ctls_sharedmem->p4outLast + 1;
 	if (Next < 0  ||  Next >= N_us428_p4out_BUFS)
 		Next = 0;
@@ -60,24 +62,107 @@ Cus428State::SliderChangedTo(int S, unsigned char New)
 	us428ctls_sharedmem->p4outLast = Next;
 }
 
-
-void 
-Cus428State::KnobChangedTo(eKnobs K, bool V)
+void Cus428State::SliderChangedTo(int S, unsigned char New)
 {
-	switch (K) {  
-	case eK_InputMonitor:
-		if (verbose > 1)
-			printf("Knob InputMonitor now %i", V);
+	if (StateInputMonitor() && S <= eFader3
+	    || S == eFaderM) {
+		usX2Y_volume &V = Volume[S >= eFader4 ? eFader4 : S];
+		V.SetTo(S, New);
+		if (S == eFaderM || !LightIs(eL_Mute0 + S))
+			SendVolume(V);
+	} else
+		Midi.SendMidiControl(0x40 + S, ((unsigned char*)us428_ctls)[S] / 2);
+
+}
+
+
+void Cus428State::KnobChangedTo(eKnobs K, bool V)
+{
+	switch (K & ~(StateInputMonitor() ? 3 : -1)) {
+	case eK_Select0:
 		if (V) {
-			LightSet(eL_InputMonitor, ! LightIs(eL_InputMonitor));
+			int S = eL_Select0 + (K & 7);
+			Light[eL_Select0 / 8].Value = 0;
+			LightSet(S, !LightIs(S));
 			LightSend();
 		}
-		if (verbose > 1)
-			printf(" Light is %i\n", LightIs(eL_InputMonitor));
+		break;
+	case eK_Mute0:
+		if (V) {
+			int M = eL_Mute0 + (K & 7);
+			LightSet(M, !LightIs(M));
+			LightSend();
+			if (StateInputMonitor()) {
+				usX2Y_volume V = Volume[M - eL_Mute0];
+				if (LightIs(M))
+					V.LH = V.LL = V.RL = V.RH = 0;
+				SendVolume(V);
+			}
+		}
 		break;
 	default:
-		if (verbose > 1)
-			printf("Knob %i now %i\n", K, V);
+		switch (K) {
+		case eK_InputMonitor:
+			if (verbose > 1)
+				printf("Knob InputMonitor now %i", V);
+			if (V) {
+				if (StateInputMonitor()) {
+					SelectInputMonitor = Light[0].Value;
+					MuteInputMonitor = Light[2].Value;
+				} else {
+					Select = Light[0].Value;
+					Mute = Light[2].Value;
+				}
+				LightSet(eL_InputMonitor, ! StateInputMonitor());
+				Light[0].Value = StateInputMonitor() ? SelectInputMonitor : Select;
+				Light[2].Value = StateInputMonitor() ? MuteInputMonitor : Mute;
+				LightSend();
+			}
+			if (verbose > 1)
+				printf(" Light is %i\n", LightIs(eL_InputMonitor));
+			break;
+		default:
+			if (verbose > 1)
+				printf("Knob %i now %i\n", K, V);
+			Midi.SendMidiControl(K, V);
+		}
 	}
 }
 
+
+void Cus428State::WheelChangedTo(E_In84 W, char Diff)
+{
+	char Param;
+	switch (W) {
+	case eWheelPan:
+		if (StateInputMonitor() && Light[0].Value) {
+			int index = 0;
+
+			while( index < 4 && (1 << index) !=  Light[0].Value)
+				index++;
+
+			if (index >= 4)
+				return;
+
+			Volume[index].PanTo(Diff, us428_ctls->Knob(eK_SET));
+			if (!LightIs(eL_Mute0 + index))
+				SendVolume(Volume[index]);
+			return;
+		}
+		Param = 0x4D;
+		break;
+	case eWheelGain:
+		Param = 0x48;
+		break;
+	case eWheelFreq:
+		Param = 0x49;
+		break;
+	case eWheelQ:
+		Param = 0x4A;
+		break;
+	case eWheel:
+		Param = 0x60;
+		break;
+	}
+	Midi.SendMidiControl(Param, ((unsigned char*)us428_ctls)[W]);
+}

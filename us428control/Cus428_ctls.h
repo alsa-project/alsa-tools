@@ -27,6 +27,9 @@ class Cus428_ctls: public us428_ctls{
  public:
 	void dump(int n = 0);
 	void analyse(Cus428_ctls& Previous, unsigned n = 0);
+	bool Knob( int K) {
+		return ((char*)this)[K / 8] & (1 << K % 8);
+	}
 };
 
 #endif

@@ -17,7 +17,12 @@
  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
  */
 
-enum E_In84{
+#ifdef __cplusplus
+#include <string.h>
+extern int verbose;
+#endif
+
+enum E_In84 {
 	eFader0 = 0,
 	eFader1,
 	eFader2,
@@ -76,18 +81,63 @@ enum {
 };
 
 typedef struct usX2Y_volume {
-	unsigned char Channel,
-		LH,
-		LL,
-		RH,
-		RL;
+	unsigned char	Channel,
+			LH,
+			LL,
+			RH,
+			RL;
+	unsigned char	Slider;
+	char		Pan,
+			Mute;
 #ifdef __cplusplus
 	public:
+	void init(unsigned char _Channel) {
+		memset(this, 0, sizeof(*this));
+		Channel = _Channel;
+	}
 	int Scale(){return 0x40;}
+
+	void calculate() {
+		int lPan = (int)Pan * Slider / 0x80;
+		int ValL = (Slider - lPan) * Scale();
+		LH = ValL >> 8;
+		LL = ValL;
+		int ValR = (Slider + lPan) * Scale();
+		RH = ValR >> 8;
+		RL = ValR;
+		if (2 < verbose)
+			printf("S=% 3i, P=% 3i, lP=% 3i, VL=%05i, VR=%05i\n", (int)Slider, (int)Pan, (int)lPan, ValL, ValR);
+	}
+
 	void SetTo(unsigned char _Channel, int RawValue){
+		Slider = RawValue;
 		Channel = eFaderM == _Channel ? 4 : _Channel;
-		LH = RH = (RawValue *= Scale()) >> 8;
-		LL = RL = RawValue;
+		calculate();
+	}
+	void PanTo(int RawValue, bool Grob) {
+		int NewPan;
+		if (Grob) {
+			static int GrobVals[] = {-128, -64, 0, 64, 127};
+			int i = 4;
+			while (i >= 0 && GrobVals[i] > Pan) 
+				i--;
+			if (GrobVals[i] != Pan  &&  RawValue < 0)
+				i++;
+
+			if (i >= 0) {
+				if ((i += RawValue) >= 0  &&  i < 5)
+					NewPan = GrobVals[i];
+				else
+					return;
+			}
+
+		} else {
+			NewPan = Pan + RawValue;
+		}
+		if (NewPan < -128  ||  NewPan > 127)
+			return;
+		Pan = NewPan;
+		calculate();
 	}
 #endif
 } usX2Y_volume_t;
@@ -97,16 +147,18 @@ struct us428_lights{
 #ifdef __cplusplus
 	public:
 	enum eLight{
+		eL_Select0 = 0,
+		eL_Mute0 = 16,
 		eL_InputMonitor = 25
 	};
-	bool LightIs(eLight L){
+	bool LightIs(int L){
 		return Light[L / 8].Value & (1 << (L % 8));
 	}
-	void LightSet(eLight L, bool Value){
+	void LightSet(int L, bool Value){
 		if (Value)
 			Light[L / 8].Value |= (1 << (L % 8));
 		else
-			Light[L / 8].Value &= (~1 << (L % 8));
+			Light[L / 8].Value &= ~(1 << (L % 8));
 	}
 	void init_us428_lights();
 #endif

@@ -31,6 +31,7 @@
 #include <alsa/asoundlib.h>
 #include "Cus428_ctls.h"
 #include "Cus428State.h"
+#include "Cus428Midi.h"
 
 
 #define PROGNAME		"us428control"
@@ -40,6 +41,8 @@
 #define SND_CARDS	8
 
 int verbose = 1;
+
+Cus428Midi Midi;
 
 
 static void error(const char *fmt, ...)
@@ -56,7 +59,7 @@ static void error(const char *fmt, ...)
 
 static void usage(void)
 {
-	printf("Tascam US-428 Contol\n");
+	printf("Tascam US-428 Control\n");
 	printf("version %s\n", VERSION);
 	printf("usage: "PROGNAME" [-v verbosity_level 0..2] [-c card] [-D device] [-u usb-device]\n");
 }
@@ -104,8 +107,10 @@ int US428Control(const char* DevName)
 		perror("mmap failed:");
 		return -ENOMEM;
 	}
+	Midi.CreatePorts();
 	us428ctls_sharedmem->CtlSnapShotRed = us428ctls_sharedmem->CtlSnapShotLast;
 	OneState = new Cus428State(us428ctls_sharedmem);
+	OneState->InitDevice();
 	while (1) {
 		int x = poll(&pfds,1,-1);
 		if (verbose > 1 || pfds.revents & (POLLERR|POLLHUP))
