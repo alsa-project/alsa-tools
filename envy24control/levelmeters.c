@@ -28,6 +28,8 @@ static GdkGC *penRedLight[21] = { NULL, };
 static GdkPixmap *pixmap[21] = { NULL, };
 static snd_ctl_elem_value_t *peaks;
 
+extern int input_channels, output_channels, spdif_channels;
+
 static void update_peak_switch(void)
 {
 	int err;
@@ -195,7 +197,33 @@ gint level_meters_timeout_callback(gpointer data)
 	int idx, l1, l2;
 
 	update_peak_switch();
-	for (idx = 0; idx <= 20; idx++) {
+	for (idx = 0; idx <= output_channels; idx++) {
+		get_levels(idx, &l1, &l2);
+		widget = idx == 0 ? mixer_mix_drawing : mixer_drawing[idx-1];
+		if (!GTK_WIDGET_VISIBLE(widget))
+			continue;
+		redraw_meters(idx, widget->allocation.width, widget->allocation.height, l1, l2);
+		gdk_draw_pixmap(widget->window,
+				widget->style->black_gc,
+				pixmap[idx],
+				0, 0,
+				0, 0,
+				widget->allocation.width, widget->allocation.height);	
+	}
+	for (idx = 11; idx <= input_channels + 10; idx++) {
+		get_levels(idx, &l1, &l2);
+		widget = idx == 0 ? mixer_mix_drawing : mixer_drawing[idx-1];
+		if (!GTK_WIDGET_VISIBLE(widget))
+			continue;
+		redraw_meters(idx, widget->allocation.width, widget->allocation.height, l1, l2);
+		gdk_draw_pixmap(widget->window,
+				widget->style->black_gc,
+				pixmap[idx],
+				0, 0,
+				0, 0,
+				widget->allocation.width, widget->allocation.height);	
+	}
+	for (idx = 19; idx <= spdif_channels + 18; idx++) {
 		get_levels(idx, &l1, &l2);
 		widget = idx == 0 ? mixer_mix_drawing : mixer_drawing[idx-1];
 		if (!GTK_WIDGET_VISIBLE(widget))

@@ -22,6 +22,8 @@
 #define toggle_set(widget, state) \
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), state);
 
+extern int input_channels, output_channels, spdif_channels;
+
 static int is_active(GtkWidget *widget)
 {
 	return GTK_TOGGLE_BUTTON(widget)->active ? 1 : 0;
@@ -153,6 +155,10 @@ void mixer_postinit(void)
 {
 	int stream;
 
-	for (stream = 1; stream <= 20; stream++)
+	for (stream = 1; stream <= output_channels; stream++)
+		mixer_update_stream(stream, 1, 1);
+	for (stream = 11; stream <= input_channels + 8; stream++)
+		mixer_update_stream(stream, 1, 1);
+	for (stream = 19; stream <= spdif_channels + 18; stream++)
 		mixer_update_stream(stream, 1, 1);
 }

@@ -26,6 +26,7 @@
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), state);
 
 static int stream_active[10];
+extern int output_channels, input_channels, spdif_channels;
 
 static int is_active(GtkWidget *widget)
 {
@@ -69,7 +70,7 @@ void patchbay_update(void)
 {
 	int stream, tidx;
 
-	for (stream = 1; stream <= 10; stream++) {
+	for (stream = 1; stream <= output_channels; stream++) {
 		if (stream_active[stream - 1]) {
 			tidx = get_toggle_index(stream);
 			toggle_set(router_radio[stream - 1][tidx], TRUE);
@@ -135,7 +136,8 @@ void patchbay_init(void)
 	snd_ctl_elem_value_alloca(&val);
 	snd_ctl_elem_value_set_interface(val, SND_CTL_ELEM_IFACE_MIXER);
 	snd_ctl_elem_value_set_name(val, ANALOG_PLAYBACK_ROUTE_NAME);
-	for (i = 0; i < 8; i++) {
+	memset (stream_active, 0, 10 * sizeof(int));
+	for (i = 0; i < output_channels; i++) {
 		snd_ctl_elem_value_set_numid(val, 0);
 		snd_ctl_elem_value_set_index(val, i);
 		if (snd_ctl_elem_read(ctl, val) < 0)
@@ -144,7 +146,7 @@ void patchbay_init(void)
 		stream_active[i] = 1;
 	}
 	snd_ctl_elem_value_set_name(val, SPDIF_PLAYBACK_ROUTE_NAME);
-	for (i = 0; i < 2; i++) {
+	for (i = 0; i < spdif_channels; i++) {
 		snd_ctl_elem_value_set_numid(val, 0);
 		snd_ctl_elem_value_set_index(val, i);
  		if (snd_ctl_elem_read(ctl, val) < 0)

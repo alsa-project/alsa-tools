@@ -41,6 +41,7 @@ static int dac_sense_items;
 static int adc_sense_items;
 static char *dac_sense_name[4];
 static char *adc_sense_name[4];
+extern int input_channels, output_channels;
 
 int envy_dac_volumes(void)
 {
@@ -310,7 +311,11 @@ void analog_volume_init(void)
 			break;
 		dac_max = snd_ctl_elem_info_get_max(info);
 	}
-	dac_volumes = i;
+	if (i < output_channels - 1)
+		dac_volumes = i;
+	else
+		dac_volumes = output_channels;
+
 	snd_ctl_elem_info_set_name(info, DAC_SENSE_NAME);
 	for (i = 0; i < dac_volumes; i++) {
 		snd_ctl_elem_info_set_numid(info, 0);
@@ -338,7 +343,10 @@ void analog_volume_init(void)
 		if (snd_ctl_elem_info(ctl, info) < 0)
 			break;
 	}
-	adc_volumes = i;
+	if (i < input_channels - 1)
+		adc_volumes = i;
+	else
+		adc_volumes = input_channels;
 	snd_ctl_elem_info_set_name(info, ADC_SENSE_NAME);
 	for (i = 0; i < adc_volumes; i++) {
 		snd_ctl_elem_info_set_numid(info, 0);
@@ -366,7 +374,10 @@ void analog_volume_init(void)
 		if (snd_ctl_elem_info(ctl, info) < 0)
 			break;
 	}
-	ipga_volumes = i;
+	if (i < input_channels - 1)
+		ipga_volumes = i;
+	else
+		ipga_volumes = input_channels;
 }
 
 void analog_volume_postinit(void)

@@ -24,6 +24,7 @@
 #define _GNU_SOURCE
 #include <getopt.h>
 
+int input_channels, output_channels, spdif_channels;
 ice1712_eeprom_t card_eeprom;
 snd_ctl_t *ctl;
 
@@ -329,8 +330,11 @@ static void create_mixer(GtkWidget *main, GtkWidget *notebook, int page)
 	gtk_widget_show(hbox);
 	gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, TRUE, 0);
 
-
-	for (stream = 1; stream <= 20; stream++)
+	for(stream = 1; stream <= output_channels; stream ++)
+		create_mixer_frame(hbox, stream);
+	for(stream = 11; stream <= input_channels + 10; stream ++)
+		create_mixer_frame(hbox, stream);
+	for(stream = 19; stream <= spdif_channels + 18; stream ++)
 		create_mixer_frame(hbox, stream);
 }
 
@@ -420,7 +424,7 @@ static void create_router_frame(GtkWidget *box, int stream, int pos)
 	gtk_box_pack_start(GTK_BOX(vbox), hseparator, FALSE, TRUE, 0);
 
 
-	for(idx = 0; idx < 10; idx++) {
+	for(idx = 2 - spdif_channels; idx < input_channels + 2; idx++) {
 		radiobutton = gtk_radio_button_new_with_label(group, table[idx]);
 		router_radio[stream-1][2+idx] = radiobutton;
 		group = gtk_radio_button_group(GTK_RADIO_BUTTON(radiobutton));
@@ -462,7 +466,11 @@ static void create_router(GtkWidget *main, GtkWidget *notebook, int page)
 	gtk_container_add(GTK_CONTAINER(viewport), hbox);
 
 	pos = 0;
-	for (stream = 1; stream <= 10; stream++) {
+	for (stream = 1; stream <= output_channels; stream++) {
+		if (patchbay_stream_is_active(stream))
+			create_router_frame(hbox, stream, pos++);
+	}
+	for (stream = 8; stream <= 8 + spdif_channels; stream++) {
 		if (patchbay_stream_is_active(stream))
 			create_router_frame(hbox, stream, pos++);
 	}
@@ -1360,7 +1368,12 @@ static void create_analog_volume(GtkWidget *main, GtkWidget *notebook, int page)
 
 static void usage(void)
 {
-	fprintf(stderr, "usage: envy24control [-c card#] [-D control-name]\n");
+	fprintf(stderr, "usage: envy24control [-c card#] [-D control-name] [-o num-outputs] [-i num-inputs]\n");
+	fprintf(stderr, "\t-c, --card\tAlsa card number to control\n");
+	fprintf(stderr, "\t-D, --device\tcontrol-name\n");
+	fprintf(stderr, "\t-o, --outputs\tLimit number of outputs to display\n");
+	fprintf(stderr, "\t-i, --input\tLimit number of inputs to display\n");
+	fprintf(stderr, "\t-s, --spdif\tLimit number of spdif outputs to display\n");
 }
 
 int main(int argc, char **argv)
@@ -1376,6 +1389,9 @@ int main(int argc, char **argv)
 	static struct option long_options[] = {
 		{"device", 1, 0, 'D'},
 		{"card", 1, 0, 'c'},
+		{"inputs", 1, 0, 'i'},
+		{"outputs", 1, 0, 'o'},
+		{"spdif", 1, 0, 's'}
 	};
 
 
@@ -1386,7 +1402,10 @@ int main(int argc, char **argv)
         gtk_init(&argc, &argv);
 
 	name = "hw:0";
-	while ((c = getopt_long(argc, argv, "D:c:", long_options, NULL)) != -1) {
+	input_channels = 8;
+	output_channels = 10;
+	spdif_channels = 2;
+	while ((c = getopt_long(argc, argv, "D:c:i:o:s:", long_options, NULL)) != -1) {
 		switch (c) {
 		case 'c':
 			i = atoi(optarg);
@@ -1399,6 +1418,27 @@ int main(int argc, char **argv)
 			break;
 		case 'D':
 			name = optarg;
+			break;
+		case 'i':
+			input_channels = atoi(optarg);
+			if (input_channels < 0 || input_channels > 8) {
+				fprintf(stderr, "envy24control: must have 0-8 inputs\n");
+				exit(1);
+			}
+			break;
+		case 'o':
+			output_channels = atoi(optarg);
+			if (output_channels < 0 || output_channels > 10) {
+				fprintf(stderr, "envy24control: must have 0-10 outputs\n");
+				exit(1);
+			}
+			break;
+		case 's':
+			spdif_channels = atoi(optarg);
+			if (spdif_channels < 0 || spdif_channels > 2) {
+				fprintf(stderr, "envy24control: must have 0-2 spdifs\n");
+				exit(1);
+			}
 			break;
 		default:
 			usage();
