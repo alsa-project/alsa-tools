@@ -101,7 +101,7 @@ int main(int argc,char *argv[])
 		{"device", 1, NULL, 'D'},
 		{"4ch", 0, NULL, '4'},
 		{"6ch", 0, NULL, '6'},
-		{"card", 0, NULL, 'c'},
+		{"card", 1, NULL, 'c'},
 		{"iec958c", 0, NULL, 'C'},
 		{"spdif", 0, NULL, 'C'},
 		{"iec958p", 0, NULL, 'P'},
@@ -131,7 +131,7 @@ int main(int argc,char *argv[])
 	while (1) {
 		int c;
 
-		if ((c = getopt_long(argc, argv, "hvcD:46CPRZ:q", long_option, NULL)) < 0)
+		if ((c = getopt_long(argc, argv, "hvc:D:46CPRZ:q", long_option, NULL)) < 0)
 			break;
 		switch (c) {
 		case 'h':

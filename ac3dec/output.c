@@ -52,7 +52,6 @@ int output_open(output_t *output)
 		switch (output->channels) {
 		case 1:
 		case 2:
-			sprintf(devstr, "default");
 			if (output->spdif != SPDIF_NONE) {
 				unsigned char s[4];
 				if (output->spdif == SPDIF_PRO) {
@@ -76,6 +75,11 @@ int output_open(output_t *output)
 				sprintf(devstr, "iec958:AES0=0x%x,AES1=0x%x,AES2=0x%x,AES3=0x%x", s[0], s[1], s[2], s[3]);
 				if (out_config.card)
 					sprintf(devstr + strlen(devstr), ",CARD=%s", out_config.card);
+			} else {
+				if (out_config.card)
+					sprintf(devstr, "plughw:%s", out_config.card);
+				else
+					sprintf(devstr, "default");
 			}
 			break;
 		case 4:
