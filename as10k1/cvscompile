@@ -14,7 +14,8 @@ for f in install-sh mkinstalldirs missing; do
 done
 
 aclocal $ACLOCAL_FLAGS
-automake --foreign --add-missing
+automake --foreign --add-missing --copy
+touch depcomp
 autoconf
 export CFLAGS='-O2 -Wall -pipe -g'
 echo "CFLAGS=$CFLAGS"

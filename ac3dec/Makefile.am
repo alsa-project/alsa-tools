@@ -12,7 +12,7 @@ ac3dec_SOURCES = ac3dec.c output.c ac3spdif.c
 ac3dec_DEPENDENCIES = libac3/libac3.a
 
 
-EXTRA_DIST = README Changelog TODO plot_spectrum.m autogen.sh
+EXTRA_DIST = README Changelog TODO plot_spectrum.m autogen.sh depcomp
 
 SUBDIRS = libac3 tools test .
 

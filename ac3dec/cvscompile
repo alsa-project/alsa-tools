@@ -2,7 +2,8 @@
 
 aclocal $ACLOCAL_FLAGS
 autoheader
-automake --add-missing
+automake --add-missing --copy --foreign
+touch depcomp
 autoconf
 ./configure $*
 make

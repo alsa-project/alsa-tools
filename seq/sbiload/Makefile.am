@@ -8,7 +8,7 @@ bin_PROGRAMS = sbiload
 
 sbiload_SOURCES = sbiload.c
 
-EXTRA_DIST = README COPYING
+EXTRA_DIST = README COPYING depcomp
 
 alsa-dist: distdir
 	@rm -rf ../../distdir/seq/sbiload
