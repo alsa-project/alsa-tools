@@ -1391,7 +1391,8 @@ int main(int argc, char **argv)
 		{"card", 1, 0, 'c'},
 		{"inputs", 1, 0, 'i'},
 		{"outputs", 1, 0, 'o'},
-		{"spdif", 1, 0, 's'}
+		{"spdif", 1, 0, 's'},
+		{0, 0, 0, 0}
 	};
 
 
