@@ -19,11 +19,11 @@
 
 #include "envy24control.h"
 
-static snd_control_t spdif_master;
-static snd_control_t word_clock_sync;
-static snd_control_t volume_rate;
-static snd_control_t spdif_input;
-static snd_control_t spdif_output;
+static snd_ctl_element_t spdif_master;
+static snd_ctl_element_t word_clock_sync;
+static snd_ctl_element_t volume_rate;
+static snd_ctl_element_t spdif_input;
+static snd_ctl_element_t spdif_output;
 
 #define toggle_set(widget, state) \
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), state);
@@ -37,10 +37,10 @@ void master_clock_update(void)
 {
 	int err;
 	
-	if ((err = snd_ctl_cread(card_ctl, &spdif_master)) < 0)
+	if ((err = snd_ctl_element_read(card_ctl, &spdif_master)) < 0)
 		g_print("Unable to read S/PDIF master state: %s\n", snd_strerror(err));
 	if (card_eeprom.subvendor == ICE1712_SUBDEVICE_DELTA1010) {
-		if ((err = snd_ctl_cread(card_ctl, &word_clock_sync)) < 0)
+		if ((err = snd_ctl_element_read(card_ctl, &word_clock_sync)) < 0)
 			g_print("Unable to read word clock sync selection: %s\n", snd_strerror(err));
 	}
 	if (spdif_master.value.integer.value[0]) {
@@ -60,7 +60,7 @@ static void master_clock_spdif_master(int on)
 	int err;
 
 	spdif_master.value.integer.value[0] = on ? 1 : 0;
-	if ((err = snd_ctl_cwrite(card_ctl, &spdif_master)) < 0)
+	if ((err = snd_ctl_element_write(card_ctl, &spdif_master)) < 0)
 		g_print("Unable to write S/PDIF master state: %s\n", snd_strerror(err));
 }
 
@@ -71,7 +71,7 @@ static void master_clock_word_select(int on)
 	if (card_eeprom.subvendor != ICE1712_SUBDEVICE_DELTA1010)
 		return;
 	word_clock_sync.value.integer.value[0] = on ? 1 : 0;
-	if ((err = snd_ctl_cwrite(card_ctl, &word_clock_sync)) < 0)
+	if ((err = snd_ctl_element_write(card_ctl, &word_clock_sync)) < 0)
 		g_print("Unable to write word clock sync selection: %s\n", snd_strerror(err));
 }
 
@@ -96,15 +96,15 @@ void master_clock_toggled(GtkWidget *togglebutton, gpointer data)
 
 gint master_clock_status_timeout_callback(gpointer data)
 {
-	snd_control_t sw;
+	snd_ctl_element_t sw;
 	int err;
 	
 	if (card_eeprom.subvendor != ICE1712_SUBDEVICE_DELTA1010)
 		return FALSE;
 	memset(&sw, 0, sizeof(sw));
-	sw.id.iface = SND_CONTROL_IFACE_PCM;
+	sw.id.iface = SND_CTL_ELEMENT_IFACE_PCM;
 	strcpy(sw.id.name, "Word Clock Status");
-	if ((err = snd_ctl_cread(card_ctl, &sw)) < 0)
+	if ((err = snd_ctl_element_read(card_ctl, &sw)) < 0)
 		g_print("Unable to determine word clock status: %s\n", snd_strerror(err));
 	gtk_label_set_text(GTK_LABEL(hw_master_clock_status_label),
 			   sw.value.integer.value[0] ? "Locked" : "No signal");
@@ -115,7 +115,7 @@ void volume_change_rate_update(void)
 {
 	int err;
 	
-	if ((err = snd_ctl_cread(card_ctl, &volume_rate)) < 0)
+	if ((err = snd_ctl_element_read(card_ctl, &volume_rate)) < 0)
 		g_print("Unable to read volume change rate: %s\n", snd_strerror(err));
 	gtk_adjustment_set_value(GTK_ADJUSTMENT(hw_volume_change_adj), volume_rate.value.integer.value[0]);
 }
@@ -125,7 +125,7 @@ void volume_change_rate_adj(GtkAdjustment *adj, gpointer data)
 	int err;
 	
 	volume_rate.value.integer.value[0] = adj->value;
-	if ((err = snd_ctl_cwrite(card_ctl, &volume_rate)) < 0)
+	if ((err = snd_ctl_element_write(card_ctl, &volume_rate)) < 0)
 		g_print("Unable to write volume change rate: %s\n", snd_strerror(err));
 }
 
@@ -135,7 +135,7 @@ void spdif_output_update(void)
 	
 	if (card_eeprom.subvendor == ICE1712_SUBDEVICE_DELTA44)
 		return;
-	if ((err = snd_ctl_cread(card_ctl, &spdif_output)) < 0)
+	if ((err = snd_ctl_element_read(card_ctl, &spdif_output)) < 0)
 		g_print("Unable to read Delta S/PDIF output state: %s\n", snd_strerror(err));
 	val = spdif_output.value.integer.value[0];
 	if (val & 1) {		/* consumer */
@@ -186,7 +186,7 @@ static void spdif_output_write(void)
 {
 	int err;
 
-	if ((err = snd_ctl_cwrite(card_ctl, &spdif_output)) < 0)
+	if ((err = snd_ctl_element_write(card_ctl, &spdif_output)) < 0)
 		g_print("Unable to write Delta S/PDIF Output Defaults: %s\n", snd_strerror(err));
 }
 
@@ -359,7 +359,7 @@ void spdif_input_update(void)
 	
 	if (card_eeprom.subvendor != ICE1712_SUBDEVICE_DELTADIO2496)
 		return;
-	if ((err = snd_ctl_cread(card_ctl, &spdif_input)) < 0)
+	if ((err = snd_ctl_element_read(card_ctl, &spdif_input)) < 0)
 		g_print("Unable to read S/PDIF input switch: %s\n", snd_strerror(err));
 	if (spdif_input.value.integer.value[0]) {
 		toggle_set(hw_spdif_input_optical_radio, TRUE);
@@ -379,30 +379,30 @@ void spdif_input_toggled(GtkWidget *togglebutton, gpointer data)
 		spdif_input.value.integer.value[0] = 1;
 	else
 		spdif_input.value.integer.value[0] = 0;
-	if ((err = snd_ctl_cwrite(card_ctl, &spdif_input)) < 0)
+	if ((err = snd_ctl_element_write(card_ctl, &spdif_input)) < 0)
 		g_print("Unable to write S/PDIF input switch: %s\n", snd_strerror(err));
 }
 
 void hardware_init(void)
 {
 	memset(&spdif_master, 0, sizeof(spdif_master));
-	spdif_master.id.iface = SND_CONTROL_IFACE_PCM;
+	spdif_master.id.iface = SND_CTL_ELEMENT_IFACE_PCM;
 	strcpy(spdif_master.id.name, "Multi Track S/PDIF Master");
 
 	memset(&word_clock_sync, 0, sizeof(spdif_master));
-	word_clock_sync.id.iface = SND_CONTROL_IFACE_PCM;
+	word_clock_sync.id.iface = SND_CTL_ELEMENT_IFACE_PCM;
 	strcpy(word_clock_sync.id.name, "Word Clock Sync");
 
 	memset(&volume_rate, 0, sizeof(volume_rate));
-	spdif_master.id.iface = SND_CONTROL_IFACE_PCM;
+	spdif_master.id.iface = SND_CTL_ELEMENT_IFACE_PCM;
 	strcpy(volume_rate.id.name, "Multi Track Volume Rate");
 
 	memset(&spdif_input, 0, sizeof(spdif_input));
-	spdif_master.id.iface = SND_CONTROL_IFACE_PCM;
+	spdif_master.id.iface = SND_CTL_ELEMENT_IFACE_PCM;
 	strcpy(spdif_input.id.name, "S/PDIF Input Optical");
 
 	memset(&spdif_output, 0, sizeof(spdif_output));
-	spdif_master.id.iface = SND_CONTROL_IFACE_PCM;
+	spdif_master.id.iface = SND_CTL_ELEMENT_IFACE_PCM;
 	strcpy(spdif_output.id.name, "Delta S/PDIF Output Defaults");
 }
 

@@ -29,15 +29,15 @@ static int is_active(GtkWidget *widget)
 
 void mixer_update_stream(int stream, int vol_flag, int sw_flag)
 {
-	snd_control_t vol, sw;
+	snd_ctl_element_t vol, sw;
 	int err;
 	
 	if (vol_flag) {
 		memset(&vol, 0, sizeof(vol));
-		vol.id.iface = SND_CONTROL_IFACE_MIXER;
+		vol.id.iface = SND_CTL_ELEMENT_IFACE_MIXER;
 		strcpy(vol.id.name, stream <= 10 ? "Multi Playback Volume" : "Multi Capture Volume");
 		vol.id.index = (stream - 1) % 10;
-		if ((err = snd_ctl_cread(card_ctl, &vol)) < 0)
+		if ((err = snd_ctl_element_read(card_ctl, &vol)) < 0)
 			g_print("Unable to read multi playback volume: %s\n", snd_strerror(err));
 		gtk_adjustment_set_value(GTK_ADJUSTMENT(mixer_adj[stream-1][0]), 96 - vol.value.integer.value[0]);
 		gtk_adjustment_set_value(GTK_ADJUSTMENT(mixer_adj[stream-1][1]), 96 - vol.value.integer.value[1]);
@@ -46,10 +46,10 @@ void mixer_update_stream(int stream, int vol_flag, int sw_flag)
 	}
 	if (sw_flag) {
 		memset(&sw, 0, sizeof(sw));
-		sw.id.iface = SND_CONTROL_IFACE_MIXER;
+		sw.id.iface = SND_CTL_ELEMENT_IFACE_MIXER;
 		strcpy(sw.id.name, stream <= 10 ? "Multi Playback Switch" : "Multi Capture Switch");
 		sw.id.index = (stream - 1) % 10;
-		if ((err = snd_ctl_cread(card_ctl, &sw)) < 0)
+		if ((err = snd_ctl_element_read(card_ctl, &sw)) < 0)
 			g_print("Unable to read multi playback switch: %s\n", snd_strerror(err));
 		toggle_set(mixer_solo_toggle[stream-1][0], sw.value.integer.value[0] ? TRUE : FALSE);
 		toggle_set(mixer_solo_toggle[stream-1][1], sw.value.integer.value[1] ? TRUE : FALSE);
@@ -62,20 +62,20 @@ void mixer_update_stream(int stream, int vol_flag, int sw_flag)
 
 static void set_switch1(int stream, int left, int right)
 {
-	snd_control_t sw;
+	snd_ctl_element_t sw;
 	int err;
 	
 	memset(&sw, 0, sizeof(sw));
-	sw.id.iface = SND_CONTROL_IFACE_MIXER;
+	sw.id.iface = SND_CTL_ELEMENT_IFACE_MIXER;
 	strcpy(sw.id.name, stream <= 10 ? "Multi Playback Switch" : "Multi Capture Switch");
 	sw.id.index = (stream - 1) % 10;
-	if ((err = snd_ctl_cread(card_ctl, &sw)) < 0)
+	if ((err = snd_ctl_element_read(card_ctl, &sw)) < 0)
 		g_print("Unable to read multi switch: %s\n", snd_strerror(err));
 	if (left >= 0)
 		sw.value.integer.value[0] = left != 0;
 	if (right >= 0)
 		sw.value.integer.value[1] = right != 0;
-	if ((err = snd_ctl_cwrite(card_ctl, &sw)) < 0 && err != -EBUSY)
+	if ((err = snd_ctl_element_write(card_ctl, &sw)) < 0 && err != -EBUSY)
 		g_print("Unable to write multi switch: %s\n", snd_strerror(err));
 }
 
@@ -147,20 +147,20 @@ void mixer_toggled_mute(GtkWidget *togglebutton, gpointer data)
 
 static void set_volume1(int stream, int left, int right)
 {
-	snd_control_t vol;
+	snd_ctl_element_t vol;
 	int err;
 	
 	memset(&vol, 0, sizeof(vol));
-	vol.id.iface = SND_CONTROL_IFACE_MIXER;
+	vol.id.iface = SND_CTL_ELEMENT_IFACE_MIXER;
 	strcpy(vol.id.name, stream <= 10 ? "Multi Playback Volume" : "Multi Capture Volume");
 	vol.id.index = (stream - 1) % 10;
-	if ((err = snd_ctl_cread(card_ctl, &vol)) < 0)
+	if ((err = snd_ctl_element_read(card_ctl, &vol)) < 0)
 		g_print("Unable to read multi volume: %s\n", snd_strerror(err));
 	if (left >= 0)
 		vol.value.integer.value[0] = left;
 	if (right >= 0)
 		vol.value.integer.value[1] = right;
-	if ((err = snd_ctl_cwrite(card_ctl, &vol)) < 0 && err != -EBUSY)
+	if ((err = snd_ctl_element_write(card_ctl, &vol)) < 0 && err != -EBUSY)
 		g_print("Unable to write multi volume: %s\n", snd_strerror(err));
 }
 

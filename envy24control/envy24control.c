@@ -21,7 +21,7 @@
 
 int card = 0;
 snd_ctl_t *card_ctl = NULL;
-snd_ctl_info_t hw_info;
+snd_ctl_card_info_t hw_info;
 ice1712_eeprom_t card_eeprom;
 
 GtkWidget *window;
@@ -1029,7 +1029,7 @@ int main(int argc, char **argv)
         char name[32], title[128];
 	int err;
 	unsigned int cards_mask;
-	snd_control_t ctl;
+	snd_ctl_element_t ctl;
 	// snd_mixer_filter_t filter;
 
 	/* Go through gtk initialization */
@@ -1044,8 +1044,8 @@ int main(int argc, char **argv)
 			fprintf(stderr, "snd_ctl_open: %s\n", snd_strerror(err));
 			exit(EXIT_FAILURE);
 		}
-		if ((err = snd_ctl_info(card_ctl, &hw_info)) < 0) {
-			fprintf(stderr, "snd_ctl_info: %s\n", snd_strerror(err));
+		if ((err = snd_ctl_card_info(card_ctl, &hw_info)) < 0) {
+			fprintf(stderr, "snd_ctl_card_info: %s\n", snd_strerror(err));
 			exit(EXIT_FAILURE);
 		}
 		if (hw_info.type == SND_CARD_TYPE_ICE1712)
@@ -1074,9 +1074,9 @@ int main(int argc, char **argv)
 #endif
 
 	memset(&ctl, 0, sizeof(ctl));
-	ctl.id.iface = SND_CONTROL_IFACE_CARD;
+	ctl.id.iface = SND_CTL_ELEMENT_IFACE_CARD;
 	strcpy(ctl.id.name, "ICE1712 EEPROM");
-	if ((err = snd_ctl_cread(card_ctl, &ctl)) < 0) {
+	if ((err = snd_ctl_element_read(card_ctl, &ctl)) < 0) {
 		fprintf(stderr, "Unable to read EEPROM contents: %s\n", snd_strerror(err));
 		exit(EXIT_FAILURE);
 	}

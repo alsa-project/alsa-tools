@@ -19,9 +19,9 @@
 
 #include "envy24control.h"
 
-static void control_value(snd_ctl_t *handle, void *private_data, snd_control_id_t *id)
+static void control_value(snd_ctl_t *handle, void *private_data, snd_ctl_element_id_t *id)
 {
-	if (id->iface == SND_CONTROL_IFACE_PCM) {
+	if (id->iface == SND_CTL_ELEMENT_IFACE_PCM) {
 		if (!strcmp(id->name, "Multi Track Route")) {
 			patchbay_update();
 			return;
@@ -47,7 +47,7 @@ static void control_value(snd_ctl_t *handle, void *private_data, snd_control_id_
 			return;
 		}
 	}
-	if (id->iface == SND_CONTROL_IFACE_MIXER) {
+	if (id->iface == SND_CTL_ELEMENT_IFACE_MIXER) {
 		if (!strcmp(id->name, "Multi Playback Volume")) {
 			mixer_update_stream(id->index + 1, 1, 0);
 			return;
