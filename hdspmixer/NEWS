@@ -1,0 +1,9 @@
+Version 1.1 (27/07/2003):
+    * Fixes a typo for Digiface and H9652 cards in HDSPMixerSelector.cxx
+      (caused a crash on startup)
+    * Fixes a menu messing bug in Submix handling
+    * Fixes FLTK detection in configure
+    * Fixes a bug preventing full reset to factory settings
+
+Version 1.0 (27/07/2003):
+    * Initial release
