@@ -55,6 +55,27 @@ int output_open(output_t *output)
 		case 1:
 		case 2:
 			sprintf(devstr, "default");
+			if (output->spdif != SPDIF_NONE) {
+				unsigned char s[4];
+				if (output->spdif == SPDIF_PRO) {
+					s[0] = (IEC958_AES0_PROFESSIONAL |
+					        IEC958_AES0_NONAUDIO |
+						IEC958_AES0_PRO_EMPHASIS_NONE |
+						IEC958_AES0_PRO_FS_48000);
+					s[1] = (IEC958_AES1_PRO_MODE_NOTID |
+						IEC958_AES1_PRO_USERBITS_NOTID);
+					s[2] = IEC958_AES2_PRO_WORDLEN_NOTID;
+					s[3] = 0;
+				} else {
+					s[0] = (IEC958_AES0_NONAUDIO |
+						IEC958_AES0_CON_EMPHASIS_NONE);
+					s[1] = (IEC958_AES1_CON_ORIGINAL |
+						IEC958_AES1_CON_PCM_CODER);
+					s[2] = 0;
+					s[3] = IEC958_AES3_CON_FS_48000;
+				}
+				sprintf(devstr, "iec958:AES0=0x%x,AES1=0x%x,AES2=0x%x,AES3=0x%x", s[0], s[1], s[2], s[3]);
+			}
 			break;
 		case 4:
 			strcpy(devstr, "surround40");
@@ -130,77 +151,6 @@ int output_open(output_t *output)
 	if ((err = snd_pcm_hw_params(pcm, params)) < 0) {
 		fprintf(stderr, "PCM hw_params failed: %s\n", snd_strerror(err));
 		goto __close;
-	}
-
-	if (output->spdif != SPDIF_NONE) {
-		snd_pcm_info_t *info;
-		snd_ctl_elem_value_t *ctl;
-		snd_ctl_t *ctl_handle;
-		char ctl_name[12];
-		int ctl_card;
-		snd_aes_iec958_t spdif;
-
-		memset(&spdif, 0, sizeof(spdif));
-		if (output->spdif == SPDIF_PRO) {
-			spdif.status[0] = (IEC958_AES0_PROFESSIONAL |
-					   IEC958_AES0_NONAUDIO |
-					   IEC958_AES0_PRO_EMPHASIS_NONE |
-					   IEC958_AES0_PRO_FS_48000);
-			spdif.status[1] = (IEC958_AES1_PRO_MODE_NOTID |
-					   IEC958_AES1_PRO_USERBITS_NOTID);
-			spdif.status[2] = IEC958_AES2_PRO_WORDLEN_NOTID;
-			spdif.status[3] = 0;
-		} else {
-			spdif.status[0] = (IEC958_AES0_NONAUDIO |
-					   IEC958_AES0_CON_EMPHASIS_NONE);
-			spdif.status[1] = (IEC958_AES1_CON_ORIGINAL |
-					   IEC958_AES1_CON_PCM_CODER);
-			spdif.status[2] = 0;
-			spdif.status[3] = IEC958_AES3_CON_FS_48000;
-		}
-		snd_pcm_info_alloca(&info);
-		if ((err = snd_pcm_info(pcm, info)) < 0) {
-			fprintf(stderr, "pcm info error: %s", snd_strerror(err));
-			goto __close;
-		}
-		snd_ctl_elem_value_alloca(&ctl);
-		snd_ctl_elem_value_set_interface(ctl, SND_CTL_ELEM_IFACE_PCM);
-		snd_ctl_elem_value_set_device(ctl, snd_pcm_info_get_device(info));
-		snd_ctl_elem_value_set_subdevice(ctl, snd_pcm_info_get_subdevice(info));
-		snd_ctl_elem_value_set_name(ctl, SND_CTL_NAME_IEC958("",PLAYBACK,PCM_STREAM));
-		snd_ctl_elem_value_set_iec958(ctl, &spdif);
-		ctl_card = snd_pcm_info_get_card(info);
-		if (ctl_card < 0) {
-			fprintf(stderr, "Unable to setup the IEC958 (S/PDIF) interface - PCM has no assigned card\n");
-			goto __diga_end;
-		}
-		sprintf(ctl_name, "hw:%d", ctl_card);
-		if ((err = snd_ctl_open(&ctl_handle, ctl_name, 0)) < 0) {
-			fprintf(stderr, "Unable to open the control interface '%s': %s\n", ctl_name, snd_strerror(err));
-			goto __diga_end;
-		}
-		if (!strcasecmp(snd_pcm_info_get_name(info), "EMU10K1 FX8010")) {
-			/* EMU10K1 hack, don't use, alsa-lib will provide more clean solution */
-			snd_ctl_elem_value_set_interface(ctl, SND_CTL_ELEM_IFACE_MIXER);
-			snd_ctl_elem_value_set_device(ctl, 0);
-			snd_ctl_elem_value_set_subdevice(ctl, 0);
-			snd_ctl_elem_value_set_name(ctl, "IEC958 Optical Raw Playback Switch");
-			snd_ctl_elem_value_set_boolean(ctl, 0, 1);
-			snd_ctl_elem_value_set_boolean(ctl, 1, 1);
-			if ((err = snd_ctl_elem_write(ctl_handle, ctl)) < 0) {
-				fprintf(stderr, "Unable to update the IEC958 Optical Raw control: %s\n", snd_strerror(err));
-				goto __diga_close;
-			}
-		} else {
-			if ((err = snd_ctl_elem_write(ctl_handle, ctl)) < 0) {
-				fprintf(stderr, "Unable to update the IEC958 control: %s\n", snd_strerror(err));
-				goto __diga_close;
-			}
-		}
-
-	      __diga_close:
-		snd_ctl_close(ctl_handle);
-	      __diga_end:
 	}
 
 	return 0;
