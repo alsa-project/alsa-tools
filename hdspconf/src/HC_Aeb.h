@@ -19,31 +19,24 @@
  */
 
 #pragma interface
-#ifndef HC_CLOCKSOURCE_H
-#define HC_CLOCKSOURCE_H
+#ifndef HC_AEB_H
+#define HC_AEB_H
 
 #include <FL/Fl_Group.H>
-#include <FL/Fl_Round_Button.H>
+#include <FL/Fl_Check_Button.H>
 #include <alsa/asoundlib.h>
 #include "HC_CardPane.h"
 
 class HC_CardPane;
 
-class HC_ClockSource:public Fl_Group
+class HC_Aeb:public Fl_Group
 {
 public:
-    HC_ClockSource(int x, int y, int w, int h);
-    Fl_Round_Button *autosync;
-    Fl_Round_Button *khz32;
-    Fl_Round_Button *khz44_1;
-    Fl_Round_Button *khz48;
-    Fl_Round_Button *khz64;
-    Fl_Round_Button *khz88_2;
-    Fl_Round_Button *khz96;
-    Fl_Round_Button *khz128;
-    Fl_Round_Button *khz176_4;
-    Fl_Round_Button *khz192;
-    void setSource(unsigned char s);
+    HC_Aeb(int x, int y, int w, int h);
+    Fl_Check_Button *adat_internal;
+    void setAdatInternal(unsigned char val);
+    int handle(int e);
+    int lock;
 };
 
 #endif

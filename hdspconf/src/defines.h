@@ -21,22 +21,20 @@
 #ifndef DEFINES_H
 #define DEFINES_H
 
-#define MULTIFACE 0
-#define DIGIFACE  1
-#define HDSP9652  2
-
-#define WINDOW_WIDTH  380
-#define WINDOW_HEIGHT 330
+#define WINDOW_WIDTH  500
+#define WINDOW_HEIGHT 400
 
 #define TABS_X 10
 #define TABS_Y 10
-#define TABS_W 360
-#define TABS_H 310
+#define TABS_W 480
+#define TABS_H 380
 
 #define PANE_X 10
 #define PANE_Y 30
-#define PANE_H 290
-#define PANE_W 360
+#define PANE_W 480
+#define PANE_H 360
+
+#define V_STEP 24
 
 #endif
 

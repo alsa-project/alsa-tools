@@ -21,8 +21,8 @@
 #pragma implementation
 #include "HC_AutoSyncRef.h"
 
-extern char *freqs[7];
-extern char *ref[6];
+extern char *freqs[10];
+extern char *ref[7];
 
 HC_AutoSyncRef::HC_AutoSyncRef(int x, int y, int w, int h):Fl_Widget(x, y, w, h, "AutoSync Ref.")
 {
@@ -69,6 +69,15 @@ void HC_AutoSyncRef::setFreq(int f)
 	case 96000:
 	    freq = 5;
 	    break;
+	case 128000:
+	    freq = 7;
+	    break;
+	case 176400:
+	    freq = 8;
+	    break;
+	case 192000:
+	    freq = 9;
+	    break;
 	default:
 	    freq = 6;
 	}	    
@@ -81,7 +90,7 @@ void HC_AutoSyncRef::setFreq(int f)
 void HC_AutoSyncRef::setRef(unsigned char r)
 {
 	if (r == external_ref) return;
-	if (r > 6) external_ref = 6;
+	if (r > 6) external_ref = 3;
 	else external_ref = r;
 	redraw();
 }

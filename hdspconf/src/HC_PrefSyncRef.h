@@ -41,6 +41,8 @@ public:
     Fl_Round_Button *word_clock;
     Fl_Round_Button *adat_sync;
     void setRef(int r);
+private:
+    char *adat_name;
 };
 
 #endif

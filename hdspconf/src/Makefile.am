@@ -20,7 +20,19 @@ hdspconf_SOURCES = \
 	HC_SpdifOut.h \
 	HC_PrefSyncRef.cxx \
 	HC_PrefSyncRef.h \
+	HC_Aeb.cxx \
+	HC_Aeb.h \
+	HC_BreakoutCable.cxx \
+	HC_BreakoutCable.h \
+	HC_InputLevel.cxx \
+	HC_InputLevel.h \
+	HC_OutputLevel.cxx \
+	HC_OutputLevel.h \
+	HC_Phones.cxx \
+	HC_Phones.h \
 	HC_XpmRenderer.cxx \
 	HC_XpmRenderer.h \
 	HC_AboutText.cxx \
-	HC_AboutText.h
+	HC_AboutText.h \
+	pixmaps.cxx \
+	pixmaps.h

@@ -23,7 +23,7 @@
 
 HC_AboutText::HC_AboutText(int x, int y, int w, int h):Fl_Widget(x, y, w, h, "About Text")
 {
-	text = "HDSPConf (C) 2003 Thomas Charbonnel <thomas@@undata.org>\n\n"
+	text = "HDSPConf " VERSION " (C) 2003 Thomas Charbonnel <thomas@@undata.org>\n\n"
 	       "This Program is free software; you can redistribute it and/or modify\n"
 	       "it under the terms of the GNU General Public License as published by\n"
 	       "the Free Software Foundation; either version 2 of the License, or\n"

@@ -33,11 +33,11 @@ void pref_sync_ref_cb(Fl_Widget *w, void *arg)
     Fl_Round_Button *source = (Fl_Round_Button *)w;
     if (source == psr->word_clock) {
 	ref = 0;
-    } else if (source == psr->adat_sync) {
-	ref = 1;
     } else if (source == psr->spdif) {
-	ref = 2;
+	ref = 1;
     } else if (source == psr->adat1) {
+	ref = 2;
+    } else if (source == psr->adat_sync) {
 	ref = 3;
     } else if (source == psr->adat2) {
 	ref = 4;
@@ -70,31 +70,33 @@ void pref_sync_ref_cb(Fl_Widget *w, void *arg)
 HC_PrefSyncRef::HC_PrefSyncRef(int x, int y, int w, int h):Fl_Group(x, y, w, h, "Pref. Sync Ref")
 {
 	int i = 0;
-	int v_step;
-	if (((HC_CardPane *)parent())->type == MULTIFACE) {
-	    v_step = (int)(h/4.0f);
+	if (((HC_CardPane *)parent())->type == Multiface || ((HC_CardPane *)parent())->type == H9632) {
+	    adat_name = "ADAT In";
 	} else {
-	    v_step = (int)(h/6.0f);
+	    adat_name = "ADAT1 In";
 	}
-	source = 0;
 	box(FL_ENGRAVED_FRAME);;
 	label("Pref. Sync Ref");
 	labelsize(10);
 	align(FL_ALIGN_TOP|FL_ALIGN_LEFT);
-	word_clock = new Fl_Round_Button(x+15, y+v_step*i++, w-30, v_step, "Word Clock");
+	word_clock = new Fl_Round_Button(x+10, y+V_STEP*i++, w-20, V_STEP, "Word Clock");
 	word_clock->callback(pref_sync_ref_cb, (void *)this);
-	adat_sync = new Fl_Round_Button(x+15, y+v_step*i++, w-30, v_step, "ADAT Sync");
-	adat_sync->callback(pref_sync_ref_cb, (void *)this);
-	spdif = new Fl_Round_Button(x+15, y+v_step*i++, w-30, v_step, "SPDIF In");
+	if (((HC_CardPane *)parent())->type != H9632) {
+	    adat_sync = new Fl_Round_Button(x+10, y+V_STEP*i++, w-20, V_STEP, "ADAT Sync");
+	    adat_sync->callback(pref_sync_ref_cb, (void *)this);
+	    adat_sync->labelsize(10);
+	    adat_sync->type(FL_RADIO_BUTTON);
+	}
+	spdif = new Fl_Round_Button(x+10, y+V_STEP*i++, w-20, V_STEP, "SPDIF In");
 	spdif->callback(pref_sync_ref_cb, (void *)this);
-	adat1 = new Fl_Round_Button(x+15, y+v_step*i++, w-30, v_step, "ADAT1 In");
+	adat1 = new Fl_Round_Button(x+10, y+V_STEP*i++, w-20, V_STEP, adat_name);
 	adat1->callback(pref_sync_ref_cb, (void *)this);
-	if (((HC_CardPane *)parent())->type != MULTIFACE) {
-	    adat2 = new Fl_Round_Button(x+15, y+v_step*i++, w-30, v_step, "ADAT2 In");
+	if (((HC_CardPane *)parent())->type != Multiface && ((HC_CardPane *)parent())->type != H9632) {
+	    adat2 = new Fl_Round_Button(x+10, y+V_STEP*i++, w-20, V_STEP, "ADAT2 In");
 	    adat2->labelsize(10);
 	    adat2->type(FL_RADIO_BUTTON);
 	    adat2->callback(pref_sync_ref_cb, (void *)this);
-	    adat3 = new Fl_Round_Button(x+15, y+v_step*i++, w-30, v_step, "ADAT3 In");
+	    adat3 = new Fl_Round_Button(x+10, y+V_STEP*i++, w-20, V_STEP, "ADAT3 In");
 	    adat3->labelsize(10);
 	    adat3->type(FL_RADIO_BUTTON);
 	    adat3->callback(pref_sync_ref_cb, (void *)this);
@@ -105,16 +107,39 @@ HC_PrefSyncRef::HC_PrefSyncRef(int x, int y, int w, int h):Fl_Group(x, y, w, h, 
 	spdif->type(FL_RADIO_BUTTON);
 	word_clock->labelsize(10);
 	word_clock->type(FL_RADIO_BUTTON);
-	adat_sync->labelsize(10);
-	adat_sync->type(FL_RADIO_BUTTON);
 	end();	
 }
 
 void HC_PrefSyncRef::setRef(int r)
 {
-	if (r >= 0 && r < children()) {
-	    if (((Fl_Round_Button *)child(r))->value() != 1)
-		((Fl_Round_Button *)child(r))->setonly();
+	switch (r) {
+	case 0:
+	    if (word_clock->value() != 1)
+		word_clock->setonly();
+	    break;
+	case 1:
+	    if (spdif->value() != 1)
+		spdif->setonly();
+	    break;
+	case 2:
+	    if (adat1->value() != 1)
+		adat1->setonly();
+	    break;
+	case 3:
+	    if (((HC_CardPane *)parent())->type != H9632)
+		if (adat_sync->value() != 1)
+		    adat_sync->setonly();
+	    break;
+	case 4:
+	    if (((HC_CardPane *)parent())->type == H9652 || ((HC_CardPane *)parent())->type == Digiface)
+		if (adat2->value() != 1)
+		    adat2->setonly();
+	    break;		    	    
+	case 5:
+	    if (((HC_CardPane *)parent())->type == H9652 || ((HC_CardPane *)parent())->type == Digiface)
+		if (adat3->value() != 1)
+		    adat3->setonly();
+	    break;		    	    
 	}
 }
 

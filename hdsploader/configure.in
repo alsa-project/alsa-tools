@@ -1,5 +1,5 @@
 AC_INIT(hdsploader.c)
-AM_INIT_AUTOMAKE(hdsploader, 1.1)
+AM_INIT_AUTOMAKE(hdsploader, 1.2)
 AC_PROG_CC
 AC_PROG_INSTALL
 AC_HEADER_STDC

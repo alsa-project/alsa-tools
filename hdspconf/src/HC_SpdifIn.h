@@ -37,6 +37,7 @@ public:
     Fl_Round_Button *adat1;
     Fl_Round_Button *coaxial;
     Fl_Round_Button *internal;
+    Fl_Round_Button *aes;
     void setInput(unsigned char i);
 };
 

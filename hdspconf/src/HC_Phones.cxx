@@ -19,38 +19,36 @@
  */
 
 #pragma implementation
-#include "HC_SpdifIn.h"
+#include "HC_Phones.h"
 
-void spdif_in_cb(Fl_Widget *w, void *arg)
+void phones_cb(Fl_Widget *w, void *arg)
 {
-    int in, err;
+    int gain, err;
     char card_name[6];
     snd_ctl_elem_value_t *ctl;
     snd_ctl_elem_id_t *id;
     snd_ctl_t *handle;
     Fl_Round_Button *source = (Fl_Round_Button *)w;
-    HC_SpdifIn *si = (HC_SpdifIn *)arg;
-    HC_CardPane *pane = (HC_CardPane *)si->parent();
-    if (source == si->adat1) {
-	in = 0;
-    } else if (source == si->coaxial) {
-	in = 1;
-    } else if (source == si->internal) {
-	in = 2;
-    } else if (source == si->aes) {
-	in = 3;
+    HC_Phones *ph = (HC_Phones *)arg;
+    HC_CardPane *pane = (HC_CardPane *)ph->parent();
+    if (source == ph->zero_db) {
+	gain = 0;
+    } else if (source == ph->minus_six_db) {
+	gain = 1;
+    } else if (source == ph->minus_twelve_db) {
+	gain = 2;
     }
     snprintf(card_name, 6, "hw:%i", pane->alsa_index);
     snd_ctl_elem_value_alloca(&ctl);
     snd_ctl_elem_id_alloca(&id);
-    snd_ctl_elem_id_set_name(id, "IEC958 Input Connector");
+    snd_ctl_elem_id_set_name(id, "Phones Gain");
     snd_ctl_elem_id_set_numid(id, 0);
-    snd_ctl_elem_id_set_interface(id, SND_CTL_ELEM_IFACE_PCM);
+    snd_ctl_elem_id_set_interface(id, SND_CTL_ELEM_IFACE_HWDEP);
     snd_ctl_elem_id_set_device(id, 0);
     snd_ctl_elem_id_set_subdevice(id, 0);
     snd_ctl_elem_id_set_index(id, 0);
     snd_ctl_elem_value_set_id(ctl, id);
-    snd_ctl_elem_value_set_enumerated(ctl, 0, in);
+    snd_ctl_elem_value_set_enumerated(ctl, 0, gain);
     if ((err = snd_ctl_open(&handle, card_name, SND_CTL_NONBLOCK)) < 0) {
 	fprintf(stderr, "Error opening ctl interface on card %s\n", card_name);
 	return;
@@ -62,35 +60,30 @@ void spdif_in_cb(Fl_Widget *w, void *arg)
     snd_ctl_close(handle);
 }
 
-HC_SpdifIn::HC_SpdifIn(int x, int y, int w, int h):Fl_Group(x, y, w, h, "SPDIF In")
+HC_Phones::HC_Phones(int x, int y, int w, int h):Fl_Group(x, y, w, h, "Phones")
 {
 	int i = 0;
+	int v_step = (int)(h/3.0f);
 	box(FL_ENGRAVED_FRAME);;
-	label("SPDIF In");
+	label("Phones");
 	labelsize(10);
 	align(FL_ALIGN_TOP|FL_ALIGN_LEFT);
-	adat1 = new Fl_Round_Button(x+10, y+V_STEP*i++, w-20, V_STEP, "Optical");
-	coaxial = new Fl_Round_Button(x+10, y+V_STEP*i++, w-20, V_STEP, "Coaxial");
-	internal = new Fl_Round_Button(x+10, y+V_STEP*i++, w-20, V_STEP, "Internal");
-	if (((HC_CardPane *)parent())->type == H9632) {
-	    aes = new Fl_Round_Button(x+10, y+V_STEP*i++, w-20, V_STEP, "AES");
-	    aes->labelsize(10);
-	    aes->type(FL_RADIO_BUTTON);
-	    aes->callback(spdif_in_cb, (void *)this);
-	}
-	adat1->labelsize(10);
-	adat1->type(FL_RADIO_BUTTON);
-	adat1->callback(spdif_in_cb, (void *)this);
-	coaxial->labelsize(10);
-	coaxial->type(FL_RADIO_BUTTON);
-	coaxial->callback(spdif_in_cb, (void *)this);
-	internal->labelsize(10);
-	internal->type(FL_RADIO_BUTTON);
-	internal->callback(spdif_in_cb, (void *)this);
+	zero_db = new Fl_Round_Button(x+15, y+v_step*i++, w-30, v_step, "Hi Gain");
+	minus_six_db = new Fl_Round_Button(x+15, y+v_step*i++, w-30, v_step, "+4 dBu");
+	minus_twelve_db = new Fl_Round_Button(x+15, y+v_step*i++, w-30, v_step, "-10 dBV");
+	zero_db->labelsize(10);
+	zero_db->type(FL_RADIO_BUTTON);
+	zero_db->callback(phones_cb, (void *)this);
+	minus_six_db->labelsize(10);
+	minus_six_db->type(FL_RADIO_BUTTON);
+	minus_six_db->callback(phones_cb, (void *)this);
+	minus_twelve_db->labelsize(10);
+	minus_twelve_db->type(FL_RADIO_BUTTON);
+	minus_twelve_db->callback(phones_cb, (void *)this);
 	end();	
 }
 
-void HC_SpdifIn::setInput(unsigned char i)
+void HC_Phones::setPhones(unsigned char i)
 {
 	if (i < children()) {
 	    if (((Fl_Round_Button *)child(i))->value() != 1)

@@ -23,6 +23,7 @@
 #define HC_CardPane_H
 
 #include <stdio.h>
+#include <sound/hdsp.h>
 #include <FL/Fl_Group.H>
 #include "HC_SyncCheck.h"
 #include "HC_SpdifFreq.h"
@@ -32,6 +33,11 @@
 #include "HC_SpdifIn.h"
 #include "HC_SpdifOut.h"
 #include "HC_PrefSyncRef.h"
+#include "HC_Aeb.h"
+#include "HC_BreakoutCable.h"
+#include "HC_InputLevel.h"
+#include "HC_OutputLevel.h"
+#include "HC_Phones.h"
 #include "defines.h"
 
 class HC_SyncCheck;
@@ -42,11 +48,16 @@ class HC_ClockSource;
 class HC_SpdifIn;
 class HC_SpdifOut;
 class HC_PrefSyncRef;
+class HC_Aeb;
+class HC_BreakoutCable;
+class HC_InputLevel;
+class HC_OutputLevel;
+class HC_Phones;
 
 class HC_CardPane:public Fl_Group
 {
 public:
-    HC_CardPane(int alsa_idx, int idx, int t);    
+    HC_CardPane(int alsa_idx, int idx, HDSP_IO_Type t);    
     HC_SyncCheck *sync_check;
     HC_SpdifFreq *spdif_freq;
     HC_AutoSyncRef *autosync_ref;
@@ -55,11 +66,16 @@ public:
     HC_SpdifIn *spdif_in;
     HC_SpdifOut *spdif_out;
     HC_PrefSyncRef *sync_ref;
+    HC_Aeb *aeb;
+    HC_BreakoutCable *breakout_cable;
+    HC_InputLevel *input_level;
+    HC_OutputLevel *output_level;
+    HC_Phones *phones;
     int index;
     int alsa_index;
-    int type;
+    HDSP_IO_Type type;
 private:
-    char name[7];
+    char name[19];
 };
 
 #endif

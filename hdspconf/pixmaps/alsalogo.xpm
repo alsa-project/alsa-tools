@@ -1,5 +1,5 @@
 /* XPM */
-static char * alsalogo_xpm[] = {
+char * alsalogo_xpm[] = {
 "50 50 398 2",
 "  	c None",
 ". 	c #C0C0C0",

@@ -25,6 +25,7 @@
 #include <FL/Fl_Widget.H>
 #include <FL/fl_draw.H>
 #include <FL/Fl.H>
+#include "pixmaps.h"
 
 class HC_XpmRenderer:public Fl_Widget
 {

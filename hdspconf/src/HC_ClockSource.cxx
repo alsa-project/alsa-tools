@@ -21,7 +21,7 @@
 #pragma implementation
 #include "HC_ClockSource.h"
 
-extern char *freqs[7];
+extern char *freqs[10];
 
 void clock_source_cb(Fl_Widget *w, void *arg)
 {
@@ -47,7 +47,14 @@ void clock_source_cb(Fl_Widget *w, void *arg)
 		src = 5;
 	} else if (source == cs->khz96) {
 		src = 6;
+	} else if (source == cs->khz128) {
+		src = 7;
+	} else if (source == cs->khz176_4) {
+		src = 8;
+	} else if (source == cs->khz192) {
+		src = 9;
 	}
+	
 	snprintf(card_name, 6, "hw:%i", pane->alsa_index);
 	snd_ctl_elem_value_alloca(&ctl);
 	snd_ctl_elem_id_alloca(&id);
@@ -73,25 +80,38 @@ void clock_source_cb(Fl_Widget *w, void *arg)
 HC_ClockSource::HC_ClockSource(int x, int y, int w, int h):Fl_Group(x, y, w, h, "Sample Clock Source")
 {
 	int i = 0;
-	int v_step = (int)(h/7.0f);
 	box(FL_ENGRAVED_FRAME);
 	label("Sample Clock Source");
 	labelsize(10);
 	align(FL_ALIGN_TOP|FL_ALIGN_LEFT);
-	autosync = new Fl_Round_Button(x+15, y+v_step*i++, w-30, v_step, "AutoSync");
+	autosync = new Fl_Round_Button(x+10, y+V_STEP*i++, w-20, V_STEP, "AutoSync");
 	autosync->callback(clock_source_cb, (void *)this);
-	khz32 = new Fl_Round_Button(x+15, y+v_step*i++, w-30, v_step, freqs[0]);
+	khz32 = new Fl_Round_Button(x+10, y+V_STEP*i++, w-20, V_STEP, freqs[0]);
 	khz32->callback(clock_source_cb, (void *)this);
-	khz44_1 = new Fl_Round_Button(x+15, y+v_step*i++, w-30, v_step, freqs[1]);
+	khz44_1 = new Fl_Round_Button(x+10, y+V_STEP*i++, w-20, V_STEP, freqs[1]);
 	khz44_1->callback(clock_source_cb, (void *)this);
-	khz48 = new Fl_Round_Button(x+15, y+v_step*i++, w-30, v_step, freqs[2]);
+	khz48 = new Fl_Round_Button(x+10, y+V_STEP*i++, w-20, V_STEP, freqs[2]);
 	khz48->callback(clock_source_cb, (void *)this);
-	khz64 = new Fl_Round_Button(x+15, y+v_step*i++, w-30, v_step, freqs[3]);
+	khz64 = new Fl_Round_Button(x+10, y+V_STEP*i++, w-20, V_STEP, freqs[3]);
 	khz64->callback(clock_source_cb, (void *)this);
-	khz88_2 = new Fl_Round_Button(x+15, y+v_step*i++, w-30, v_step, freqs[4]);
+	khz88_2 = new Fl_Round_Button(x+10, y+V_STEP*i++, w-20, V_STEP, freqs[4]);
 	khz88_2->callback(clock_source_cb, (void *)this);
-	khz96 = new Fl_Round_Button(x+15, y+v_step*i, w-30, v_step, freqs[5]);
+	khz96 = new Fl_Round_Button(x+10, y+V_STEP*i++, w-20, V_STEP, freqs[5]);
 	khz96->callback(clock_source_cb, (void *)this);
+	if (((HC_CardPane *)parent())->type == H9632) {
+	    khz128 = new Fl_Round_Button(x+10, y+V_STEP*i++, w-20, V_STEP, freqs[7]);
+	    khz128->callback(clock_source_cb, (void *)this);
+	    khz128->labelsize(10);
+	    khz128->type(FL_RADIO_BUTTON);
+	    khz176_4 = new Fl_Round_Button(x+10, y+V_STEP*i++, w-20, V_STEP, freqs[8]);
+	    khz176_4->callback(clock_source_cb, (void *)this);
+	    khz176_4->labelsize(10);
+	    khz176_4->type(FL_RADIO_BUTTON);
+	    khz192 = new Fl_Round_Button(x+10, y+V_STEP*i++, w-20, V_STEP, freqs[9]);
+	    khz192->callback(clock_source_cb, (void *)this);	
+	    khz192->labelsize(10);
+	    khz192->type(FL_RADIO_BUTTON);
+	}
 	autosync->labelsize(10);
 	autosync->type(FL_RADIO_BUTTON);
 	khz32->labelsize(10);

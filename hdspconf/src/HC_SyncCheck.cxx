@@ -31,10 +31,10 @@ HC_SyncCheck::HC_SyncCheck(int x, int y, int w, int h):Fl_Widget(x, y, w, h, "Sy
 	wordclock_lock_status = -1;
 	adatsync_lock_status = -1;
 	spdif_lock_status = -1;
-	if (((HC_CardPane *)parent())->type == MULTIFACE) {
-		v_step = (int)(h/4.0f);    
+	if (((HC_CardPane *)parent())->type == Multiface || ((HC_CardPane *)parent())->type == H9632) {
+		adat_name = "ADAT In";
 	} else {
-		v_step = (int)(h/6.0f);
+		adat_name = "ADAT1 In";
 	} 
 	h_step = (int)(w/2.0f);
 	draw_box = Fl::get_boxtype(FL_ENGRAVED_FRAME);
@@ -45,7 +45,6 @@ HC_SyncCheck::HC_SyncCheck(int x, int y, int w, int h):Fl_Widget(x, y, w, h, "Sy
 
 void HC_SyncCheck::draw()
 {
-	int v_pos = v_step;
 	int h_pos = 4;
 	int i = 0;
 	fl_color(FL_BACKGROUND_COLOR);
@@ -53,20 +52,22 @@ void HC_SyncCheck::draw()
 	draw_box(x(), y(), w(), h(), FL_WHITE);
 	fl_color(FL_BLACK);
 	fl_font(FL_HELVETICA, 10);
-	fl_draw("ADAT1 In", x()+h_pos, y()+v_pos*i, h_step, v_step, FL_ALIGN_LEFT);
-	fl_draw(lock_status[adat1_lock_status], x()+h_pos+h_step, y()+v_pos*i++, h_step-h_pos, v_step, FL_ALIGN_CENTER);
-	if (((HC_CardPane *)parent())->type != MULTIFACE) {
-		fl_draw("ADAT2 In", x()+h_pos, y()+v_pos*i, h_step, v_step, FL_ALIGN_LEFT);
-		fl_draw(lock_status[adat2_lock_status], x()+h_pos+h_step, y()+v_pos*i++, h_step-h_pos, v_step, FL_ALIGN_CENTER);
-		fl_draw("ADAT3 In", x()+h_pos, y()+v_pos*i, h_step, v_step, FL_ALIGN_LEFT);
-		fl_draw(lock_status[adat3_lock_status], x()+h_pos+h_step, y()+v_pos*i++, h_step-h_pos, v_step, FL_ALIGN_CENTER);
+	fl_draw(adat_name, x()+h_pos, y()+V_STEP*i, h_step, V_STEP, FL_ALIGN_LEFT);
+	fl_draw(lock_status[adat1_lock_status], x()+h_pos+h_step, y()+V_STEP*i++, h_step-h_pos, V_STEP, FL_ALIGN_CENTER);
+	if (((HC_CardPane *)parent())->type == Digiface || ((HC_CardPane *)parent())->type == H9652) {
+		fl_draw("ADAT2 In", x()+h_pos, y()+V_STEP*i, h_step, V_STEP, FL_ALIGN_LEFT);
+		fl_draw(lock_status[adat2_lock_status], x()+h_pos+h_step, y()+V_STEP*i++, h_step-h_pos, V_STEP, FL_ALIGN_CENTER);
+		fl_draw("ADAT3 In", x()+h_pos, y()+V_STEP*i, h_step, V_STEP, FL_ALIGN_LEFT);
+		fl_draw(lock_status[adat3_lock_status], x()+h_pos+h_step, y()+V_STEP*i++, h_step-h_pos, V_STEP, FL_ALIGN_CENTER);
 	}
-	fl_draw("SPDIF In", x()+h_pos, y()+v_pos*i, h_step, v_step, FL_ALIGN_LEFT);
-	fl_draw(lock_status[spdif_lock_status], x()+h_pos+h_step, y()+v_pos*i++, h_step-h_pos, v_step, FL_ALIGN_CENTER);
-	fl_draw("WordClock", x()+h_pos, y()+v_pos*i, h_step, v_step, FL_ALIGN_LEFT);
-	fl_draw(lock_status[wordclock_lock_status], x()+h_pos+h_step, y()+v_pos*i++, h_step-h_pos, v_step, FL_ALIGN_CENTER);
-	fl_draw("ADAT Sync", x()+h_pos, y()+v_pos*i, h_step, v_step, FL_ALIGN_LEFT);
-	fl_draw(lock_status[adatsync_lock_status], x()+h_pos+h_step, y()+v_pos*i, h_step-h_pos, v_step, FL_ALIGN_CENTER);
+	fl_draw("SPDIF In", x()+h_pos, y()+V_STEP*i, h_step, V_STEP, FL_ALIGN_LEFT);
+	fl_draw(lock_status[spdif_lock_status], x()+h_pos+h_step, y()+V_STEP*i++, h_step-h_pos, V_STEP, FL_ALIGN_CENTER);
+	fl_draw("WordClock", x()+h_pos, y()+V_STEP*i, h_step, V_STEP, FL_ALIGN_LEFT);
+	fl_draw(lock_status[wordclock_lock_status], x()+h_pos+h_step, y()+V_STEP*i++, h_step-h_pos, V_STEP, FL_ALIGN_CENTER);
+	if (((HC_CardPane *)parent())->type != H9632) {
+	    fl_draw("ADAT Sync", x()+h_pos, y()+V_STEP*i, h_step, V_STEP, FL_ALIGN_LEFT);
+	    fl_draw(lock_status[adatsync_lock_status], x()+h_pos+h_step, y()+V_STEP*i, h_step-h_pos, V_STEP, FL_ALIGN_CENTER);
+	}
 }
 
 void HC_SyncCheck::setSpdifStatus(unsigned char s)

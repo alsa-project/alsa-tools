@@ -31,25 +31,35 @@
 #include <FL/Fl_Tabs.H>
 #include "HC_CardPane.h"
 #include "HC_XpmRenderer.h"
+#include "pixmaps.h"
 #include "HC_AboutText.h"
 #include "defines.h"
 
-#include "../pixmaps/rme.xpm"
-#include "../pixmaps/alsalogo.xpm"
-#include "../pixmaps/lad_banner.xpm"
+//#define GUI_TEST
 
 class HC_CardPane;
 class HC_XpmRenderer;
 class HC_AboutText;
 
-char *freqs[7] = {
+char *card_names[5] = {
+    "Digiface",
+    "Multiface",
+    "HDSP9652",
+    "HDSP9632",
+    "Undefined",
+};
+
+char *freqs[10] = {
     "32.0 kHz",
     "44.1 kHz",
     "48.0 kHz",
     "64.0 kHz",
     "88.2 kHz",
     "96.0 kHz",
-    "-----"
+    "-----",
+    "128.0 kHz",
+    "176.4 kHz",
+    "192.0 kHz",
 };
 
 char *ref[7] = {
@@ -101,8 +111,10 @@ static void refresh_cb(void *arg)
 	pane->sync_check->setAdat1Status(config_info.adat_sync_check[0]);
 	pane->sync_check->setSpdifStatus(config_info.spdif_sync_check);
 	pane->sync_check->setWCStatus(config_info.wordclock_sync_check);
-	pane->sync_check->setAdatSyncStatus(config_info.adatsync_sync_check);
-	if (pane->type != MULTIFACE) {
+	if (pane->type != H9632) {
+	    pane->sync_check->setAdatSyncStatus(config_info.adatsync_sync_check);
+	}
+	if (pane->type == Digiface || pane->type == H9652) {
 	    pane->sync_check->setAdat2Status(config_info.adat_sync_check[1]);
 	    pane->sync_check->setAdat3Status(config_info.adat_sync_check[2]);
 	}
@@ -118,6 +130,15 @@ static void refresh_cb(void *arg)
 	pane->autosync_ref->setFreq(config_info.autosync_sample_rate);
 	pane->system_clock->setMode(config_info.system_clock_mode);
 	pane->system_clock->setFreq(config_info.system_sample_rate);
+	if (pane->type == H9632) {
+	    pane->input_level->setInputLevel(config_info.ad_gain);
+	    pane->output_level->setOutputLevel(config_info.da_gain);
+	    pane->phones->setPhones(config_info.phone_gain);
+	    pane->breakout_cable->setXlr(config_info.xlr_breakout_cable);
+	}
+	if (pane->type == H9632 || pane->type == H9652) {
+	    pane->aeb->setAdatInternal(config_info.analog_extension_board);
+	}
     }
 
     Fl::add_timeout(0.3, refresh_cb, arg);
@@ -136,7 +157,7 @@ int main(int argc, char **argv)
     Fl_Group  *about_pane;
     char *name;
     int card;
-    int hdsp_cards[4];
+    HDSP_IO_Type hdsp_cards[4];
     int alsa_index[4];
     snd_ctl_t *handle;
     snd_ctl_card_info_t *info;
@@ -146,8 +167,22 @@ int main(int argc, char **argv)
     snd_ctl_card_info_alloca(&info);
     snd_pcm_info_alloca(&pcminfo);    
     card = -1;
-    printf("HDSPConf %s\n", VERSION);
+    printf("\nHDSPConf %s - Copyright (C) 2003 Thomas Charbonnel <thomas@undata.org>\n", VERSION);
+    printf("This program comes WITH ABSOLUTELY NO WARRANTY\n");
+    printf("HDSPConf is free software, see the file copying for details\n\n");
     printf("Looking for HDSP cards :\n");
+
+#ifdef GUI_TEST
+    hdsp_cards[0] = Digiface;
+    alsa_index[0] = 0;
+    hdsp_cards[1] = H9652;
+    alsa_index[1] = 1;
+    hdsp_cards[2] = Multiface;
+    alsa_index[2] = 2;
+    hdsp_cards[3] = H9632;
+    alsa_index[3] = 3;
+    cards = 4;
+#else
     while (snd_card_next(&card) >= 0 && cards < 4) {
 	if (card < 0) {
 	    break;
@@ -156,24 +191,30 @@ int main(int argc, char **argv)
 	    printf("Card %d : %s\n", card, name);
 	    if (!strncmp(name, "RME Hammerfall DSP + Multiface", 30)) {
 		printf("Multiface found !\n");
-		hdsp_cards[cards] = MULTIFACE;
+		hdsp_cards[cards] = Multiface;
 		alsa_index[cards] = card;
 		cards++;
 	    } else if (!strncmp(name, "RME Hammerfall DSP + Digiface", 29)) {
 		printf("Digiface found !\n");
-		hdsp_cards[cards] = DIGIFACE;
+		hdsp_cards[cards] = Digiface;
 		alsa_index[cards] = card;
 		cards++;
 	    } else if (!strncmp(name, "RME Hammerfall HDSP 9652", 24)) {
 		printf("HDSP 9652 found !\n");
-		hdsp_cards[cards] = HDSP9652;
+		hdsp_cards[cards] = H9652;
 		alsa_index[cards] = card;
 		cards++;
+	    } else if (!strncmp(name, "RME Hammerfall HDSP 9632", 24)) {
+		printf("HDSP 9632 found !\n");
+		hdsp_cards[cards] = H9632;
+		alsa_index[cards] = card;
+		cards++;	
 	    } else if (!strncmp(name, "RME Hammerfall DSP", 18)) {
-		printf("Uninitialized HDSP card found. Use hdsploader to upload firmware.\n");
+		printf("Uninitialized HDSP card found.\nUse hdsploader to upload configuration data to the card.\n");
 	    }
 	}
     }
+#endif
     if (!cards) {
 	printf("No Hammerfall DSP card found.\n");
 	exit(1);
@@ -187,15 +228,17 @@ int main(int argc, char **argv)
 	    card_panes[i] = new HC_CardPane(alsa_index[i], i, hdsp_cards[i]);
 	    tabs->add((Fl_Group *)card_panes[i]);
     }
-    about_pane = new Fl_Group(10, 30, 360, 360, "About");
+    about_pane = new Fl_Group(10, 30, 480, 360, "About");
     about_pane->labelsize(10);
-    about_text = new HC_AboutText(20, 40, 340, 210); 
-    rme_logo = new HC_XpmRenderer(20, 263, 113, 35, rme_xpm);
-    alsa_logo = new HC_XpmRenderer(170, 255, 50, 50, alsalogo_xpm);
-    lad_banner = new HC_XpmRenderer(245, 260, 113, 39, lad_banner_xpm);
+    about_text = new HC_AboutText(80, 70, 440, 210); 
+    rme_logo = new HC_XpmRenderer(60, 328, 113, 35, rme_xpm);
+    alsa_logo = new HC_XpmRenderer(230, 320, 50, 50, alsalogo_xpm);
+    lad_banner = new HC_XpmRenderer(325, 325, 113, 39, lad_banner_xpm);
     about_pane->end();
     tabs->add(about_pane);
+#ifndef GUI_TEST
     refresh_cb((void *)tabs);
+#endif
     window->show(argc, argv);
     return Fl::run();    
 }

@@ -21,7 +21,7 @@
 #pragma implementation
 #include "HC_SystemClock.h"
 
-extern char *freqs[7];
+extern char *freqs[10];
 
 HC_SystemClock::HC_SystemClock(int x, int y, int w, int h):Fl_Widget(x, y, w, h, "System Clock")
 {
@@ -76,6 +76,15 @@ void HC_SystemClock::setFreq(int f)
 	break;
     case 96000:
 	freq = 5;
+	break;
+    case 128000:
+	freq = 7;
+	break;
+    case 176400:
+	freq = 8;
+	break;
+    case 192000:
+	freq = 9;
 	break;
     default:
 	freq = 6;

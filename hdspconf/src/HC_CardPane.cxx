@@ -21,26 +21,75 @@
 #pragma implementation
 #include "HC_CardPane.h"
 
-HC_CardPane::HC_CardPane(int alsa_idx, int idx, int t):Fl_Group(PANE_X, PANE_Y, PANE_W, PANE_H)
+extern char *card_names[5];
+
+HC_CardPane::HC_CardPane(int alsa_idx, int idx, HDSP_IO_Type t):Fl_Group(PANE_X, PANE_Y, PANE_W, PANE_H)
 {
     alsa_index = alsa_idx;
     index = idx;
     type = t;
-    snprintf(name, 7, "Card %d", index+1);
+    snprintf(name, 19, "Card %d (%s)", index+1, card_names[t]);
     label(name);
     labelsize(10);
 
-    sync_ref = new HC_PrefSyncRef(x()+6, y()+20, 112, 120);
-    sync_check = new HC_SyncCheck(x()+6, y()+156, 112, 100);
+    if (type == Multiface) {
+	clock_source = new HC_ClockSource(x()+9, y()+20, 148, V_STEP*7);
+	sync_check = new HC_SyncCheck(x()+9, y()+40+V_STEP*7, 148, V_STEP*4);
 
-    spdif_in = new HC_SpdifIn(x()+124, y()+20, 112, 60);
-    spdif_out = new HC_SpdifOut(x()+124, y()+96, 112, 80);
-    spdif_freq = new HC_SpdifFreq(x()+124, y()+192, 112, 20);
+	spdif_in = new HC_SpdifIn(x()+166, y()+20, 148, V_STEP*3);
+	spdif_out = new HC_SpdifOut(x()+166, y()+40+V_STEP*3, 148, V_STEP*4);
+	spdif_freq = new HC_SpdifFreq(x()+166, y()+60+V_STEP*7, 148, V_STEP);
+	    
+	sync_ref = new HC_PrefSyncRef(x()+323, y()+20, 148, V_STEP*4);
+	autosync_ref = new HC_AutoSyncRef(x()+323, y()+40+V_STEP*4, 148, V_STEP*2);
+	system_clock = new HC_SystemClock(x()+323, y()+60+V_STEP*6, 148, V_STEP*2);
 
-    clock_source = new HC_ClockSource(x()+242, y()+20, 112, 140);
-    autosync_ref = new HC_AutoSyncRef(x()+242, y()+176, 112, 40);
-    system_clock = new HC_SystemClock(x()+242, y()+232, 112, 40);
+    } else if (type == Digiface) {
+    
+	clock_source = new HC_ClockSource(x()+9, y()+20, 148, V_STEP*7);
+	sync_check = new HC_SyncCheck(x()+9, y()+40+V_STEP*7, 148, V_STEP*6);
 
+	spdif_in = new HC_SpdifIn(x()+166, y()+20, 148, V_STEP*3);
+	spdif_out = new HC_SpdifOut(x()+166, y()+40+V_STEP*3, 148, V_STEP*4);
+	spdif_freq = new HC_SpdifFreq(x()+166, y()+60+V_STEP*7, 148, V_STEP);
+	    
+	sync_ref = new HC_PrefSyncRef(x()+323, y()+20, 148, V_STEP*6);
+	autosync_ref = new HC_AutoSyncRef(x()+323, y()+40+V_STEP*6, 148, V_STEP*2);
+	system_clock = new HC_SystemClock(x()+323, y()+60+V_STEP*8, 148, V_STEP*2);
+
+    } else if (type == H9652) {
+
+	clock_source = new HC_ClockSource(x()+9, y()+20, 148, V_STEP*7);
+	sync_check = new HC_SyncCheck(x()+9, y()+40+V_STEP*7, 148, V_STEP*6);
+
+	spdif_in = new HC_SpdifIn(x()+166, y()+20, 148, V_STEP*3);
+	spdif_out = new HC_SpdifOut(x()+166, y()+40+V_STEP*3, 148, V_STEP*4);
+	spdif_freq = new HC_SpdifFreq(x()+166, y()+60+V_STEP*7, 148, V_STEP);
+	    
+	aeb = new HC_Aeb(x()+323, y()+20, 148, V_STEP);
+	sync_ref = new HC_PrefSyncRef(x()+323, y()+40+V_STEP, 148, V_STEP*6);
+	autosync_ref = new HC_AutoSyncRef(x()+323, y()+60+V_STEP*7, 148, V_STEP*2);
+	system_clock = new HC_SystemClock(x()+323, y()+80+V_STEP*9, 148, V_STEP*2);
+
+    } else if (type == H9632) {
+	clock_source = new HC_ClockSource(x()+8, y()+20, 110, V_STEP*10);
+	sync_check = new HC_SyncCheck(x()+8, y()+40+V_STEP*10, 110, V_STEP*3);
+
+	spdif_in = new HC_SpdifIn(x()+126, y()+20, 110, V_STEP*4);
+	spdif_out = new HC_SpdifOut(x()+126, y()+40+V_STEP*4, 110, V_STEP*4);
+	spdif_freq = new HC_SpdifFreq(x()+126, y()+60+V_STEP*8, 110, V_STEP);
+	    
+	aeb = new HC_Aeb(x()+244, y()+20, 110, V_STEP);
+	sync_ref = new HC_PrefSyncRef(x()+244, y()+40+V_STEP, 110, V_STEP*3);
+	autosync_ref = new HC_AutoSyncRef(x()+244, y()+60+V_STEP*4, 110, V_STEP*2);
+	system_clock = new HC_SystemClock(x()+244, y()+80+V_STEP*6, 110, V_STEP*2);
+    
+	breakout_cable = new HC_BreakoutCable(x()+362, y()+20, 110, V_STEP);
+	input_level = new HC_InputLevel(x()+362, y()+40+V_STEP, 110, V_STEP*3);
+	output_level = new HC_OutputLevel(x()+362, y()+60+V_STEP*4, 110, V_STEP*3);
+	phones = new HC_Phones(x()+362, y()+80+V_STEP*7, 110, V_STEP*3);
+	
+    }
     end();
 }
 

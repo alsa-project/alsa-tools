@@ -36,7 +36,6 @@ void upload_firmware(int card)
     snd_hwdep_info_t *info;
     char card_name[6];
     hdsp_version_t version;
-    unsigned long *fw;
     
     hdsp_firmware_t firmware;
     hdsp_config_info_t config_info;
@@ -60,16 +59,16 @@ void upload_firmware(int card)
     switch (version.io_type) {
     case Multiface:
 	if (version.firmware_rev == 0xa) {
-	    fw = multiface_firmware;
+	    firmware.firmware_data = multiface_firmware;
 	} else {
-	    fw = multiface_firmware_rev11;
+	    firmware.firmware_data = multiface_firmware_rev11;
 	}
 	break;
     case Digiface:
 	if (version.firmware_rev == 0xa) {
-	    fw = digiface_firmware;
+	    firmware.firmware_data = digiface_firmware;
 	} else {
-	    fw = digiface_firmware_rev11;
+	    firmware.firmware_data = digiface_firmware_rev11;
 	}
 	break;
     default:
@@ -77,8 +76,6 @@ void upload_firmware(int card)
 	snd_hwdep_close(hw);
 	return;
     }	
-    
-    firmware.firmware_data = fw;
     
     if ((err = snd_hwdep_ioctl(hw, SNDRV_HDSP_IOCTL_UPLOAD_FIRMWARE, &firmware)) < 0) {
 	fprintf(stderr, "Hwdep ioctl error on card %s : %s.\n", card_name, snd_strerror(err));

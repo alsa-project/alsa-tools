@@ -21,7 +21,7 @@
 #pragma implementation
 #include "HC_SpdifFreq.h"
 
-extern char *freqs[7];
+extern char *freqs[10];
 
 HC_SpdifFreq::HC_SpdifFreq(int x, int y, int w, int h):Fl_Widget(x, y, w, h, "SPDIF Freq.")
 {
@@ -63,6 +63,15 @@ void HC_SpdifFreq::setFreq(int f)
 	    break;
 	case 96000:
 	    freq = 5;
+	    break;
+	case 128000:
+	    freq = 7;
+	    break;
+	case 176400:
+	    freq = 8;
+	    break;
+	case 192000:
+	    freq = 9;
 	    break;
 	default:
 	    freq = 6;
