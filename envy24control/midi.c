@@ -55,6 +55,7 @@ int midi_close()
 static void do_controller(int c, int v)
 {
   snd_seq_event_t ev;
+  if(!seq) return;
   snd_seq_ev_clear(&ev);
   snd_seq_ev_set_source(&ev, port);
   snd_seq_ev_set_subs(&ev);
