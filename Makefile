@@ -1,6 +1,7 @@
 VERSION = 0.9.4
 TOP = .
-SUBDIRS = ac3dec as10k1 envy24control sb16_csp seq sscape_ctl vxloader hdsploader
+SUBDIRS = ac3dec as10k1 envy24control hdsploader hdspconf \
+	rmedigicontrol sb16_csp seq sscape_ctl vxloader
 
 all:
 	@for i in $(SUBDIRS); do cd $(TOP)/$$i; ./cvscompile; cd ..; make -C $$i; done
