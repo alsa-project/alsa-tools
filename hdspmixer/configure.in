@@ -51,7 +51,7 @@ fi
 
 AC_PATH_PROG(FLTK_CONFIG, fltk-config, no)
 if test "$FLTK_CONFIG" = "no"; then
-  AC_MSG_ERROR(no fltk-config is found)
+  AC_MSG_WARN(no fltk-config is found)
 fi
 LIBS="-s `fltk-config --ldflags` -lasound"
 CXXFLAGS="`fltk-config --cxxflags` -fno-exceptions $ALSA_CFLAGS"
