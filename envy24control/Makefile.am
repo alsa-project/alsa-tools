@@ -4,7 +4,7 @@ man_MANS = envy24control.1
 envy24control_SOURCES = envy24control.c envy24control.h levelmeters.c \
                         mixer.c patchbay.c hardware.c driverevents.c volume.c
 envy24control_LDFLAGS = @ENVY24CONTROL_LIBS@
-EXTRA_DIST = cvscompile envy24control.1 depcomp
+EXTRA_DIST = envy24control.1 depcomp configure.in-gtk2
 AUTOMAKE_OPTIONS = foreign
 
 alsa-dist: distdir
