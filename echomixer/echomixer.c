@@ -104,6 +104,7 @@ int dmodeVal, clocksrcVal, spdifmodeVal;
 int VUwidth, VUheight, Mixwidth, Mixheight;
 
 #define DONT_DRAW (ECHOGAIN_MUTED-1)
+#define DONT_CHANGE (1<<31)
 #define NOPOS 999999
 struct geometry {
   int st;		// window status: 0 = hidden ; 1 = visible ; NOPOS = no stored setting
@@ -188,7 +189,7 @@ struct VolumeControl {
 
 GtkWidget *p4dbuOut[ECHO_MAXAUDIOOUTPUTS], *p4dbuIn[ECHO_MAXAUDIOINPUTS];	// +4dBu/-10dBV toggles
 GtkWidget *clocksrc_menuitem[ECHO_CLOCKS];
-GtkWidget *dmodeOpt, *clocksrcOpt, *spdifmodeOpt, *phantomToggle;
+GtkWidget *dmodeOpt, *clocksrcOpt, *spdifmodeOpt, *phantomChkbutton;
 GtkWidget *window, *Mainwindow, *Miscwindow, *LVwindow, *VUwindow, *GMwindow;
 GtkWidget *VUdarea, *Mixdarea;
 gint VUtimer, Mixtimer, clocksrctimer;
@@ -447,7 +448,7 @@ void InitPhantomPowerGUI(int numid) {
   snd_ctl_elem_value_set_id(control, id);
   if ((err=snd_ctl_elem_read(ctlhandle, control))<0)
     printf("Control %s element read error: %s\n", card, snd_strerror(err));
-  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(phantomToggle), snd_ctl_elem_value_get_integer(control, 0));
+  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(phantomChkbutton), snd_ctl_elem_value_get_integer(control, 0));
 }
 
 
@@ -2142,20 +2143,23 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
   }
 
 
+  // Switches
   if (phantomId) {
-    // Phantom power switch
-    frame=gtk_frame_new("Phantom power");
+    frame=gtk_frame_new("Switches");
     gtk_widget_show(frame);
     gtk_box_pack_start(GTK_BOX(mainbox), frame, TRUE, FALSE, 0);
-    hbox=gtk_hbox_new(FALSE, 0);
+    hbox=gtk_vbox_new(FALSE, 0);
     gtk_widget_show(hbox);
     gtk_container_add(GTK_CONTAINER(frame), hbox);
 
-    phantomToggle=gtk_toggle_button_new_with_label("On");
-    gtk_widget_show(phantomToggle);
-    gtk_box_pack_start(GTK_BOX(hbox), phantomToggle, TRUE, FALSE, 0);
-    gtk_signal_connect(GTK_OBJECT(phantomToggle), "toggled", PhantomPower_toggled, (gpointer)0);
-    InitPhantomPowerGUI(phantomId);
+    if (phantomId) {
+      // Phantom power switch
+      phantomChkbutton=gtk_check_button_new_with_label("Phantom power");
+      gtk_widget_show(phantomChkbutton);
+      gtk_box_pack_start(GTK_BOX(hbox), phantomChkbutton, TRUE, FALSE, 0);
+      gtk_signal_connect(GTK_OBJECT(phantomChkbutton), "toggled", PhantomPower_toggled, NULL);
+      InitPhantomPowerGUI(phantomId);
+    }
   }
 
 
