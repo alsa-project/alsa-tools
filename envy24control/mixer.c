@@ -157,7 +157,7 @@ void mixer_postinit(void)
 
 	for (stream = 1; stream <= output_channels; stream++)
 		mixer_update_stream(stream, 1, 1);
-	for (stream = 11; stream <= input_channels + 8; stream++)
+	for (stream = 11; stream <= input_channels + 10; stream++)
 		mixer_update_stream(stream, 1, 1);
 	for (stream = 19; stream <= spdif_channels + 18; stream++)
 		mixer_update_stream(stream, 1, 1);

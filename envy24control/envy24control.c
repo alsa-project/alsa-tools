@@ -1680,14 +1680,14 @@ int main(int argc, char **argv)
         gtk_init(&argc, &argv);
 
 	name = "hw:0";
-	input_channels = 8;
-	output_channels = 10;
-	spdif_channels = 2;
+	input_channels = MAX_INPUT_CHANNELS;
+	output_channels = MAX_OUTPUT_CHANNELS;
+	spdif_channels = MAX_SPDIF_CHANNELS;
 	while ((c = getopt_long(argc, argv, "D:c:i:o:s:", long_options, NULL)) != -1) {
 		switch (c) {
 		case 'c':
 			i = atoi(optarg);
-			if (i < 0 || i >= 8) {
+			if (i < 0 || i >= MAX_CARD_NUMBERS) {
 				fprintf(stderr, "envy24control: invalid card number %d\n", i);
 				exit(1);
 			}
@@ -1699,24 +1699,24 @@ int main(int argc, char **argv)
 			break;
 		case 'i':
 			input_channels = atoi(optarg);
-			if (input_channels < 0 || input_channels > 8) {
-				fprintf(stderr, "envy24control: must have 0-8 inputs\n");
+			if (input_channels < 0 || input_channels > MAX_INPUT_CHANNELS) {
+				fprintf(stderr, "envy24control: must have 0-%i inputs\n", MAX_INPUT_CHANNELS);
 				exit(1);
 			}
 			input_channels_set = 1;
 			break;
 		case 'o':
 			output_channels = atoi(optarg);
-			if (output_channels < 0 || output_channels > 10) {
-				fprintf(stderr, "envy24control: must have 0-10 outputs\n");
+			if (output_channels < 0 || output_channels > MAX_OUTPUT_CHANNELS) {
+				fprintf(stderr, "envy24control: must have 0-%i outputs\n", MAX_OUTPUT_CHANNELS);
 				exit(1);
 			output_channels_set = 1;
 			}
 			break;
 		case 's':
 			spdif_channels = atoi(optarg);
-			if (spdif_channels < 0 || spdif_channels > 2) {
-				fprintf(stderr, "envy24control: must have 0-2 spdifs\n");
+			if (spdif_channels < 0 || spdif_channels > MAX_SPDIF_CHANNELS) {
+				fprintf(stderr, "envy24control: must have 0-%i spdifs\n", MAX_SPDIF_CHANNELS);
 				exit(1);
 			}
 			break;

@@ -25,6 +25,11 @@
 /* Hoontech */
 #define ICE1712_SUBDEVICE_STDSP24       0x12141217      /* Hoontech SoundTrack Audio DSP 24 */
 
+#define MAX_CARD_NUMBERS	8
+#define MAX_INPUT_CHANNELS	8
+#define MAX_OUTPUT_CHANNELS	8
+#define MAX_SPDIF_CHANNELS	2
+
 typedef struct {
 	unsigned int subvendor;	/* PCI[2c-2f] */
 	unsigned char size;	/* size of EEPROM image in bytes */

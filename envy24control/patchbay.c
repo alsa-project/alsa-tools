@@ -25,7 +25,7 @@
 #define toggle_set(widget, state) \
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), state);
 
-static int stream_active[10];
+static int stream_active[MAX_OUTPUT_CHANNELS + MAX_SPDIF_CHANNELS];
 extern int output_channels, input_channels, spdif_channels;
 
 static int is_active(GtkWidget *widget)
@@ -136,7 +136,7 @@ void patchbay_init(void)
 	snd_ctl_elem_value_alloca(&val);
 	snd_ctl_elem_value_set_interface(val, SND_CTL_ELEM_IFACE_MIXER);
 	snd_ctl_elem_value_set_name(val, ANALOG_PLAYBACK_ROUTE_NAME);
-	memset (stream_active, 0, 10 * sizeof(int));
+	memset (stream_active, 0, (MAX_OUTPUT_CHANNELS + MAX_SPDIF_CHANNELS) * sizeof(int));
 	for (i = 0; i < output_channels; i++) {
 		snd_ctl_elem_value_set_numid(val, 0);
 		snd_ctl_elem_value_set_index(val, i);
