@@ -1,0 +1,83 @@
+This is sbiload - an OPL2/3 FM instrument loader for ALSA sequencer
+
+Written by Uros Bizjak <uros@kss-loka.si>
+Web: http://www.kss-loka.si/~uros/sbiload.html
+
+See the file COPYING for licence details.
+
+Build and install
+-----------------
+
+You should be able to just type 'make'.  All configuration variables
+are in make.conf if you need to change anything.
+
+By default it will install into /usr/local/bin, change INSTDIR in
+make.conf to change this.
+
+Before use
+----------
+
+Please check that the correct sequencer modules are loaded for your
+sound card. You need to load snd-synth-opl3 module.
+
+Usage
+-----
+
+	loadsbi [-p client:port] [-l] [-v level] instfile drumfile
+
+	  -p, --port=client:port  - An ALSA client and port number to use
+	  -4  --opl3              - Four operators (OPL3) file type
+	  -l, --list              - List possible output ports
+	  -v, --verbose=level     - Verbose level
+
+Because you may have more than one sound card and each sound
+card may have several MIDI connections, you have to tell sbiload
+which one to use.
+
+First find out what the possibilities are for your system:
+
+If you run: 
+	
+	sbiload -l
+
+it will give you a list of the devices. On my system I get: 
+	
+	 Port     Client name                       Port name 
+	 64:0     0: MIDI Synth                     MIDI 0-0 
+	 65:0     OPL3 FM Synth                     OPL3 FM Synth port
+
+
+Only OPLx FM Synth port can be used with sbiload. In the example above
+the first one is the external Midi port, and the second is the internal
+four-operator FM synthesizer (OPL3).
+
+If you don't see anything listed then check that the correct ALSA
+modules are loaded as in the section "Before use".
+
+Running sbiload
+---------------
+
+You specify the port to use with the -p option, or by setting the
+environment variable ALSA_OUT_PORT. 
+
+For example to use port 0 on client 65 to load four-operator FM
+instrument
+	
+	sbiload -p 65:0 --opl3 std.o3 drums.o3
+
+or 
+	
+	export ALSA_OUT_PORT=65:0 
+	sbiload --opl3 std.o3 drums.o3 
+
+
+Acknowledgements
+----------------
+
+sbiload includes work from Steve Ratcliffe (pmidi-1.4.1.tar.gz) and
+Jaroslav Kysela (alsamod-1999-09-01.tar.gz).
+
+Where to report bugs and feedback
+---------------------------------
+
+Please report any problems to uros@kss-loka.si
