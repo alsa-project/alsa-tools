@@ -22,7 +22,8 @@ case "$host" in
 i?86-*) AC_DEFINE(__i386__);;
 alpha*-*) AC_DEFINE(__alpha__);;
 sparc-*) AC_DEFINE(__sparc__);;
-ppc-*) AC_DEFINE(__ppc__);;
+ppc-*|powerpc-*) AC_DEFINE(__ppc__);;
+ia64-*) AC_DEFINE(__ia64__);;
 *) echo "$host is not currently supported by ac3dec"; exit 1;;
 esac
 
