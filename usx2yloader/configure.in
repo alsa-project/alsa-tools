@@ -8,4 +8,4 @@ AM_PATH_ALSA(1.0.0)
 CFLAGS="$CFLAGS $ALSA_CFLAGS"
 LDFLAGS="$LDFLAGS $ALSA_LIBS"
 
-AC_OUTPUT(Makefile)
+AC_OUTPUT(Makefile tascam_fpga tascam_fw)

@@ -2,8 +2,11 @@
 
 # load the firmware into Tascam USB devices
 
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+
 FIRMWARE=
-FIRMWAREDIR=/usr/local/share/alsa/firmware
+FIRMWAREDIR=@datadir@/alsa/firmware/usx2yloader
 FLAGS=
 LOADER=/sbin/fxload
 LOADERFIRMWARE=$FIRMWAREDIR/tascam_loader.ihx
@@ -53,3 +56,5 @@ if [ -x /usr/bin/logger ]; then
 	/usr/bin/logger -t $0 "load $FIRMWARE for $PRODUCT to $DEVICE"
 fi
 $LOADER $FLAGS -s $LOADERFIRMWARE -I $FIRMWARE
+
+exit 0
