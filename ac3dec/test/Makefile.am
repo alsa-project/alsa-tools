@@ -23,12 +23,12 @@ imdct_test_LDADD = ../libac3/imdct.o -lm
 #crc_timing_LDADD = ../crc.o -lm
 
 check:
-	#rm -f bitstream_test.out
-	#./bitstream_test > bitstream_test.out
-	#diff bitstream_test.out bitstream_test.out.ref
-	#rm -f imdct_test.out
-	#./imdct_test > imdct_test.out
-	#diff imdct_test.out imdct_test.out.ref
+#	rm -f bitstream_test.out
+#	./bitstream_test > bitstream_test.out
+#	diff bitstream_test.out bitstream_test.out.ref
+#	rm -f imdct_test.out
+#	./imdct_test > imdct_test.out
+#	diff imdct_test.out imdct_test.out.ref
 	rm -f dither_test.out
 	./dither_test > dither_test.out
 	diff dither_test.out dither_test.out.ref
