@@ -6,6 +6,8 @@ bin_PROGRAMS = hdsploader
 
 hdsploader_SOURCES = hdsploader.c
 
+EXTRA_DIST = depcomp
+
 alsa-dist: distdir
 	@rm -rf ../distdir/hdsploader
 	@mkdir -p ../distdir/hdsploader
