@@ -14,7 +14,7 @@
 
 const char default_dir[] = "/sndscape";
 const char scope[] = "scope.cod";
-
+char _microcode[65536];
 
 static void
 show_usage(void)
@@ -122,7 +122,7 @@ load_microcode(const char *fname, struct sscape_microcode *microcode)
   {
     int save_errno;
 
-    err = read(fd, microcode->code, sizeof(microcode->code));
+    err = read(fd, microcode->code, sizeof(_microcode));
     if (err >= 0)
     {
       printf("Microcode: read %d bytes\n", err);
@@ -205,6 +205,7 @@ main(int argc, char *argv[])
     struct sscape_bootblock  boot;
     struct sscape_microcode  microcode;
 
+    microcode.code = &_microcode;
     if ((len = get_directory(directory, filename, sizeof(filename))) == 0)
     {
       fprintf(stderr, "Invalid directory - pathname too long\n");
