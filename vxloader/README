@@ -48,7 +48,7 @@ COPYRIGHT
 =========
 
 Copyright (c) 2003 Takashi Iwai <tiwai@suse.de>
-Distributalbe under GPL.
+Distributable under GPL.
 
-The firmware files included in firmware sub-directory are copyright
+The firmware files included in alsa-firmware package are copyright
 by Digigram S.A.

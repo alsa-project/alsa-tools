@@ -1,9 +1,9 @@
 # # Process this file with automake to produce Makefile.in.
 AUTOMAKE_OPTIONS = 1.3 foreign
 
-AM_CFLAGS = -DDATAPATH=\"$(datadir)/alsa/firmware\"
+MYNAME = vxloader
 
-SUBDIRS = firmware
+AM_CFLAGS = -DDATAPATH=\"$(datadir)/alsa/firmware/$(MYNAME)\"
 
 bin_PROGRAMS = usx2yloader
 
@@ -17,7 +17,7 @@ hotplug_SCRIPTS = $(hotplug_files)
 
 
 alsa-dist: distdir
-	@rm -rf ../distdir/usx2yloader
-	@mkdir -p ../distdir/usx2yloader
-	@cp -RLpv $(distdir)/* ../distdir/usx2yloader
+	@rm -rf ../distdir/$(MYNAME)
+	@mkdir -p ../distdir/$(MYNAME)
+	@cp -RLpv $(distdir)/* ../distdir/$(MYNAME)
 	@rm -rf $(distdir)

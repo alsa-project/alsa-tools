@@ -69,17 +69,17 @@ You also need hotplug to be installed.
 FIRMWAREFILES
 =============
 
-The firmware binaries are installed on /usr/share/alsa/firmware
-(or /usr/local/share/alsa/firmware, depending to the prefix option of
-configure).  There will be *.conf files, which define the dsp image
-files for each different card type.
+The firmware binaries are installed on /usr/share/alsa/firmware/usx2yloader
+(or /usr/local/share/alsa/firmware/usx2yloader, depending to the
+prefix option of configure).  There will be *.conf files, which
+define the dsp image files for each different card type.
 
 
 COPYRIGHT
 =========
 
 Copyright (c) 2003 Karsten Wiese <annabellesgarden@yahoo.de>
-Distributalbe under GPL.
+Distributable under GPL.
 
-The firmware files included in firmware sub-directory are copyright
+The firmware files included in alsa-firmware package are copyright
 by Tascam / TEAC Corporation.
