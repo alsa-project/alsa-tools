@@ -318,7 +318,7 @@ __again:
     snd_instr_header_t *remove;
 
     snd_instr_header_alloca(&remove);
-    snd_instr_header_set_cmd(remove, SNDRV_SEQ_INSTR_FREE_CMD_SINGLE);
+    snd_instr_header_set_cmd(remove, SND_SEQ_INSTR_FREE_CMD_SINGLE);
     snd_instr_header_set_id(remove, snd_instr_header_get_id(put));
 
     /* remove instrument */
