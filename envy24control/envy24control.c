@@ -1696,8 +1696,8 @@ int delete_card_number(GtkWidget *delete_button)
 		return EXIT_SUCCESS;
 
 	card_nr = GTK_ADJUSTMENT (card_number_adj)->value;
-	if ((card_nr < 0) || (card_nr > MAX_CARD_NUMBERS)) {
-		fprintf(stderr, "card number not in [0 ... %d]\n", MAX_CARD_NUMBERS);
+	if ((card_nr < 0) || (card_nr >= MAX_CARD_NUMBERS)) {
+		fprintf(stderr, "card number not in [0 ... %d]\n", MAX_CARD_NUMBERS - 1);
 		gtk_toggle_button_set_state(GTK_TOGGLE_BUTTON (delete_button), FALSE);
 		return -EINVAL;
 	}
@@ -1871,7 +1871,7 @@ static void create_profiles(GtkWidget *main, GtkWidget *notebook, int page)
 	gtk_box_pack_start(GTK_BOX (hbox2), label_card_nr, FALSE, FALSE, 20);
 	gtk_label_set_justify(GTK_LABEL (label_card_nr), GTK_JUSTIFY_LEFT);
 
-	card_button_adj = gtk_adjustment_new(16, 0, MAX_CARD_NUMBERS, 1, 10, 10);
+	card_button_adj = gtk_adjustment_new(16, 0, MAX_CARD_NUMBERS - 1, 1, 10, 10);
 	card_number_adj = card_button_adj;
 	card_button = gtk_spin_button_new(GTK_ADJUSTMENT (card_button_adj), 1, 0);
 	gtk_widget_show(card_button);
@@ -1991,6 +1991,10 @@ int main(int argc, char **argv)
 		case 'D':
 			name = optarg;
 			card_number = atoi(strchr(name, ':') + sizeof(char));
+			if (card_number < 0 || card_number >= MAX_CARD_NUMBERS) {
+				fprintf(stderr, "envy24control: invalid card number %d\n", card_number);
+				exit(1);
+			}
 			break;
 		case 'i':
 			input_channels = atoi(optarg);
