@@ -11,3 +11,6 @@ dsp: $(TARGETS)
 
 clean:
 	rm -f *~ *.emu10k1
+
+distdir:
+	@echo > /dev/null
