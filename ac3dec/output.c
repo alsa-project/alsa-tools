@@ -78,9 +78,10 @@ int output_open(output_t *output)
 					s[2] = 0;
 					s[3] = IEC958_AES3_CON_FS_48000;
 				}
-				sprintf(devstr, "iec958:AES0=0x%x,AES1=0x%x,AES2=0x%x,AES3=0x%x", s[0], s[1], s[2], s[3]);
+				sprintf(devstr, "plug:iec958:{AES0 0x%x AES1 0x%x AES2 0x%x AES3 0x%x", s[0], s[1], s[2], s[3]);
 				if (out_config.card)
-					sprintf(devstr + strlen(devstr), ",CARD=%s", out_config.card);
+					sprintf(devstr + strlen(devstr), " CARD %s", out_config.card);
+				strcat(devstr, "}");
 				format = SND_PCM_FORMAT_S16_LE;
 			} else {
 				if (out_config.card)
@@ -90,14 +91,14 @@ int output_open(output_t *output)
 			}
 			break;
 		case 4:
-			strcpy(devstr, "surround40");
+			strcpy(devstr, "plug:surround40");
 			if (out_config.card)
-				sprintf(devstr + strlen(devstr), ",CARD=%s", out_config.card);
+				sprintf(devstr + strlen(devstr), ":{CARD %s}", out_config.card);
 			break;
 		case 6:
-			strcpy(devstr, "surround51");
+			strcpy(devstr, "plug:surround51");
 			if (out_config.card)
-				sprintf(devstr + strlen(devstr), ",CARD=%s", out_config.card);
+				sprintf(devstr + strlen(devstr), ":{CARD %s}", out_config.card);
 			break;
 		default:
 			fprintf(stderr, "%d channels are not supported\n", output->channels);
