@@ -117,7 +117,6 @@ int HDSPMixerMeter::logToHeight(double db)
 
 void HDSPMixerMeter::update(int peak, int overs, int64 rms)
 {
-    int p;
     double fp, fr, db;
     int over = 0;
     

@@ -46,7 +46,6 @@ int HDSPMixerFader::handle(int e)
     int button3 = Fl::event_button3();
     int shift = Fl::event_shift();
     int ctrl = Fl::event_ctrl();
-    int xpos = Fl::event_x()-x();
     int ypos = Fl::event_y()-y();
     switch (e) {
 	case FL_PUSH:

@@ -47,7 +47,6 @@ void HDSPMixerView::draw()
 
 int HDSPMixerView::handle(int e)
 {
-    int xpos = Fl::event_x()-x();
     int ypos = Fl::event_y()-y();
     switch (e) {
 	case FL_PUSH:

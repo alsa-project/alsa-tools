@@ -53,7 +53,6 @@ void HDSPMixerMaster::draw()
 int HDSPMixerMaster::handle(int e)
 {
     int xpos = Fl::event_x()-x();
-    int ypos = Fl::event_y()-y();
     switch (e) {
 	case FL_PUSH:
 	    if (xpos >= 0 && xpos <= 29) {

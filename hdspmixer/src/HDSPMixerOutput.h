@@ -41,47 +41,6 @@ class HDSPMixerMeter;
 class HDSPMixerOutputData;
 class HDSPMixerWindow;
 
-#ifdef HDSPMIXER_DEFINE_OUTPUT_LABELS
-static char *labels_mf_ss[20] = {
-    "AN 1", "AN 2", "AN 3", "AN 4", "AN 5", "AN 6", "AN 7", "AN 8",
-    "A 1", "A 2", "A 3", "A 4", "A 5", "A 6", "A 7", "A 8",
-    "SP.L", "SP.R", "AN.L", "AN.R"
-};
-
-static char *labels_mf_ds[16] = {
-    "AN 1", "AN 2", "AN 3", "AN 4", "AN 5", "AN 6", "AN 7", "AN 8",
-    "A 1", "A 2", "A 3", "A 4",
-    "SP.L", "SP.R", "AN.L", "AN.R"
-};
-
-static char *labels_df_ss[28] = {
-    "A1 1", "A1 2", "A1 3", "A1 4", "A1 5", "A1 6", "A1 7", "A1 8",
-    "A2 1", "A2 2", "A2 3", "A2 4", "A2 5", "A2 6", "A2 7", "A2 8",
-    "A3 1", "A3 2", "A3 3", "A3 4", "A3 5", "A3 6", "A3 7", "A3 8",
-    "SP.L", "SP.R", "AN.L", "AN.R"
-};
-
-static char *labels_df_ds[16] = {
-    "A1 1", "A1 2", "A1 3", "A1 4",
-    "A2 1", "A2 2", "A2 3", "A2 4",
-    "A3 1", "A3 2", "A3 3", "A3 4",
-    "SP.L", "SP.R", "AN.L", "AN.R"
-};
-
-static char *labels_9632_ss[16] = {
-    "A 1", "A 2", "A 3", "A 4", "A 5", "A 6", "A 7", "A 8",
-    "SP.L", "SP.R", "AN 1", "AN 2", "AN 3", "AN 4", "AN 5", "AN 6"
-};
-
-static char *labels_9632_ds[12] = {
-    "A 1", "A 2", "A 3", "A 4",
-    "SP.L", "SP.R", "AN 1", "AN 2", "AN 3", "AN 4", "AN 5", "AN 6"
-};
-
-static char *labels_9632_qs[8] = {
-    "SP.L", "SP.R", "AN 1", "AN 2", "AN 3", "AN 4", "AN 5", "AN 6"
-};
-#endif
 
 class HDSPMixerOutput:public Fl_Group
 {

@@ -19,8 +19,54 @@
  */
 
 #pragma implementation
-#define HDSPMIXER_DEFINE_SELECTOR_LABELS
 #include "HDSPMixerSelector.h"
+
+    static char *destinations_mf_ss[10] = {
+	"AN 1+2", "AN 3+4", "AN 5+6", "AN 7+8",
+	"A 1+2", "A 3+4", "A 5+6", "A 7+8",
+	"SPDIF", "Analog"
+    };
+    static char *destinations_mf_ds[8] = {
+	"AN 1+2", "AN 3+4", "AN 5+6", "AN 7+8",
+	"A 1+2", "A 3+4",
+        "SPDIF", "Analog"
+    };
+    static char *destinations_df_ss[14] = {
+	"A1 1+2", "A1 3+4", "A1 5+6", "A1 7+8",
+	"A2 1+2", "A2 3+4", "A2 5+6", "A2 7+8",
+	"A3 1+2", "A3 3+4", "A3 5+6", "A3 7+8",
+	"SPDIF", "Analog"
+    };
+    static char *destinations_df_ds[8] = {
+	"A1 1+2", "A1 3+4",
+	"A2 1+2", "A2 3+4",
+	"A3 1+2", "A3 3+4",
+	"SPDIF", "Analog"
+    };
+    static char *destinations_h9652_ss[13] = {
+	"A1 1+2", "A1 3+4", "A1 5+6", "A1 7+8",
+	"A2 1+2", "A2 3+4", "A2 5+6", "A2 7+8",
+	"A3 1+2", "A3 3+4", "A3 5+6", "A3 7+8",
+	"SPDIF"
+    };
+
+    static char *destinations_h9652_ds[7] = {
+	"A1 1+2", "A1 3+4",
+	"A2 1+2", "A2 3+4",
+	"A3 1+2", "A3 3+4",
+	"SPDIF"
+    };
+    static char *destinations_h9632_ss[8] = {
+	"A 1+2", "A 3+4", "A 5+6", "A 7+8",
+	"SPDIF", "AN 1+2", "AN 3+4", "AN 5+6"
+    };
+    static char *destinations_h9632_ds[6] = {
+	"A 1+2", "A 3+4",
+	"SPDIF", "AN 1+2", "AN 3+4", "AN 5+6"    
+    };
+    static char *destinations_h9632_qs[4] = {
+	"SPDIF", "AN 1+2", "AN 3+4", "AN 5+6"    
+    };
 
 HDSPMixerSelector::HDSPMixerSelector(int x, int y, int w, int h):Fl_Menu_(x, y, w, h)
 {
@@ -41,8 +87,6 @@ void HDSPMixerSelector::draw() {
 
 int HDSPMixerSelector::handle(int e) {
     const Fl_Menu_Item *item;
-    int xpos = Fl::event_x()-x();
-    int ypos = Fl::event_y()-y();
     switch(e) {
 	case FL_PUSH:
 	    for (int i = 0; i < max_dest; i++) {

@@ -26,9 +26,6 @@
 #include <stdio.h>
 #include <alsa/asoundlib.h>
 #include <sound/hdsp.h>
-#ifdef HDSPMIXER_DEFINE_MAPPINGS
-#include "mappings.h"
-#endif
 #include "defines.h"
 #include "HDSPMixerWindow.h"
 

@@ -19,8 +19,75 @@
  */
 
 #pragma implementation
-#define HDSPMIXER_DEFINE_MAPPINGS
 #include "HDSPMixerCard.h"
+
+static char channel_map_df_ss[26] = {
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17,
+    18, 19, 20, 21, 22, 23, 24, 25
+};
+
+static char channel_map_mf_ss[26] = {
+    0, 1, 2, 3, 4, 5, 6, 7,
+    16, 17, 18, 19, 20, 21, 22, 23, 
+    24, 25,
+    -1, -1, -1, -1, -1, -1, -1, -1
+};
+
+static char meter_map_ds[26] = {
+    0, 1, 2, 3, 8, 9, 10, 11, 16, 17, 18, 19, 
+    24, 25,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
+};
+
+static char channel_map_ds[26] = {
+    1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 
+    24, 25,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
+};
+
+static char dest_map_mf_ss[10] = {
+    0, 2, 4, 6, 16, 18, 20, 22, 24, 26 
+};
+
+static char dest_map_ds[8] = {
+    0, 2, 8, 10, 16, 18, 24, 26 
+};
+
+static char dest_map_df_ss[14] = {
+    0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26 
+};
+
+static char dest_map_h9652_ss[13] = {
+    0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24 
+};
+
+static char dest_map_h9652_ds[7] = {
+    0, 2, 8, 10, 16, 18, 24 
+};
+
+static char dest_map_h9632_ss[8] = {
+    0, 2, 4, 6, 8, 10, 12, 14
+};
+
+static char dest_map_h9632_ds[6] = {
+    0, 2, 8, 10, 12, 14
+};
+
+static char dest_map_h9632_qs[4] = {
+    8, 10, 12, 14
+};
+
+static char channel_map_h9632_ss[16] = {
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
+};
+
+static char channel_map_h9632_ds[12] = {
+    0, 1, 2, 3, 8, 9, 10, 11, 12, 13, 14, 15
+};
+
+static char channel_map_h9632_qs[8] = {
+    8, 9, 10, 11, 12, 13, 14, 15
+};
 
 static void alsactl_cb(snd_async_handler_t *handler)
 {
@@ -76,12 +143,7 @@ static void alsactl_cb(snd_async_handler_t *handler)
 
 int HDSPMixerCard::getAutosyncSpeed()
 {
-    /*  FIXME : this is over simplistic, there are lots of crooked cases
-	It should always be possible to do what one wants executing the 
-	proper sequence of actions, though.
-    */
-
-    int err, external_rate;
+    int err, rate;
     snd_ctl_elem_value_t *elemval;
     snd_ctl_elem_id_t * elemid;
     snd_ctl_t *handle;
@@ -92,24 +154,22 @@ int HDSPMixerCard::getAutosyncSpeed()
 	return -1; 
     }
     
-    snd_ctl_elem_id_set_name(elemid, "External Rate");
-    snd_ctl_elem_id_set_numid(elemid, 17);
-    snd_ctl_elem_id_set_interface(elemid, SND_CTL_ELEM_IFACE_PCM);
+    snd_ctl_elem_id_set_name(elemid, "System Sample Rate");
+    snd_ctl_elem_id_set_numid(elemid, 16);
+    snd_ctl_elem_id_set_interface(elemid, SND_CTL_ELEM_IFACE_HWDEP);
     snd_ctl_elem_id_set_device(elemid, 0);
     snd_ctl_elem_id_set_subdevice(elemid, 0);
     snd_ctl_elem_id_set_index(elemid, 0);
     snd_ctl_elem_value_set_id(elemval, elemid);
     snd_ctl_elem_read(handle, elemval);
-    external_rate = snd_ctl_elem_value_get_enumerated(elemval, 0);
+    rate = snd_ctl_elem_value_get_integer(elemval, 0);
 
     snd_ctl_close(handle);
 
-    if (external_rate > 2 && external_rate < 6) {
-	return 1;
-    } else if (external_rate > 6) {
+    if (rate > 96000) {
 	return 2;
-    } else if (external_rate <= 2) {
-	return 0;
+    } else if (rate > 48000) {
+	return 1;
     }
     return 0;
 }
@@ -189,7 +249,7 @@ HDSPMixerCard::HDSPMixerCard(HDSP_IO_Type cardtype, int id)
 }
 
 void HDSPMixerCard::getAeb() {
-    int err, i;
+    int err;
     snd_hwdep_t *hw;
     snd_hwdep_info_t *info;
     snd_hwdep_info_alloca(&info);

@@ -43,7 +43,6 @@ int HDSPMixerPan::handle(int e)
     int shift = Fl::event_shift();
     int ctrl = Fl::event_ctrl();
     int xpos = Fl::event_x()-x();
-    int ypos = Fl::event_y()-y();
     switch (e) {
 	case FL_PUSH:
 	    if (xpos > 0 && xpos < 30) {

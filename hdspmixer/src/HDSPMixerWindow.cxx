@@ -533,6 +533,9 @@ void HDSPMixerWindow::restoreDefaults(int card)
 	h9632_an12_submix[2] = 1;
 	num_modes = 3;
 	phones = 0;
+    default:
+	/* should never happen */
+	return;
     }
     for (int preset = 0; preset < 8; ++preset) {
 	for (int speed = 0; speed < num_modes; ++speed) {
@@ -595,8 +598,10 @@ void HDSPMixerWindow::restoreDefaults(int card)
 		}
 	    } else if (preset > 4 && preset < 7) {
 		data[card][speed][preset]->submix_value = maxdest[speed]-phones-1;
-		outputs->strips[chnls[speed]-2]->data[card][speed][preset]->fader_pos = ndb;
-		outputs->strips[chnls[speed]-1]->data[card][speed][preset]->fader_pos = ndb;    
+		if (preset == 5) {
+		    outputs->strips[chnls[speed]-2]->data[card][speed][preset]->fader_pos = ndb;
+		    outputs->strips[chnls[speed]-1]->data[card][speed][preset]->fader_pos = ndb;    
+		}
 	    } else {
 		data[card][speed][preset]->submix = 0;
 	    }
@@ -613,7 +618,7 @@ void HDSPMixerWindow::restoreDefaults(int card)
 
 HDSPMixerWindow::HDSPMixerWindow(int x, int y, int w, int h, const char *label, HDSPMixerCard *hdsp_card1, HDSPMixerCard *hdsp_card2, HDSPMixerCard *hdsp_card3):Fl_Double_Window(x, y, w, h, label)
 {
-    int def, i;
+    int i;
     cards[0] = hdsp_card1;
     cards[1] = hdsp_card2;
     cards[2] = hdsp_card3;
