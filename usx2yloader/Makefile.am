@@ -11,6 +11,11 @@ usx2yloader_SOURCES = usx2yloader.c
 
 EXTRA_DIST = depcomp
 
+hotplug_files = tascam_fw.usermap tascam_fw tascam_fpga
+hotplugdir = /etc/hotplug/usb
+hotplug_SCRIPTS = $(hotplug_files)
+
+
 alsa-dist: distdir
 	@rm -rf ../distdir/usx2yloader
 	@mkdir -p ../distdir/usx2yloader

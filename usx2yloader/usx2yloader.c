@@ -63,15 +63,17 @@ static void error(const char *fmt, ...)
 
 
 /*
- * read a xilinx bitstream file
+ * read a xilinx bitstream file.
+ * NOTE: This interprets somehow differently from the vxloaders read_xilinx_image()!
+ * I took this from rbtload.c of the project usb-midi-fw.sf.net.
  */
 static int read_xilinx_image(snd_hwdep_dsp_image_t *img, const char *fname)
 {
 	FILE *fp;
 	char buf[256];
-	int data, c, idx, length;
+	int data = 0, c = 0, idx = 0, length = 0;
 	char *p;
-	char *imgbuf;
+	char *imgbuf = 0;
 
 	if ((fp = fopen(fname, "r")) == NULL) {
 		fprintf(stderr, PROGNAME ": cannot open %s\n", fname);
@@ -79,10 +81,6 @@ static int read_xilinx_image(snd_hwdep_dsp_image_t *img, const char *fname)
 	}
 	snd_hwdep_dsp_image_set_name(img, fname);
 
-	c = 0;
-	data = 0;
-	idx = 0;
-	length = 0;
 	while (fgets(buf, sizeof(buf), fp)) {
 		if (strncmp(buf, "Bits:", 5) == 0) {
 			for (p = buf + 5; *p && isspace(*p); p++);
@@ -140,15 +138,13 @@ static int read_xilinx_image(snd_hwdep_dsp_image_t *img, const char *fname)
 			}
 		}
 	}
-	if (c)
-		imgbuf[idx++] = data;
-	if (idx != length) {
-		fprintf(stderr,
-			PROGNAME ": length doesn't match: %d != %d\n", idx,
-			length);
+	if (idx != length || 0 == imgbuf) {
+		fprintf(stderr, PROGNAME ": length doesn't match: %d != %d\n", idx, length);
 		fclose(fp);
 		return -EINVAL;
 	}
+	if (c)
+		imgbuf[idx++] = data;
 	snd_hwdep_dsp_image_set_length(img, length);
 	snd_hwdep_dsp_image_set_image(img, imgbuf);
 	fclose(fp);
@@ -223,7 +219,6 @@ static int get_file_name(const char *key, unsigned int idx, char *fname)
 	len = strlen(temp);
 
 	while (fgets(buf, sizeof(buf), fp)) {
-		int prepad;
 		if (strncmp(buf, temp, len))
 			continue;
 
@@ -303,7 +298,7 @@ static int usx2y_boot(const char *devname)
 {
 	snd_hwdep_t *hw;
 	const char *id;
-	int err, is_pcmcia;
+	int err;
 	unsigned int idx, dsps, loaded;
 	snd_hwdep_dsp_status_t *stat;
 

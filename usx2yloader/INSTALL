@@ -1,0 +1,4 @@
+For Installing from CVS do:
+./cvscompile
+make install
+
