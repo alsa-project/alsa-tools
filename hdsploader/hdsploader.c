@@ -83,16 +83,16 @@ void upload_firmware(int card)
     switch (version.io_type) {
     case Multiface:
 	if (version.firmware_rev == 0xa) {
-	    err = read_bin_file(code, DATAPATH "multiface_firmware.bin");
+	    err = read_bin_file(code, DATAPATH "/multiface_firmware.bin");
 	} else {
-	    err = read_bin_file(code, DATAPATH "multiface_firmware_rev11.bin");
+	    err = read_bin_file(code, DATAPATH "/multiface_firmware_rev11.bin");
 	}
 	break;
     case Digiface:
 	if (version.firmware_rev == 0xa) {
-	    err = read_bin_file(code, DATAPATH "digiface_firmware.bin");
+	    err = read_bin_file(code, DATAPATH "/digiface_firmware.bin");
 	} else {
-	    err = read_bin_file(code, DATAPATH "digiface_firmware_rev11.bin");
+	    err = read_bin_file(code, DATAPATH "/digiface_firmware_rev11.bin");
 	}
 	break;
     default:
