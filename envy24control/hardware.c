@@ -66,6 +66,7 @@ void master_clock_update(void)
 			    break;
 		}
 	}
+	internal_clock_status_timeout_callback(NULL);
 	master_clock_status_timeout_callback(NULL);
 }
 
@@ -117,6 +118,29 @@ void internal_clock_toggled(GtkWidget *togglebutton, gpointer data)
 	}
 }
 
+static int is_rate_locked(void)
+{
+	int err;
+	
+	if ((err = snd_ctl_elem_read(ctl, rate_locking)) < 0)
+		g_print("Unable to read rate locking state: %s\n", snd_strerror(err));
+	return snd_ctl_elem_value_get_boolean(rate_locking, 0) ? 1 : 0;
+}
+
+static int is_rate_reset(void)
+{
+	int err;
+	
+	if ((err = snd_ctl_elem_read(ctl, rate_reset)) < 0)
+		g_print("Unable to read rate reset state: %s\n", snd_strerror(err));
+	return snd_ctl_elem_value_get_boolean(rate_reset, 0) ? 1 : 0;
+}
+
+static inline int is_update_needed(void)
+{
+	return (is_rate_locked() || !is_rate_reset());
+}
+
 gint master_clock_status_timeout_callback(gpointer data)
 {
 	snd_ctl_elem_value_t *sw;
@@ -131,6 +155,64 @@ gint master_clock_status_timeout_callback(gpointer data)
 		g_print("Unable to determine word clock status: %s\n", snd_strerror(err));
 	gtk_label_set_text(GTK_LABEL(hw_master_clock_status_label),
 			   snd_ctl_elem_value_get_boolean(sw, 0) ? "Locked" : "No signal");
+	return TRUE;
+}
+
+gint internal_clock_status_timeout_callback(gpointer data)
+{
+	int err, rate, need_update;
+	char *label;
+	
+	if ((err = snd_ctl_elem_read(ctl, internal_clock)) < 0)
+		g_print("Unable to read Internal Clock state: %s\n", snd_strerror(err));
+	if (card_eeprom.subvendor == ICE1712_SUBDEVICE_DELTA1010) {
+		if ((err = snd_ctl_elem_read(ctl, word_clock_sync)) < 0)
+			g_print("Unable to read word clock sync selection: %s\n", snd_strerror(err));
+	}
+	need_update = is_update_needed() ? 1 : 0;
+	if (snd_ctl_elem_value_get_enumerated(internal_clock, 0) == 13) {
+		if (snd_ctl_elem_value_get_boolean(word_clock_sync, 0)) {
+			label = "Word Clock";
+		} else {
+			label = "S/PDIF";
+		}
+	} else {
+//		toggle_set(hw_master_clock_xtal_radio, TRUE);
+		rate = snd_ctl_elem_value_get_enumerated(internal_clock, 0);
+//		g_print("Rate: %d need_update: %d\n", rate, need_update); // for debug
+		switch (rate) {
+		case 0: label = "8000"; break;
+		case 1: label = "9600"; break;
+		case 2: label = "11025"; break;
+		case 3: label = "12000"; break;
+		case 4: label = "16000"; break;
+		case 5: label = "22050";
+			if (need_update)
+			toggle_set(hw_master_clock_xtal_22050, TRUE); break;
+		case 6: label = "24000"; break;
+		case 7: label = "32000";
+			if (need_update)
+			toggle_set(hw_master_clock_xtal_32000, TRUE); break;
+		case 8: label = "44100";
+			if (need_update)
+			toggle_set(hw_master_clock_xtal_44100, TRUE); break;
+		case 9: label = "48000";
+			if (need_update)
+			toggle_set(hw_master_clock_xtal_48000, TRUE); break;
+		case 10: label = "64000"; break;
+		case 11: label = "88200";
+			if (need_update)
+			toggle_set(hw_master_clock_xtal_88200, TRUE); break;
+		case 12: label = "96000";
+			if (need_update)
+			toggle_set(hw_master_clock_xtal_96000, TRUE); break;
+		default:
+			    label = "ERROR";
+			    g_print("Error in rate: %d\n", rate);
+			    break;
+		}
+	}
+	gtk_label_set_text(GTK_LABEL(hw_master_clock_actual_rate_label), label);
 	return TRUE;
 }
 
@@ -182,6 +264,7 @@ void rate_locking_toggled(GtkWidget *togglebutton, gpointer data)
 	}
 	if (!strcmp(what, "locked")) {
 		rate_locking_set(1);
+		internal_clock_status_timeout_callback(NULL);
 	} else {
 		g_print("rate_locking_toggled: %s ???\n", what);
 	}
@@ -193,6 +276,7 @@ void rate_reset_toggled(GtkWidget *togglebutton, gpointer data)
 
 	if (!is_active(togglebutton)) {
 		rate_reset_set(0);
+		internal_clock_status_timeout_callback(NULL);
 		return;
 	}
 	if (!strcmp(what, "reset")) {

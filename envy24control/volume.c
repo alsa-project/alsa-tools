@@ -32,6 +32,7 @@
 #define ADC_SENSE_NAME	"Input Sensitivity Switch"
 
 static int dac_volumes;
+static int dac_max = 127;
 static int adc_volumes;
 static int ipga_volumes;
 static int dac_senses;
@@ -44,6 +45,11 @@ static char *adc_sense_name[4];
 int envy_dac_volumes(void)
 {
 	return dac_volumes;
+}
+
+int envy_dac_max(void)
+{
+	return dac_max;
 }
 
 int envy_adc_volumes(void)
@@ -209,7 +215,7 @@ void dac_volume_adjust(GtkAdjustment *adj, gpointer data)
 	snd_ctl_elem_value_set_name(val, DAC_VOLUME_NAME);
 	snd_ctl_elem_value_set_index(val, idx);
 	snd_ctl_elem_value_set_integer(val, 0, ival);
-	sprintf(text, "%03i %s", ival, ival == 127 ? "consumer" : (ival == 111 ? "-10dB" : ""));
+	sprintf(text, "%03i", ival);
 	gtk_label_set_text(av_dac_volume_label[idx], text);
 	if ((err = snd_ctl_elem_write(ctl, val)) < 0)
 		g_print("Unable to write dac volume: %s\n", snd_strerror(err));
@@ -227,7 +233,7 @@ void adc_volume_adjust(GtkAdjustment *adj, gpointer data)
 	snd_ctl_elem_value_set_name(val, ADC_VOLUME_NAME);
 	snd_ctl_elem_value_set_index(val, idx);
 	snd_ctl_elem_value_set_integer(val, 0, ival);
-	sprintf(text, "%03i %s", ival, ival == 127 ? "consumer" : (ival == 111 ? "-10dB" : ""));
+	sprintf(text, "%03i", ival);
 	gtk_label_set_text(av_adc_volume_label[idx], text);
 	if ((err = snd_ctl_elem_write(ctl, val)) < 0)
 		g_print("Unable to write adc volume: %s\n", snd_strerror(err));
@@ -245,7 +251,7 @@ void ipga_volume_adjust(GtkAdjustment *adj, gpointer data)
 	snd_ctl_elem_value_set_name(val, IPGA_VOLUME_NAME);
 	snd_ctl_elem_value_set_index(val, idx);
 	snd_ctl_elem_value_set_integer(val, 0, ival);
-	sprintf(text, "%03i %s", ival, ival == 0 ? "0dB" : (ival == 36 ? "+18dB" : ""));
+	sprintf(text, "%03i", ival);
 	gtk_label_set_text(av_ipga_volume_label[idx], text);
 	if ((err = snd_ctl_elem_write(ctl, val)) < 0)
 		g_print("Unable to write ipga volume: %s\n", snd_strerror(err));
@@ -300,6 +306,7 @@ void analog_volume_init(void)
 		snd_ctl_elem_info_set_index(info, i);
 		if (snd_ctl_elem_info(ctl, info) < 0)
 			break;
+		dac_max = snd_ctl_elem_info_get_max(info);
 	}
 	dac_volumes = i;
 	snd_ctl_elem_info_set_name(info, DAC_SENSE_NAME);

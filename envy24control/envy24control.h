@@ -68,6 +68,7 @@ extern GtkWidget *hw_master_clock_xtal_96000;
 extern GtkWidget *hw_master_clock_spdif_radio;
 extern GtkWidget *hw_master_clock_word_radio;
 extern GtkWidget *hw_master_clock_status_label;
+extern GtkWidget *hw_master_clock_actual_rate_label;
 
 extern GtkWidget *hw_rate_locking_check;
 extern GtkWidget *hw_rate_reset_check;
@@ -137,6 +138,7 @@ void patchbay_postinit(void);
 
 void master_clock_update(void);
 gint master_clock_status_timeout_callback(gpointer data);
+gint internal_clock_status_timeout_callback(gpointer data);
 void internal_clock_toggled(GtkWidget *togglebutton, gpointer data);
 void rate_locking_update(void);
 void rate_locking_toggled(GtkWidget *togglebutton, gpointer data);
@@ -160,6 +162,7 @@ void hardware_postinit(void);
 void analog_volume_init(void);
 void analog_volume_postinit(void);
 int envy_dac_volumes(void);
+int envy_dac_max(void);
 int envy_adc_volumes(void);
 int envy_ipga_volumes(void);
 int envy_dac_senses(void);

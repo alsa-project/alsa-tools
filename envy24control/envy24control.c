@@ -46,6 +46,7 @@ GtkWidget *hw_master_clock_xtal_96000;
 GtkWidget *hw_master_clock_spdif_radio;
 GtkWidget *hw_master_clock_word_radio;
 GtkWidget *hw_master_clock_status_label;
+GtkWidget *hw_master_clock_actual_rate_label;
 
 GtkWidget *hw_clock_state_label;
 GtkWidget *hw_clock_state_locked;
@@ -127,7 +128,7 @@ static void create_mixer_frame(GtkWidget *fixed, int stream)
 	gtk_widget_show(frame);
 	gtk_fixed_put(GTK_FIXED(fixed), frame, 2 + (stream - 1) * 102, 2);
 	gtk_widget_set_uposition(frame, 2 + (stream - 1) * 102, 2);
-	gtk_widget_set_usize(frame, 98, 288);
+	gtk_widget_set_usize(frame, 98, 338);
 	gtk_frame_set_shadow_type(GTK_FRAME(frame), GTK_SHADOW_IN);
 
 	fixed1 = gtk_fixed_new();
@@ -141,7 +142,7 @@ static void create_mixer_frame(GtkWidget *fixed, int stream)
         gtk_widget_show(vscale);
 	gtk_fixed_put(GTK_FIXED(fixed1), vscale, 8, 8);
 	gtk_widget_set_uposition(vscale, 7, 8);
-	gtk_widget_set_usize(vscale, 18, 168);	
+	gtk_widget_set_usize(vscale, 18, 218);	
 	gtk_scale_set_value_pos(GTK_SCALE(vscale), GTK_POS_BOTTOM);
 	gtk_scale_set_digits(GTK_SCALE(vscale), 0);
 	gtk_signal_connect(GTK_OBJECT(adj), "value_changed",
@@ -159,7 +160,7 @@ static void create_mixer_frame(GtkWidget *fixed, int stream)
 	gtk_widget_set_events(drawing, GDK_EXPOSURE_MASK);
 	gtk_fixed_put(GTK_FIXED(fixed1), drawing, 24, 9);
 	gtk_widget_set_uposition(drawing, 24, 9);
-	gtk_widget_set_usize(drawing, 45, 152);	
+	gtk_widget_set_usize(drawing, 45, 202);	
 
 	adj = gtk_adjustment_new(96, 0, 96, 1, 16, 0);
 	mixer_adj[stream-1][1] = adj;
@@ -168,7 +169,7 @@ static void create_mixer_frame(GtkWidget *fixed, int stream)
         gtk_widget_show(vscale);
 	gtk_fixed_put(GTK_FIXED(fixed1), vscale, 70, 8);
 	gtk_widget_set_uposition(vscale, 69, 8);
-	gtk_widget_set_usize(vscale, 18, 168);	
+	gtk_widget_set_usize(vscale, 18, 218);	
 	gtk_scale_set_value_pos(GTK_SCALE(vscale), GTK_POS_BOTTOM);
 	gtk_scale_set_digits(GTK_SCALE(vscale), 0);
 	gtk_signal_connect(GTK_OBJECT(adj), "value_changed",
@@ -176,21 +177,21 @@ static void create_mixer_frame(GtkWidget *fixed, int stream)
 
         label = gtk_label_new("Left");
         gtk_widget_show(label);
-	gtk_fixed_put(GTK_FIXED(fixed1), label, 0, 182);
-	gtk_widget_set_uposition(label, 0, 182);
+	gtk_fixed_put(GTK_FIXED(fixed1), label, 0, 232);
+	gtk_widget_set_uposition(label, 0, 232);
 	gtk_widget_set_usize(label, 41, 16);	
 
         label = gtk_label_new("Right");
         gtk_widget_show(label);
-	gtk_fixed_put(GTK_FIXED(fixed1), label, 45, 182);
-	gtk_widget_set_uposition(label, 45, 182);
+	gtk_fixed_put(GTK_FIXED(fixed1), label, 45, 232);
+	gtk_widget_set_uposition(label, 45, 232);
 	gtk_widget_set_usize(label, 41, 16);
 
 	toggle = gtk_toggle_button_new_with_label("Mute");
 	mixer_mute_toggle[stream-1][0] = toggle;
 	gtk_widget_show(toggle);
-	gtk_fixed_put(GTK_FIXED(fixed1), toggle, 8, 202);
-	gtk_widget_set_uposition(toggle, 8, 202);
+	gtk_fixed_put(GTK_FIXED(fixed1), toggle, 8, 252);
+	gtk_widget_set_uposition(toggle, 8, 252);
 	gtk_widget_set_usize(toggle, 36, 22);	
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(toggle), TRUE);
 	gtk_signal_connect(GTK_OBJECT(toggle), "toggled",
@@ -199,8 +200,8 @@ static void create_mixer_frame(GtkWidget *fixed, int stream)
 	toggle = gtk_toggle_button_new_with_label("Mute");
 	mixer_mute_toggle[stream-1][1] = toggle;
 	gtk_widget_show(toggle);
-	gtk_fixed_put(GTK_FIXED(fixed1), toggle, 48, 202);
-	gtk_widget_set_uposition(toggle, 48, 202);
+	gtk_fixed_put(GTK_FIXED(fixed1), toggle, 48, 252);
+	gtk_widget_set_uposition(toggle, 48, 252);
 	gtk_widget_set_usize(toggle, 36, 22);	
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(toggle), TRUE);
 	gtk_signal_connect(GTK_OBJECT(toggle), "toggled",
@@ -208,15 +209,15 @@ static void create_mixer_frame(GtkWidget *fixed, int stream)
 	
 	hseparator = gtk_hseparator_new();
 	gtk_widget_show(hseparator);
-	gtk_fixed_put(GTK_FIXED(fixed1), hseparator, 0, 222);
-	gtk_widget_set_uposition(hseparator, 0, 222);
+	gtk_fixed_put(GTK_FIXED(fixed1), hseparator, 0, 272);
+	gtk_widget_set_uposition(hseparator, 0, 272);
 	gtk_widget_set_usize(hseparator, 92, 16);
 
 	toggle = gtk_toggle_button_new_with_label("L/R Gang");
 	mixer_stereo_toggle[stream-1] = toggle;
 	gtk_widget_show(toggle);
-	gtk_fixed_put(GTK_FIXED(fixed1), toggle, 3, 235);
-	gtk_widget_set_uposition(toggle, 3, 235);
+	gtk_fixed_put(GTK_FIXED(fixed1), toggle, 3, 285);
+	gtk_widget_set_uposition(toggle, 3, 285);
 	gtk_widget_set_usize(toggle, 85, 32);
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(toggle), TRUE);
 }
@@ -265,31 +266,31 @@ static void create_mixer(GtkWidget *main, GtkWidget *notebook, int page)
 	gtk_widget_show(drawing);
 	gtk_fixed_put(GTK_FIXED(fixed), drawing, 4, 2);
 	gtk_widget_set_uposition(drawing, 4, 2);
-	gtk_widget_set_usize(drawing, 98, 226);	
+	gtk_widget_set_usize(drawing, 98, 276);	
 
         label = gtk_label_new("Left");
         gtk_widget_show(label);
-	gtk_fixed_put(GTK_FIXED(fixed), label, 10, 232);
-	gtk_widget_set_uposition(label, 10, 232);
+	gtk_fixed_put(GTK_FIXED(fixed), label, 10, 282);
+	gtk_widget_set_uposition(label, 10, 282);
 	gtk_widget_set_usize(label, 34, 16);	
 
         label = gtk_label_new("Right");
         gtk_widget_show(label);
-	gtk_fixed_put(GTK_FIXED(fixed), label, 60, 232);
-	gtk_widget_set_uposition(label, 60, 232);
+	gtk_fixed_put(GTK_FIXED(fixed), label, 60, 282);
+	gtk_widget_set_uposition(label, 60, 282);
 	gtk_widget_set_usize(label, 34, 16);
 
 	hseparator = gtk_hseparator_new();
 	gtk_widget_show(hseparator);
-	gtk_fixed_put(GTK_FIXED(fixed), hseparator, 0, 244);
-	gtk_widget_set_uposition(hseparator, 0, 244);
+	gtk_fixed_put(GTK_FIXED(fixed), hseparator, 0, 294);
+	gtk_widget_set_uposition(hseparator, 0, 294);
 	gtk_widget_set_usize(hseparator, 104, 16);
 
 	button = gtk_button_new_with_label("Reset Peaks");
 	mixer_clear_peaks_button = button;
 	gtk_widget_show(button);
-	gtk_fixed_put(GTK_FIXED(fixed), button, 3, 256);
-	gtk_widget_set_uposition(button, 3, 256);
+	gtk_fixed_put(GTK_FIXED(fixed), button, 3, 306);
+	gtk_widget_set_uposition(button, 3, 306);
 	gtk_widget_set_usize(button, 100, 35);	
 	gtk_signal_connect(GTK_OBJECT(button), "clicked",
 			   GTK_SIGNAL_FUNC(level_meters_reset_peaks), NULL);
@@ -349,7 +350,7 @@ static void create_router_frame(GtkWidget *fixed, int stream, int pos)
 	gtk_widget_show(frame);
 	gtk_fixed_put(GTK_FIXED(fixed), frame, 2 + pos * 130, 2);
 	gtk_widget_set_uposition(frame, 2 + pos * 130, 2);
-	gtk_widget_set_usize(frame, 125, 290);
+	gtk_widget_set_usize(frame, 125, 340);
 
 	fixed1 = gtk_fixed_new();
 	gtk_widget_show(fixed1);
@@ -394,8 +395,8 @@ static void create_router_frame(GtkWidget *fixed, int stream, int pos)
 		router_radio[stream-1][2+idx] = radio;
 		group = gtk_radio_button_group(GTK_RADIO_BUTTON(radio));
 		gtk_widget_show(radio);
-		gtk_fixed_put(GTK_FIXED(fixed1), radio, 0, 64 + (idx * 20));
-		gtk_widget_set_uposition(radio, 0, 64 + (idx * 20));
+		gtk_fixed_put(GTK_FIXED(fixed1), radio, 0, 64 + (idx * 25));
+		gtk_widget_set_uposition(radio, 0, 64 + (idx * 25));
 		gtk_widget_set_usize(radio, 120, 24);
 		gtk_signal_connect(GTK_OBJECT(radio), "toggled",
 				   (GtkSignalFunc)patchbay_toggled, (gpointer)((stream << 16) + 2 + idx));
@@ -588,6 +589,43 @@ static void create_rate_state(GtkWidget *fixed)
 
 }
 
+static void create_actual_rate(GtkWidget *fixed)
+{
+	GtkWidget *frame;
+	GtkWidget *fixed1;
+	GtkWidget *viewport;
+	GtkWidget *label;
+	GtkWidget *fixed2;
+
+	frame = gtk_frame_new("Actual Rate");
+	gtk_widget_show(frame);
+	gtk_fixed_put(GTK_FIXED(fixed), frame, 8, 251);
+	gtk_widget_set_uposition(frame, 8, 251);
+	gtk_widget_set_usize(frame, 135, 45);
+
+	fixed1 = gtk_fixed_new();
+	gtk_widget_show(fixed1);
+	gtk_container_add(GTK_CONTAINER(frame), fixed1);	
+
+	viewport = gtk_viewport_new(NULL, NULL);
+	gtk_widget_show(viewport);
+	gtk_fixed_put(GTK_FIXED(fixed1), viewport, 9, 0);
+	gtk_widget_set_uposition(viewport, 9, 0);
+	gtk_widget_set_usize(viewport, 90, 21);
+
+	fixed2 = gtk_fixed_new();
+	gtk_widget_show(fixed2);
+	gtk_container_add(GTK_CONTAINER(viewport), fixed2);	
+
+        label = gtk_label_new("");
+        hw_master_clock_actual_rate_label = label;
+        gtk_widget_show(label);
+	gtk_fixed_put(GTK_FIXED(fixed2), label, 0, 1);
+	gtk_widget_set_uposition(label, 0, 1);
+	gtk_widget_set_usize(label, 86, 16);
+
+}
+
 static void create_volume_change(GtkWidget *fixed)
 {
 	GtkWidget *frame;
@@ -598,8 +636,8 @@ static void create_volume_change(GtkWidget *fixed)
 
 	frame = gtk_frame_new("Volume Change");
 	gtk_widget_show(frame);
-	gtk_fixed_put(GTK_FIXED(fixed), frame, 8, 250);
-	gtk_widget_set_uposition(frame, 8, 250);
+	gtk_fixed_put(GTK_FIXED(fixed), frame, 8, 300);
+	gtk_widget_set_uposition(frame, 8, 300);
 	gtk_widget_set_usize(frame, 135, 58);
 
 	fixed1 = gtk_fixed_new();
@@ -978,7 +1016,7 @@ static void create_spdif_output_settings(GtkWidget *fixed)
 	gtk_widget_show(frame);
 	gtk_fixed_put(GTK_FIXED(fixed), frame, 150, 8);
 	gtk_widget_set_uposition(frame, 150, 8);
-	gtk_widget_set_usize(frame, 580, 300);
+	gtk_widget_set_usize(frame, 580, 350);
 
 	fixed1 = gtk_fixed_new();
 	gtk_widget_show(fixed1);
@@ -1009,7 +1047,7 @@ static void create_spdif_output_settings(GtkWidget *fixed)
 	gtk_widget_show(notebook);
 	gtk_fixed_put(GTK_FIXED(fixed1), notebook, 5, 31);
 	gtk_widget_set_uposition(notebook, 5, 31);
-	gtk_widget_set_usize(notebook, 565, 240);
+	gtk_widget_set_usize(notebook, 565, 290);
 
 	create_spdif_output_settings_profi(notebook, 0);
 	create_spdif_output_settings_consumer(notebook, 1);
@@ -1074,6 +1112,7 @@ static void create_hardware(GtkWidget *main, GtkWidget *notebook, int page)
 
 	create_master_clock(fixed);
 	create_rate_state(fixed);
+	create_actual_rate(fixed);
 	create_volume_change(fixed);
 	create_spdif_output_settings(fixed);
 	create_spdif_input_select(fixed);
@@ -1153,19 +1192,19 @@ static void create_analog_volume(GtkWidget *main, GtkWidget *notebook, int page)
 		gtk_frame_set_shadow_type(GTK_FRAME(frame), GTK_SHADOW_IN);
 		gtk_fixed_put(GTK_FIXED(fixed), frame, 2 + i * 120, 2);
 		gtk_widget_set_uposition(frame, 2 + i * 120, 2);
-		gtk_widget_set_usize(frame, 115, 288);
+		gtk_widget_set_usize(frame, 115, 338);
 
 		fixed1 = gtk_fixed_new();
 		gtk_widget_show(fixed1);
 		gtk_container_add(GTK_CONTAINER(frame), fixed1);	
 
-		adj = gtk_adjustment_new(0, -127, 0, 1, 16, 0);
+		adj = gtk_adjustment_new(0, -(envy_dac_max()), 0, 1, 16, 0);
 		av_dac_volume_adj[i] = adj;
 		vscale = gtk_vscale_new(GTK_ADJUSTMENT(adj));
 		gtk_scale_set_draw_value(GTK_SCALE(vscale), FALSE);
 		gtk_widget_show(vscale);
 		gtk_fixed_put(GTK_FIXED(fixed1), vscale, 26, 2);
-		gtk_widget_set_usize(vscale, 66, 180);
+		gtk_widget_set_usize(vscale, 66, 230);
 		gtk_scale_set_value_pos(GTK_SCALE(vscale), GTK_POS_BOTTOM);
 		gtk_scale_set_digits(GTK_SCALE(vscale), 0);
 		gtk_signal_connect(GTK_OBJECT(adj), "value_changed",
@@ -1174,8 +1213,8 @@ static void create_analog_volume(GtkWidget *main, GtkWidget *notebook, int page)
 	        label = gtk_label_new("100 (-000dB)");
 	        av_dac_volume_label[i] = (GtkLabel *)label;
 	        gtk_widget_show(label);
-		gtk_fixed_put(GTK_FIXED(fixed1), label, 4, 182);
-		gtk_widget_set_uposition(label, 4, 182);
+		gtk_fixed_put(GTK_FIXED(fixed1), label, 4, 232);
+		gtk_widget_set_uposition(label, 4, 232);
 		gtk_widget_set_usize(label, 105, 16);
 
 		if (i >= envy_dac_senses())
@@ -1202,7 +1241,7 @@ static void create_analog_volume(GtkWidget *main, GtkWidget *notebook, int page)
 		gtk_frame_set_shadow_type(GTK_FRAME(frame), GTK_SHADOW_IN);
 		gtk_fixed_put(GTK_FIXED(fixed), frame, 2 + (i + envy_dac_volumes()) * 120, 2);
 		gtk_widget_set_uposition(frame, 2 + (i + envy_dac_volumes()) * 120, 2);
-		gtk_widget_set_usize(frame, 115, 288);
+		gtk_widget_set_usize(frame, 115, 338);
 
 		fixed1 = gtk_fixed_new();
 		gtk_widget_show(fixed1);
@@ -1214,7 +1253,7 @@ static void create_analog_volume(GtkWidget *main, GtkWidget *notebook, int page)
 		gtk_scale_set_draw_value(GTK_SCALE(vscale), FALSE);
 		gtk_widget_show(vscale);
 		gtk_fixed_put(GTK_FIXED(fixed1), vscale, 26, 2);
-		gtk_widget_set_usize(vscale, 66, 180);
+		gtk_widget_set_usize(vscale, 66, 230);
 		gtk_scale_set_value_pos(GTK_SCALE(vscale), GTK_POS_BOTTOM);
 		gtk_scale_set_digits(GTK_SCALE(vscale), 0);
 		gtk_signal_connect(GTK_OBJECT(adj), "value_changed",
@@ -1223,8 +1262,8 @@ static void create_analog_volume(GtkWidget *main, GtkWidget *notebook, int page)
 	        label = gtk_label_new("100 (-000dB)");
 	        av_adc_volume_label[i] = (GtkLabel *)label;
 	        gtk_widget_show(label);
-		gtk_fixed_put(GTK_FIXED(fixed1), label, 4, 182);
-		gtk_widget_set_uposition(label, 4, 182);
+		gtk_fixed_put(GTK_FIXED(fixed1), label, 4, 232);
+		gtk_widget_set_uposition(label, 4, 232);
 		gtk_widget_set_usize(label, 105, 16);
 
 		if (i >= envy_adc_senses())
@@ -1251,7 +1290,7 @@ static void create_analog_volume(GtkWidget *main, GtkWidget *notebook, int page)
 		gtk_frame_set_shadow_type(GTK_FRAME(frame), GTK_SHADOW_IN);
 		gtk_fixed_put(GTK_FIXED(fixed), frame, 2 + (i + envy_dac_volumes() + envy_adc_volumes()) * 120, 2);
 		gtk_widget_set_uposition(frame, 2 + (i + envy_dac_volumes() + envy_adc_volumes()) * 120, 2);
-		gtk_widget_set_usize(frame, 115, 288);
+		gtk_widget_set_usize(frame, 115, 338);
 
 		fixed1 = gtk_fixed_new();
 		gtk_widget_show(fixed1);
@@ -1263,7 +1302,7 @@ static void create_analog_volume(GtkWidget *main, GtkWidget *notebook, int page)
 		gtk_scale_set_draw_value(GTK_SCALE(vscale), FALSE);
 		gtk_widget_show(vscale);
 		gtk_fixed_put(GTK_FIXED(fixed1), vscale, 26, 2);
-		gtk_widget_set_usize(vscale, 66, 180);
+		gtk_widget_set_usize(vscale, 66, 230);
 		gtk_scale_set_value_pos(GTK_SCALE(vscale), GTK_POS_BOTTOM);
 		gtk_scale_set_digits(GTK_SCALE(vscale), 0);
 		gtk_signal_connect(GTK_OBJECT(adj), "value_changed",
@@ -1272,8 +1311,8 @@ static void create_analog_volume(GtkWidget *main, GtkWidget *notebook, int page)
 	        label = gtk_label_new("100 (-000dB)");
 	        av_ipga_volume_label[i] = (GtkLabel *)label;
 	        gtk_widget_show(label);
-		gtk_fixed_put(GTK_FIXED(fixed1), label, 4, 182);
-		gtk_widget_set_uposition(label, 4, 182);
+		gtk_fixed_put(GTK_FIXED(fixed1), label, 4, 232);
+		gtk_widget_set_uposition(label, 4, 232);
 		gtk_widget_set_usize(label, 105, 16);
 	}
 }
@@ -1363,7 +1402,7 @@ int main(int argc, char **argv)
         gtk_signal_connect(GTK_OBJECT (window), "delete_event", 
                            (GtkSignalFunc) gtk_main_quit, NULL);
         signal(SIGINT, (void *)gtk_main_quit);
-        gtk_widget_set_usize(window, 740, 350);
+        gtk_widget_set_usize(window, 740, 400);
         gtk_window_set_policy(GTK_WINDOW (window), FALSE, TRUE, FALSE);
         gtk_widget_realize(window);
 
@@ -1394,6 +1433,7 @@ int main(int argc, char **argv)
 	}
 	gtk_timeout_add(40, level_meters_timeout_callback, NULL);
 	gtk_timeout_add(100, master_clock_status_timeout_callback, NULL);
+	gtk_timeout_add(100, internal_clock_status_timeout_callback, NULL);
 
 	level_meters_postinit();
 	mixer_postinit();
