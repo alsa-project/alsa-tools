@@ -22,10 +22,12 @@
 #ifndef HC_CLOCKSOURCE_H
 #define HC_CLOCKSOURCE_H
 
+
 #include <FL/Fl_Group.H>
 #include <FL/Fl_Round_Button.H>
 #include <alsa/asoundlib.h>
 #include "HC_CardPane.h"
+#include "labels.h"
 
 class HC_CardPane;
 

@@ -26,6 +26,7 @@
 #include <FL/fl_draw.H>
 #include <FL/Fl.H>
 #include "HC_CardPane.h"
+#include "labels.h"
 
 class HC_CardPane;
 

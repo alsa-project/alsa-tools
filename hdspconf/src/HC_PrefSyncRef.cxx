@@ -23,11 +23,12 @@
 
 void pref_sync_ref_cb(Fl_Widget *w, void *arg)
 {
-    int ref, err;
+    int err;
     char card_name[6];
     snd_ctl_elem_value_t *ctl;
     snd_ctl_elem_id_t *id;
     snd_ctl_t *handle;
+    int ref = 0;
     HC_PrefSyncRef *psr = (HC_PrefSyncRef *)arg;
     HC_CardPane *pane = (HC_CardPane *)(psr->parent());
     Fl_Round_Button *source = (Fl_Round_Button *)w;

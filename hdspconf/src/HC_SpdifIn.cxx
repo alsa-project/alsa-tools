@@ -23,11 +23,12 @@
 
 void spdif_in_cb(Fl_Widget *w, void *arg)
 {
-    int in, err;
+    int err;
     char card_name[6];
     snd_ctl_elem_value_t *ctl;
     snd_ctl_elem_id_t *id;
     snd_ctl_t *handle;
+    int in = 0;
     Fl_Round_Button *source = (Fl_Round_Button *)w;
     HC_SpdifIn *si = (HC_SpdifIn *)arg;
     HC_CardPane *pane = (HC_CardPane *)si->parent();

@@ -20,9 +20,7 @@
 
 #pragma implementation
 #include "HC_AutoSyncRef.h"
-
-extern char *freqs[10];
-extern char *ref[7];
+#include "labels.h"
 
 HC_AutoSyncRef::HC_AutoSyncRef(int x, int y, int w, int h):Fl_Widget(x, y, w, h, "AutoSync Ref.")
 {

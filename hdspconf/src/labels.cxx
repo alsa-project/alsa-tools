@@ -18,29 +18,42 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#pragma interface
-#ifndef HC_AUTOSYNCREF_H
-#define HC_AUTOSYNCREF_H
-
-#include <FL/Fl_Widget.H>
-#include <FL/fl_draw.H>
-#include <FL/Fl.H>
-#include "HC_CardPane.h"
 #include "labels.h"
 
-class HC_CardPane;
-
-class HC_AutoSyncRef:public Fl_Widget
-{
-public:
-    HC_AutoSyncRef(int x, int y, int w, int h);
-    void draw();
-    int external_freq, external_ref;
-    void setFreq(int f);
-    void setRef(unsigned char r);
-private:
-    Fl_Box_Draw_F *draw_box;
+char *card_names[5] = {
+    "Digiface",
+    "Multiface",
+    "HDSP9652",
+    "HDSP9632",
+    "Undefined",
 };
 
-#endif
+char *freqs[10] = {
+    "32.0 kHz",
+    "44.1 kHz",
+    "48.0 kHz",
+    "64.0 kHz",
+    "88.2 kHz",
+    "96.0 kHz",
+    "-----",
+    "128.0 kHz",
+    "176.4 kHz",
+    "192.0 kHz",
+};
+
+char *ref[7] = {
+    "Word Clock",
+    "ADAT Sync",
+    "SPDIF",
+    "-----",
+    "ADAT1",
+    "ADAT2",
+    "ADAT3"
+};
+
+char *lock_status[3] = {
+    "No Lock",
+    "Lock",
+    "Sync"
+};
 

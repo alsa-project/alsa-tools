@@ -23,11 +23,12 @@
 
 void phones_cb(Fl_Widget *w, void *arg)
 {
-    int gain, err;
+    int err;
     char card_name[6];
     snd_ctl_elem_value_t *ctl;
     snd_ctl_elem_id_t *id;
     snd_ctl_t *handle;
+    int gain = 0;
     Fl_Round_Button *source = (Fl_Round_Button *)w;
     HC_Phones *ph = (HC_Phones *)arg;
     HC_CardPane *pane = (HC_CardPane *)ph->parent();

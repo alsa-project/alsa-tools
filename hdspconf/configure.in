@@ -1,5 +1,5 @@
 AC_INIT(src/hdspconf.cxx)
-AM_INIT_AUTOMAKE(hdspconf, 1.3)
+AM_INIT_AUTOMAKE(hdspconf, 1.4)
 
 AC_PROG_CXX
 AC_PROG_MAKE_SET

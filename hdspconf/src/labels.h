@@ -18,29 +18,13 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#pragma interface
-#ifndef HC_AUTOSYNCREF_H
-#define HC_AUTOSYNCREF_H
+#ifndef LABELS_H
+#define LABELS_H
 
-#include <FL/Fl_Widget.H>
-#include <FL/fl_draw.H>
-#include <FL/Fl.H>
-#include "HC_CardPane.h"
-#include "labels.h"
-
-class HC_CardPane;
-
-class HC_AutoSyncRef:public Fl_Widget
-{
-public:
-    HC_AutoSyncRef(int x, int y, int w, int h);
-    void draw();
-    int external_freq, external_ref;
-    void setFreq(int f);
-    void setRef(unsigned char r);
-private:
-    Fl_Box_Draw_F *draw_box;
-};
+extern char *card_names[5];
+extern char *freqs[10];
+extern char *ref[7];
+extern char *lock_status[3];
 
 #endif
 

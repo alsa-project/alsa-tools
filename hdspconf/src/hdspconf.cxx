@@ -41,43 +41,6 @@ class HC_CardPane;
 class HC_XpmRenderer;
 class HC_AboutText;
 
-char *card_names[5] = {
-    "Digiface",
-    "Multiface",
-    "HDSP9652",
-    "HDSP9632",
-    "Undefined",
-};
-
-char *freqs[10] = {
-    "32.0 kHz",
-    "44.1 kHz",
-    "48.0 kHz",
-    "64.0 kHz",
-    "88.2 kHz",
-    "96.0 kHz",
-    "-----",
-    "128.0 kHz",
-    "176.4 kHz",
-    "192.0 kHz",
-};
-
-char *ref[7] = {
-    "Word Clock",
-    "ADAT Sync",
-    "SPDIF",
-    "-----",
-    "ADAT1",
-    "ADAT2",
-    "ADAT3"
-};
-
-char *lock_status[3] = {
-    "No Lock",
-    "Lock",
-    "Sync"
-};
-
 static void refresh_cb(void *arg)
 {
     Fl_Tabs *tabs = (Fl_Tabs *)arg;
@@ -159,7 +122,6 @@ int main(int argc, char **argv)
     int card;
     HDSP_IO_Type hdsp_cards[4];
     int alsa_index[4];
-    snd_ctl_t *handle;
     snd_ctl_card_info_t *info;
     snd_pcm_info_t *pcminfo;
     int cards = 0;

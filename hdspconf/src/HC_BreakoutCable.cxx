@@ -57,7 +57,6 @@ void xlr_cb(Fl_Widget *w, void *arg)
 
 HC_BreakoutCable::HC_BreakoutCable(int x, int y, int w, int h):Fl_Group(x, y, w, h, "Breakout Cable")
 {
-	int i = 0;
 	lock = 0;
 	box(FL_ENGRAVED_FRAME);
 	label("Breakout Cable");

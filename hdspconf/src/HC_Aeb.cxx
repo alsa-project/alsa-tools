@@ -57,7 +57,6 @@ void adat_internal_cb(Fl_Widget *w, void *arg)
 
 HC_Aeb::HC_Aeb(int x, int y, int w, int h):Fl_Group(x, y, w, h, "AEB")
 {
-	int i = 0;
 	lock = 0;
 	box(FL_ENGRAVED_FRAME);
 	label("AEB");

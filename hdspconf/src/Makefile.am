@@ -35,4 +35,6 @@ hdspconf_SOURCES = \
 	HC_AboutText.cxx \
 	HC_AboutText.h \
 	pixmaps.cxx \
-	pixmaps.h
+	pixmaps.h \
+	labels.cxx \
+	labels.h
