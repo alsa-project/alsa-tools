@@ -156,12 +156,12 @@ GtkWidget *create_enum_elem_radio(char *elem_name,ctl_elem_info_val_t *iv)
 	active=NULL;
 	box=gtk_vbox_new(TRUE,0);
 	
-	snd_ctl_elem_info_set_interface(iv->info, SND_CTL_ELEM_IFACE_PCM);
+	snd_ctl_elem_info_set_interface(iv->info, SND_CTL_ELEM_IFACE_MIXER);
 	snd_ctl_elem_info_set_name(iv->info,elem_name);
 	snd_ctl_elem_info_set_numid(iv->info,0);
 	snd_ctl_elem_info(ctl,iv->info);
 	
-	snd_ctl_elem_value_set_interface(iv->val, SND_CTL_ELEM_IFACE_PCM);
+	snd_ctl_elem_value_set_interface(iv->val, SND_CTL_ELEM_IFACE_MIXER);
 	snd_ctl_elem_value_set_name(iv->val,elem_name);
 	snd_ctl_elem_read(ctl,iv->val);
 	
