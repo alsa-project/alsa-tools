@@ -134,7 +134,7 @@ int main(int argc, char **argv)
     HC_XpmRenderer *rme_logo;
     HC_AboutText *about_text;
     Fl_Group  *about_pane;
-    char **name;
+    char *name;
     int card;
     int hdsp_cards[4];
     int alsa_index[4];
@@ -152,24 +152,26 @@ int main(int argc, char **argv)
 	if (card < 0) {
 	    break;
 	} else {
-	    snd_card_get_longname(card, name);
-	    printf("Card %d : %s\n", card, *name);
-	    if (!strncmp(*name, "RME Hammerfall DSP + Multiface", 30)) {
+	    snd_card_get_longname(card, &name);
+	    printf("Card %d : %s\n", card, name);
+	    if (!strncmp(name, "RME Hammerfall DSP + Multiface", 30)) {
 		printf("Multiface found !\n");
 		hdsp_cards[cards] = MULTIFACE;
 		alsa_index[cards] = card;
 		cards++;
-	    } else if (!strncmp(*name, "RME Hammerfall DSP + Digiface", 29)) {
+	    } else if (!strncmp(name, "RME Hammerfall DSP + Digiface", 29)) {
 		printf("Digiface found !\n");
 		hdsp_cards[cards] = DIGIFACE;
 		alsa_index[cards] = card;
 		cards++;
-	    } else if (!strncmp(*name, "RME HDSP 9652", 13)) {
+	    } else if (!strncmp(name, "RME Hammerfall HDSP 9652", 24)) {
 		printf("HDSP 9652 found !\n");
 		hdsp_cards[cards] = HDSP9652;
 		alsa_index[cards] = card;
 		cards++;
-	    } 
+	    } else if (!strncmp(name, "RME Hammerfall DSP", 18)) {
+		printf("Uninitialized HDSP card found. Use hdsploader to upload firmware.\n");
+	    }
 	}
     }
     if (!cards) {
