@@ -29,8 +29,8 @@ typedef struct {
 	int bits;
 	int rate;
 	int channels;
-	int spdif: 1;
 	int quiet: 1;
+	enum {SPDIF_NONE = 0, SPDIF_CON, SPDIF_PRO} spdif;
 } output_t;
 
 int output_open(output_t *output);

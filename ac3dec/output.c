@@ -131,7 +131,7 @@ int output_open(output_t *output)
 		goto __close;
 	}
 
-	if (output->spdif) {
+	if (output->spdif != SPDIF_NONE) {
 		snd_pcm_info_t *info;
 		snd_ctl_elem_value_t *ctl;
 		snd_ctl_t *ctl_handle;
@@ -140,12 +140,23 @@ int output_open(output_t *output)
 		snd_aes_iec958_t spdif;
 
 		memset(&spdif, 0, sizeof(spdif));
-		spdif.status[0] = IEC958_AES0_NONAUDIO |
-				  IEC958_AES0_CON_EMPHASIS_NONE;
-		spdif.status[1] = IEC958_AES1_CON_ORIGINAL |
-				  IEC958_AES1_CON_PCM_CODER;
-		spdif.status[2] = 0;
-		spdif.status[3] = IEC958_AES3_CON_FS_48000;
+		if (output->spdif == SPDIF_PRO) {
+			spdif.status[0] = (IEC958_AES0_PROFESSIONAL |
+					   IEC958_AES0_NONAUDIO |
+					   IEC958_AES0_PRO_EMPHASIS_NONE |
+					   IEC958_AES0_PRO_FS_48000);
+			spdif.status[1] = (IEC958_AES1_PRO_MODE_NOTID |
+					   IEC958_AES1_PRO_USERBITS_NOTID);
+			spdif.status[2] = IEC958_AES2_PRO_WORDLEN_NOTID;
+			spdif.status[3] = 0;
+		} else {
+			spdif.status[0] = (IEC958_AES0_NONAUDIO |
+					   IEC958_AES0_CON_EMPHASIS_NONE);
+			spdif.status[1] = (IEC958_AES1_CON_ORIGINAL |
+					   IEC958_AES1_CON_PCM_CODER);
+			spdif.status[2] = 0;
+			spdif.status[3] = IEC958_AES3_CON_FS_48000;
+		}
 		snd_pcm_info_alloca(&info);
 		if ((err = snd_pcm_info(pcm, info)) < 0) {
 			fprintf(stderr, "pcm info error: %s", snd_strerror(err));

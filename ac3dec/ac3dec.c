@@ -50,7 +50,8 @@ static void help(void)
 	printf("  -D,--device=NAME  select PCM by NAME\n");
 	printf("  -4,--4ch	    four channels mode\n");
 	printf("  -6,--6ch	    six channels mode\n");
-	printf("  -I,--iec958       raw IEC958 (S/PDIF) mode\n");
+	printf("  -C,--iec958c      raw IEC958 (S/PDIF) consumer mode\n");
+	printf("  -P,--iec958p      raw IEC958 (S/PDIF) professional mode\n");
 	printf("  -q,--quit         quit mode\n");
 }
 
@@ -84,15 +85,15 @@ int main(int argc,char *argv[])
 		{"device", 1, NULL, 'D'},
 		{"4ch", 0, NULL, '4'},
 		{"6ch", 0, NULL, '6'},
-		{"iec958", 0, NULL, 'I'},
-		{"spdif", 0, NULL, 'I'},
+		{"iec958c", 0, NULL, 'C'},
+		{"spdif", 0, NULL, 'C'},
+		{"iec958p", 0, NULL, 'P'},
 		{"quit", 0, NULL, 'q'},
 		{NULL, 0, NULL, 0},
 	};
 	ac3_config_t ac3_config;
 	output_t out_config;
 	int morehelp, loop = 0;
-	char *pcm_name = NULL;
 
 	bzero(&ac3_config, sizeof(ac3_config));
 	ac3_config.fill_buffer_callback = fill_buffer;
@@ -103,13 +104,13 @@ int main(int argc,char *argv[])
 	out_config.bits = 16;
 	out_config.rate = 48000;
 	out_config.channels = 2;
-	out_config.spdif = 0;
+	out_config.spdif = SPDIF_NONE;
 
 	morehelp = 0;
 	while (1) {
 		int c;
 
-		if ((c = getopt_long(argc, argv, "hvD:46Iq", long_option, NULL)) < 0)
+		if ((c = getopt_long(argc, argv, "hvD:46CPq", long_option, NULL)) < 0)
 			break;
 		switch (c) {
 		case 'h':
@@ -119,19 +120,23 @@ int main(int argc,char *argv[])
 			printf("ac3dec version " VERSION "\n");
 			return 1;
 		case 'D':
-			pcm_name = optarg;
+			out_config.pcm_name = optarg;
 			break;
 		case '4':
-			if (!out_config.spdif)
+			if (out_config.spdif != SPDIF_NONE)
 				ac3_config.num_output_ch = 4;
 			break;
 		case '6':
-			if (!out_config.spdif)
+			if (out_config.spdif != SPDIF_NONE)
 				ac3_config.num_output_ch = 6;
 			break;
-		case 'I':
+		case 'C':
 			ac3_config.num_output_ch = 2;
-			out_config.spdif = 1;
+			out_config.spdif = SPDIF_CON;
+			break;
+		case 'P':
+			ac3_config.num_output_ch = 2;
+			out_config.spdif = SPDIF_PRO;
 			break;
 		case 'q':
 			ac3_config.flags |= AC3_QUIET;
@@ -163,7 +168,7 @@ int main(int argc,char *argv[])
 			optind++;
 			loop++;
 		}
-		if (!out_config.spdif) {
+		if (out_config.spdif == SPDIF_NONE) {
 			ac3_frame_t *ac3_frame;
 			ac3_init(&ac3_config);
 			ac3_frame = ac3_decode_frame();
