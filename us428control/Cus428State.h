@@ -38,6 +38,7 @@ class Cus428State: public us428_lights{
 		,aWheel_R(0)
 		,bSetLocate(false)
 		,uTransport(0)
+		,aWheelSpeed(0)
 		{
 			init_us428_lights();
 			for (int v = 0; v < 5; ++v) {
@@ -106,13 +107,17 @@ class Cus428State: public us428_lights{
  private:
 	void SendVolume(usX2Y_volume &V);
 	struct us428ctls_sharedmem* us428ctls_sharedmem;
-	bool   StateInputMonitor() {
+	bool StateInputMonitor() {
 		return  LightIs(eL_InputMonitor);
 	}
 	// Set the wheel differential.
 	void WheelDelta(int W);
+	// Set the wheel differential.
+	void WheelStep(int dW);
+	// Set the wheel shuttle speed.
+	void WheelShuttle(int dW);
 	// Get the curent wheel timecode.
-	void WheelTimecode(unsigned char *tc);
+	void LocateTimecode(unsigned char *tc);
 
 	usX2Y_volume_t	Volume[5];
 	char		MuteInputMonitor,
@@ -131,6 +136,8 @@ class Cus428State: public us428_lights{
 	bool bSetLocate;
 	// Last/current transport state.
 	unsigned char uTransport;
+	// Shuttle wheel absolute speed.
+	int aWheelSpeed;
 };
 
 extern Cus428State* OneState;

@@ -28,6 +28,8 @@ extern int verbose;
 // Differential wheel tracking constants.
 #define W_DELTA_MAX	0xff
 #define W_DELTA_MIN	(W_DELTA_MAX >> 1)
+// Shuttle speed wheel constants.
+#define W_SPEED_MAX	0x3f
 
 void us428_lights::init_us428_lights()
 {
@@ -236,48 +238,33 @@ void Cus428State::WheelChangedTo(E_In84 W, char Diff)
 	case eWheel:
 		Param = 0x60;
 		// Update the absolute wheel position.
-		WheelDelta((int) ((unsigned char*) us428_ctls)[W]);
-		LocateSend();
+		WheelDelta((int) ((unsigned char *) us428_ctls)[W]);
 		break;
 	}
-	Midi.SendMidiControl(Param, ((unsigned char*)us428_ctls)[W]);
+	Midi.SendMidiControl(Param, ((unsigned char *) us428_ctls)[W]);
 }
 
 
 // Convert time-code (hh:mm:ss:ff:fr) into absolute wheel position.
 void Cus428State::LocateWheel ( unsigned char *tc )
 {
-#if 0
 	aWheel  = (60 * 60 * 30) * (int) tc[0]		// hh - hours    [0..23]
 			+ (     60 * 30) * (int) tc[1]		// mm - minutes  [0..59]
 			+ (          30) * (int) tc[2]		// ss - seconds  [0..59]
 			+                  (int) tc[3];		// ff - frames   [0..29]
-#else
-	aWheel  = (60 * 60 * 3) * (int) tc[0]		// hh - hours    [0..23]
-			+ (     60 * 3) * (int) tc[1]		// mm - minutes  [0..59]
-			+ (          3) * (int) tc[2]		// ss - seconds  [0..59]
-			+                 (int) tc[3] / 10;	// ff - frames   [0..29]
-#endif
 }
 
 
 // Convert absolute wheel position into time-code (hh:mm:ss:ff:fr)
-void Cus428State::WheelTimecode ( unsigned char *tc )
+void Cus428State::LocateTimecode ( unsigned char *tc )
 {
 	int W = aWheel;
-#if 0
+
 	tc[0] = W / (60 * 60 * 30); W -= (60 * 60 * 30) * (int) tc[0];
 	tc[1] = W / (     60 * 30); W -= (     60 * 30) * (int) tc[1];
 	tc[2] = W / (          30); W -= (          30) * (int) tc[2];
 	tc[3] = W;
 	tc[4] = 0;
-#else
-	tc[0] = W / (60 * 60 * 3); W -= (60 * 60 * 3) * (int) tc[0];
-	tc[1] = W / (     60 * 3); W -= (     60 * 3) * (int) tc[1];
-	tc[2] = W / (          3); W -= (          3) * (int) tc[2];
-	tc[3] = W * 10;
-	tc[4] = 0;
-#endif
 }
 
 
@@ -298,6 +285,53 @@ void Cus428State::WheelDelta ( int W )
 	// Can't be less than zero.
 	if (aWheel < 0)
 		aWheel = 0;
+
+	// Now it's whether we're running transport already...
+	if (aWheelSpeed)
+		WheelShuttle(dW);
+	else
+		WheelStep(dW);
+}
+
+// Get the wheel step.
+void Cus428State::WheelStep ( int dW )
+{
+	unsigned char step;
+
+	if (dW < 0)
+		step = (unsigned char) (((-dW & 0x3f) << 1) | 0x40);
+	else
+		step = (unsigned char) ((dW << 1) & 0x3f);
+
+	Midi.SendMmcCommand(MMC_CMD_STEP, &step, sizeof(step));
+}
+
+
+// Set the wheel shuttle speed.
+void Cus428State::WheelShuttle ( int dW )
+{
+	unsigned char shuttle[3];
+	int V, forward;
+
+	// Update the current absolute wheel shuttle speed.
+	aWheelSpeed += dW;
+
+	// Don't make it pass some limits...
+	if (aWheelSpeed < -W_SPEED_MAX) aWheelSpeed = -W_SPEED_MAX;
+	if (aWheelSpeed > +W_SPEED_MAX) aWheelSpeed = +W_SPEED_MAX;
+
+	// Build the MMC-Shuttle command...
+	V = aWheelSpeed;
+	forward = (V >= 0);
+	if (!forward)
+		V = -(V);
+	shuttle[0] = (unsigned char) ((V >> 3) & 0x07);		// sh
+	shuttle[1] = (unsigned char) ((V & 0x07) << 4);		// sm
+	shuttle[2] = (unsigned char) 0;						// sl
+	if (!forward)
+		shuttle[0] |= (unsigned char) 0x40;
+
+	Midi.SendMmcCommand(MMC_CMD_SHUTTLE, &shuttle[0], sizeof(shuttle));
 }
 
 
@@ -307,7 +341,7 @@ void Cus428State::LocateSend ()
 	unsigned char MmcData[6];
 	// Timecode's embedded on MMC command.
 	MmcData[0] = 0x01;
-	WheelTimecode(&MmcData[1]);
+	LocateTimecode(&MmcData[1]);
 	// Send the MMC locate command...
 	Midi.SendMmcCommand(MMC_CMD_LOCATE, MmcData, sizeof(MmcData));
 }
@@ -376,9 +410,20 @@ void Cus428State::TransportSet ( unsigned char T, bool V )
 	TransportSend();
 }
 
-// Update transport lights.
+// Update transport status lights.
 void Cus428State::TransportSend()
 {
+	// Common ground for shuttle speed set.
+	if (uTransport & T_PLAY)
+		aWheelSpeed = ((W_SPEED_MAX + 1) >> 3);
+	else if (uTransport & T_REW)
+		aWheelSpeed = -(W_SPEED_MAX + 1);
+	else if (uTransport & T_F_FWD)
+		aWheelSpeed = +(W_SPEED_MAX + 1);
+	else
+		aWheelSpeed = 0;
+
+	// Lightning feedback :)
 	LightSet(eL_Play,   (uTransport & T_PLAY));
 	LightSet(eL_Record, (uTransport & T_RECORD));
 	LightSet(eL_Rew,    (uTransport & T_REW));
@@ -391,6 +436,7 @@ void Cus428State::MmcReset()
 {
 	W0 = 0;
 	aWheel = aWheel_L = aWheel_R = 0;
+	aWheelSpeed = 0;
 	bSetLocate = false;
 	uTransport = 0;
 

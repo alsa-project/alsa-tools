@@ -136,7 +136,7 @@ void Cus428Midi::ProcessMidiEvents()
 					break;
 				case MMC_CMD_LOCATE:
 					if (verbose > 1)
-						fprintf(stderr, "LOCATE WHEEL.\n");
+						fprintf(stderr, "LOCATE.\n");
 					OneState->LocateWheel(&data[7]);
 					break;
 				case MMC_CMD_MMC_RESET:
