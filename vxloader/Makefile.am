@@ -5,8 +5,6 @@ MYNAME = vxloader
 
 AM_CFLAGS = -DDATAPATH=\"$(datadir)/alsa/firmware/$(MYNAME)\"
 
-SUBDIRS = firmware
-
 bin_PROGRAMS = vxloader
 
 vxloader_SOURCES = vxloader.c
