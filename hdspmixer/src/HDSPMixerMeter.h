@@ -23,7 +23,7 @@
 #define HDSPMixerMeter_H
 
 #include <FL/Fl_Widget.H>
-#include <FL/fl_draw.h>
+#include <FL/fl_draw.H>
 #include "HDSPMixerWindow.h"
 #include "HDSPMixerPeak.h"
 #include "pixmaps.h"
