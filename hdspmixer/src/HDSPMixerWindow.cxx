@@ -397,7 +397,13 @@ void HDSPMixerWindow::load()
 {
     FILE *file;
     if ((file = fopen(file_name, "r")) == NULL) {
+	int i = 0;
 	fl_alert("Error opening file %s for reading", file_name);
+	while (cards[i] != NULL) {
+	    restoreDefaults(i++);
+	}
+	inputs->buttons->presets->preset_change(1);	
+	return;
     }
     for (int speed = 0; speed < 3; ++speed) {
 	for (int card = 0; card < 3; ++card) {
@@ -533,6 +539,7 @@ void HDSPMixerWindow::restoreDefaults(int card)
 	h9632_an12_submix[2] = 1;
 	num_modes = 3;
 	phones = 0;
+	break;
     default:
 	/* should never happen */
 	return;
@@ -624,8 +631,18 @@ HDSPMixerWindow::HDSPMixerWindow(int x, int y, int w, int h, const char *label, 
     cards[2] = hdsp_card3;
     current_card = current_preset = 0;
     prefs = new Fl_Preferences(Fl_Preferences::USER, "thomasATundata.org", "HDSPMixer");
-    if (!prefs->get("default_file", file_name_buffer, NULL, FL_PATH_MAX-1)) file_name = NULL;
-    else file_name = file_name_buffer;
+    if (!prefs->get("default_file", file_name_buffer, NULL, FL_PATH_MAX-1)) {
+	file_name = NULL;
+    } else {
+	struct stat buf;
+	if (!stat(file_name_buffer, &buf)) {
+	    file_name = file_name_buffer;
+	} else {
+	    file_name = NULL;
+	    prefs->deleteEntry("default_file");
+	    prefs->flush();
+	}	
+    }
     for (int j = 0; j < 3; ++j) {
 	for (int i = 0; i < 8; ++i) {
 	    data[j][0][i] = new HDSPMixerPresetData();

@@ -35,6 +35,9 @@
 #include <stdlib.h>
 #include <math.h>
 #include <sys/ioctl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include <alsa/asoundlib.h>
 #include <sound/hdsp.h>
 #include "HDSPMixerCard.h"
