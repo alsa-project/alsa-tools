@@ -1,0 +1,13 @@
+/* config.h.in.  Generated automatically from configure.in by autoheader.  */
+
+/* Name of package */
+#undef PACKAGE
+
+/* Version number of package */
+#undef VERSION
+
+/* Architecture defines */
+#undef __i386__
+#undef __alpha__
+#undef __ppc__
+#undef __sparc__ 

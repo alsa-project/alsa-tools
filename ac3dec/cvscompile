@@ -1,0 +1,5 @@
+#!/bin/sh
+
+automake --add-missing
+autoconf
+make
