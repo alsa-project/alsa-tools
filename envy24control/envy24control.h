@@ -3,6 +3,7 @@
 #include <string.h>
 #include <signal.h>
 #include <errno.h>
+#include <assert.h>
 #include <gtk/gtk.h>
 #include <alsa/asoundlib.h>
 
