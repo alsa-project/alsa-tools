@@ -1840,6 +1840,8 @@ int main(int argc, char **argv)
 	gtk_timeout_add(40, level_meters_timeout_callback, NULL);
 	gtk_timeout_add(100, master_clock_status_timeout_callback, NULL);
 	gtk_timeout_add(100, internal_clock_status_timeout_callback, NULL);
+	gtk_timeout_add(100, rate_locking_status_timeout_callback, NULL);
+	gtk_timeout_add(100, rate_reset_status_timeout_callback, NULL);
 
 
 	gtk_widget_show(window);

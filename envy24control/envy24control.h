@@ -170,6 +170,8 @@ void patchbay_postinit(void);
 void master_clock_update(void);
 gint master_clock_status_timeout_callback(gpointer data);
 gint internal_clock_status_timeout_callback(gpointer data);
+gint rate_locking_status_timeout_callback(gpointer data);
+gint rate_reset_status_timeout_callback(gpointer data);
 void internal_clock_toggled(GtkWidget *togglebutton, gpointer data);
 void rate_locking_update(void);
 void rate_locking_toggled(GtkWidget *togglebutton, gpointer data);

@@ -48,6 +48,8 @@ void control_input_callback(gpointer data, gint source, GdkInputCondition condit
 			spdif_output_update();
 		else if (!strcmp(name, "Multi Track Internal Clock"))
 			master_clock_update();
+		else if (!strcmp(name, "Multi Track Internal Clock Default"))
+			master_clock_update();
 		else if (!strcmp(name, "Multi Track Rate Locking"))
 			rate_locking_update();
 		else if (!strcmp(name, "Multi Track Rate Reset"))

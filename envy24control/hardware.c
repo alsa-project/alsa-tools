@@ -20,6 +20,7 @@
 #include "envy24control.h"
 
 static snd_ctl_elem_value_t *internal_clock;
+static snd_ctl_elem_value_t *internal_clock_default;
 static snd_ctl_elem_value_t *word_clock_sync;
 static snd_ctl_elem_value_t *rate_locking;
 static snd_ctl_elem_value_t *rate_reset;
@@ -31,6 +32,8 @@ static snd_ctl_elem_value_t *breakbox_led;
 static snd_ctl_elem_value_t *spdif_on_off;
 static snd_ctl_elem_value_t *phono_input;
 
+static inline int is_update_needed(void);
+
 #define toggle_set(widget, state) \
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), state);
 
@@ -41,10 +44,12 @@ static int is_active(GtkWidget *widget)
 
 void master_clock_update(void)
 {
-	int err, rate;
+	int err, rate, need_default_update;
 	
 	if ((err = snd_ctl_elem_read(ctl, internal_clock)) < 0)
 		g_print("Unable to read Internal Clock state: %s\n", snd_strerror(err));
+	if ((err = snd_ctl_elem_read(ctl, internal_clock_default)) < 0)
+		g_print("Unable to read Internal Clock Default state: %s\n", snd_strerror(err));
 	if (card_eeprom.subvendor == ICE1712_SUBDEVICE_DELTA1010 ||
 	    card_eeprom.subvendor == ICE1712_SUBDEVICE_DELTA1010LT) {
 		if ((err = snd_ctl_elem_read(ctl, word_clock_sync)) < 0)
@@ -58,7 +63,12 @@ void master_clock_update(void)
 		}
 	} else {
 //		toggle_set(hw_master_clock_xtal_radio, TRUE);
-		rate = snd_ctl_elem_value_get_enumerated(internal_clock, 0);
+		need_default_update = !is_update_needed() ? 1 : 0;
+		if (need_default_update) {
+			rate = snd_ctl_elem_value_get_enumerated(internal_clock_default, 0);
+		} else {
+			rate = snd_ctl_elem_value_get_enumerated(internal_clock, 0);
+		}
 		switch (rate) {
 		case 5: toggle_set(hw_master_clock_xtal_22050, TRUE); break;
 		case 7: toggle_set(hw_master_clock_xtal_32000, TRUE); break;
@@ -171,6 +181,8 @@ gint internal_clock_status_timeout_callback(gpointer data)
 	
 	if ((err = snd_ctl_elem_read(ctl, internal_clock)) < 0)
 		g_print("Unable to read Internal Clock state: %s\n", snd_strerror(err));
+	if ((err = snd_ctl_elem_read(ctl, internal_clock_default)) < 0)
+		g_print("Unable to read Internal Clock Default state: %s\n", snd_strerror(err));
 	if (card_eeprom.subvendor == ICE1712_SUBDEVICE_DELTA1010 ||
 	    card_eeprom.subvendor == ICE1712_SUBDEVICE_DELTA1010LT) {
 		if ((err = snd_ctl_elem_read(ctl, word_clock_sync)) < 0)
@@ -218,9 +230,43 @@ gint internal_clock_status_timeout_callback(gpointer data)
 			    g_print("Error in rate: %d\n", rate);
 			    break;
 		}
+		if (!need_update) {	//default clock need update
+			rate = snd_ctl_elem_value_get_enumerated(internal_clock_default, 0);
+			switch (rate) {
+			case 5: toggle_set(hw_master_clock_xtal_22050, TRUE); break;
+			case 7: toggle_set(hw_master_clock_xtal_32000, TRUE); break;
+			case 8: toggle_set(hw_master_clock_xtal_44100, TRUE); break;
+			case 9: toggle_set(hw_master_clock_xtal_48000, TRUE); break;
+			case 11: toggle_set(hw_master_clock_xtal_88200, TRUE); break;
+			case 12: toggle_set(hw_master_clock_xtal_96000, TRUE); break;
+			default:
+				g_print("Error in rate: %d\n", rate);
+				break;
+			}
+		}
 	}
 	gtk_label_set_text(GTK_LABEL(hw_master_clock_actual_rate_label), label);
 	return TRUE;
+}
+
+gint rate_locking_status_timeout_callback(gpointer data)
+{
+    int state;
+
+    if (is_active(hw_rate_locking_check) != (state = is_rate_locked())) {
+	toggle_set(hw_rate_locking_check, state ? TRUE : FALSE);
+    }
+    return TRUE;
+}
+
+gint rate_reset_status_timeout_callback(gpointer data)
+{
+    int state;
+
+    if (is_active(hw_rate_reset_check) != (state = is_rate_reset())) {
+	toggle_set(hw_rate_reset_check, state ? TRUE : FALSE);
+    }
+    return TRUE;
 }
 
 void rate_locking_update(void)
@@ -728,6 +774,7 @@ void phono_input_toggled(GtkWidget *togglebutton, gpointer data)
 void hardware_init(void)
 {
 	if (snd_ctl_elem_value_malloc(&internal_clock) < 0 ||
+	    snd_ctl_elem_value_malloc(&internal_clock_default) < 0 ||
 	    snd_ctl_elem_value_malloc(&word_clock_sync) < 0 ||
 	    snd_ctl_elem_value_malloc(&rate_locking) < 0 ||
 	    snd_ctl_elem_value_malloc(&rate_reset) < 0 ||
@@ -744,6 +791,9 @@ void hardware_init(void)
 
 	snd_ctl_elem_value_set_interface(internal_clock, SND_CTL_ELEM_IFACE_MIXER);
 	snd_ctl_elem_value_set_name(internal_clock, "Multi Track Internal Clock");
+
+	snd_ctl_elem_value_set_interface(internal_clock_default, SND_CTL_ELEM_IFACE_MIXER);
+	snd_ctl_elem_value_set_name(internal_clock_default, "Multi Track Internal Clock Default");
 
 	snd_ctl_elem_value_set_interface(word_clock_sync, SND_CTL_ELEM_IFACE_PCM);
 	snd_ctl_elem_value_set_name(word_clock_sync, "Word Clock Sync");
