@@ -1865,7 +1865,7 @@ int main(int argc, char *argv[]) {
   GtkWidget *vbsel, *frame, *button;
   GtkWidget *label, *menu, *menuitem;
   GSList *bgroup;
-  int err, i, o, n, cardnum;
+  int err, i, o, n, cardnum, value;
   char hwname[8], cardname[32], load, save;
   snd_ctl_card_info_t *hw_info;
 
@@ -2049,6 +2049,7 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
       p4dbuIn[i]=gtk_toggle_button_new_with_label(str);
       gtk_box_pack_start(GTK_BOX(hbox), p4dbuIn[i], TRUE, FALSE, 1);
       gtk_widget_show(p4dbuIn[i]);
+      gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(p4dbuIn[i]), NominalIn[i]);	// Forces handler call
       gtk_signal_connect(GTK_OBJECT(p4dbuIn[i]), "toggled", GTK_SIGNAL_FUNC(Nominal_level_toggled), (gpointer)i);
       gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(p4dbuIn[i]), !NominalIn[i]);
     }
@@ -2069,6 +2070,7 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
       p4dbuOut[i]=gtk_toggle_button_new_with_label(str);
       gtk_box_pack_start(GTK_BOX(hbox), p4dbuOut[i], TRUE, FALSE, 1);
       gtk_widget_show(p4dbuOut[i]);
+      gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(p4dbuOut[i]), NominalOut[i]);
       gtk_signal_connect(GTK_OBJECT(p4dbuOut[i]), "toggled", GTK_SIGNAL_FUNC(Nominal_level_toggled), (gpointer)(i+ECHO_MAXAUDIOINPUTS));
       gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(p4dbuOut[i]), !NominalOut[i]);
     }
@@ -2209,7 +2211,8 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
       gtk_widget_show(label);
       gtk_box_pack_start(GTK_BOX(vbox), label, FALSE, FALSE, 0);
       // Volume
-      pcmoutControl.adj[i]=gtk_adjustment_new(999, ECHOGAIN_MINOUT, ECHOGAIN_MAXOUT, SHORTSTEP, LONGSTEP, 0);
+      value = INVERT(pcmoutControl.Gain[i]);
+      pcmoutControl.adj[i]=gtk_adjustment_new(!value, ECHOGAIN_MINOUT, ECHOGAIN_MAXOUT, SHORTSTEP, LONGSTEP, 0);
       pcmoutControl.volume[i]=gtk_vscale_new(GTK_ADJUSTMENT(pcmoutControl.adj[i]));
       gtk_widget_show(pcmoutControl.volume[i]);
       gtk_box_pack_start(GTK_BOX(vbox), pcmoutControl.volume[i], TRUE, TRUE, 0);
@@ -2219,7 +2222,7 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
       pcmoutControl.label[i]=gtk_label_new("xxx");
       gtk_widget_show(pcmoutControl.label[i]);
       gtk_box_pack_start(GTK_BOX(vbox), pcmoutControl.label[i], FALSE, FALSE, 0);
-      gtk_adjustment_set_value(GTK_ADJUSTMENT(pcmoutControl.adj[i]), INVERT(pcmoutControl.Gain[i]));
+      gtk_adjustment_set_value(GTK_ADJUSTMENT(pcmoutControl.adj[i]), value);
     }
     gtk_widget_set_usize(GTK_WIDGET(pcmoutControl.volume[0]), 0, 170);		// Set minimum y size
   }
@@ -2261,7 +2264,8 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
       gtk_widget_show(label);
       gtk_box_pack_start(GTK_BOX(vbox), label, FALSE, FALSE, 0);
       // Volume (resolution is 0.5 dB)
-      lineinControl.adj[i]=gtk_adjustment_new(999, ECHOGAIN_MININP, ECHOGAIN_MAXINP, SHORTSTEP, LONGSTEP*2, 0);
+      value = IN_INVERT(lineinControl.Gain[i]);
+      lineinControl.adj[i]=gtk_adjustment_new(!value, ECHOGAIN_MININP, ECHOGAIN_MAXINP, SHORTSTEP, LONGSTEP*2, 0);
       lineinControl.volume[i]=gtk_vscale_new(GTK_ADJUSTMENT(lineinControl.adj[i]));
       gtk_widget_show(lineinControl.volume[i]);
       gtk_box_pack_start(GTK_BOX(vbox), lineinControl.volume[i], TRUE, TRUE, 0);
@@ -2271,7 +2275,7 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
       lineinControl.label[i]=gtk_label_new("xxx");
       gtk_widget_show(lineinControl.label[i]);
       gtk_box_pack_start(GTK_BOX(vbox), lineinControl.label[i], FALSE, FALSE, 0);
-      gtk_adjustment_set_value(GTK_ADJUSTMENT(lineinControl.adj[i]), IN_INVERT(lineinControl.Gain[i]));
+      gtk_adjustment_set_value(GTK_ADJUSTMENT(lineinControl.adj[i]), value);
     }
     gtk_widget_set_usize(GTK_WIDGET(lineinControl.volume[0]), 0, 170);	// Set minimum y size
   }
@@ -2299,7 +2303,8 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
       gtk_widget_show(label);
       gtk_box_pack_start(GTK_BOX(vbox), label, FALSE, FALSE, 0);
       // Volume
-      lineoutControl.adj[i]=gtk_adjustment_new(0, ECHOGAIN_MINOUT, ECHOGAIN_MAXOUT, SHORTSTEP, LONGSTEP, 0);
+      value = INVERT(lineoutControl.Gain[i]);
+      lineoutControl.adj[i]=gtk_adjustment_new(!value, ECHOGAIN_MINOUT, ECHOGAIN_MAXOUT, SHORTSTEP, LONGSTEP, 0);
       lineoutControl.volume[i]=gtk_vscale_new(GTK_ADJUSTMENT(lineoutControl.adj[i]));
       gtk_widget_show(lineoutControl.volume[i]);
       gtk_box_pack_start(GTK_BOX(vbox), lineoutControl.volume[i], TRUE, TRUE, 0);
@@ -2309,7 +2314,7 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
       lineoutControl.label[i]=gtk_label_new("xxx");
       gtk_widget_show(lineoutControl.label[i]);
       gtk_box_pack_start(GTK_BOX(vbox), lineoutControl.label[i], FALSE, FALSE, 0);
-      gtk_adjustment_set_value(GTK_ADJUSTMENT(lineoutControl.adj[i]), INVERT(lineoutControl.Gain[i]));
+      gtk_adjustment_set_value(GTK_ADJUSTMENT(lineoutControl.adj[i]), value);
     }
     gtk_widget_set_usize(GTK_WIDGET(lineoutControl.volume[0]), 0, 170);		// Set minimum y size
   }
