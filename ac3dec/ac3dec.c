@@ -35,10 +35,10 @@
 #include "libac3/ac3.h"
 #include "output.h"
 
-void
-init_spdif(void);
-int
-output_spdif(uint_8 *data_start, uint_8 *data_end, int quiet);
+void init_spdif(void);
+int output_spdif_zero(int frames);
+int output_spdif_leadin(void);
+int output_spdif(uint_8 *data_start, uint_8 *data_end, int quiet);
 
 static int end_flag = 0;
 static int quiet = 0;
@@ -56,6 +56,7 @@ static void help(void)
 	printf("  -C,--iec958c      raw IEC958 (S/PDIF) consumer mode\n");
 	printf("  -P,--iec958p      raw IEC958 (S/PDIF) professional mode\n");
 	printf("  -R,--iec958r      raw IEC958 (S/PDIF) PCM\n");
+	printf("  -Z,--zero=#       add # zero-AC3-frames before stream\n");
 	printf("  -q,--quit         quit mode\n");
 }
 
@@ -105,12 +106,14 @@ int main(int argc,char *argv[])
 		{"spdif", 0, NULL, 'C'},
 		{"iec958p", 0, NULL, 'P'},
 		{"iec958r", 0, NULL, 'R'},
+		{"zero", 1, NULL, 'Z'},
 		{"quit", 0, NULL, 'q'},
 		{NULL, 0, NULL, 0},
 	};
 	ac3_config_t ac3_config;
 	output_t out_config;
 	int morehelp, loop = 0;
+	int zero = 0;
 
 	bzero(&ac3_config, sizeof(ac3_config));
 	ac3_config.fill_buffer_callback = fill_buffer;
@@ -128,7 +131,7 @@ int main(int argc,char *argv[])
 	while (1) {
 		int c;
 
-		if ((c = getopt_long(argc, argv, "hvcD:46CPRq", long_option, NULL)) < 0)
+		if ((c = getopt_long(argc, argv, "hvcD:46CPRZq", long_option, NULL)) < 0)
 			break;
 		switch (c) {
 		case 'h':
@@ -162,6 +165,9 @@ int main(int argc,char *argv[])
 		case 'R':
 			ac3_config.num_output_ch = 2;
 			out_config.spdif = SPDIF_PCM;
+			break;
+		case 'Z':
+			zero = atoi(optarg);
 			break;
 		case 'q':
 			ac3_config.flags |= AC3_QUIET;
@@ -218,6 +224,10 @@ int main(int argc,char *argv[])
 			signal(SIGINT, ac3dec_signal_handler);
 			signal(SIGTERM, ac3dec_signal_handler);
 			signal(SIGABRT, ac3dec_signal_handler);
+			if (zero > 0)
+				output_spdif_zero(zero);
+			else
+				output_spdif_leadin();
 			while (fill_buffer(&start, &end) > 0)
 				if (output_spdif(start, end, quiet) < 0)
 					break;
