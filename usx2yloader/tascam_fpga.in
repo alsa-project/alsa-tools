@@ -23,6 +23,9 @@ case $PRODUCT in
 1604/8001/*)
 	CONTROLLER=@bindir@/us428control
 	;;
+1604/8005/*)
+	CONTROLLER=@bindir@/us428control
+	;;
 *)
 	;;
 esac
