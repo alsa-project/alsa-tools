@@ -144,7 +144,7 @@ void adc_volume_update(int idx)
 void ipga_volume_update(int idx)
 {
 	snd_ctl_elem_value_t *val;
-	int err;
+	int err, ipga_vol;
 	snd_ctl_elem_value_alloca(&val);
 	snd_ctl_elem_value_set_interface(val, SND_CTL_ELEM_IFACE_MIXER);
 	snd_ctl_elem_value_set_name(val, IPGA_VOLUME_NAME);
@@ -154,15 +154,17 @@ void ipga_volume_update(int idx)
 		return;
 	}
 	gtk_adjustment_set_value(GTK_ADJUSTMENT(av_ipga_volume_adj[idx]),
-				 -snd_ctl_elem_value_get_integer(val, 0));
+				 -(ipga_vol = snd_ctl_elem_value_get_integer(val, 0)));
 	snd_ctl_elem_value_set_name(val, ADC_VOLUME_NAME);
 	snd_ctl_elem_value_set_index(val, idx);
 	if ((err = snd_ctl_elem_read(ctl, val)) < 0) {
 		g_print("Unable to read adc volume: %s\n", snd_strerror(err));
 		return;
 	}
-	gtk_adjustment_set_value(GTK_ADJUSTMENT(av_adc_volume_adj[idx]),
-				 -127);
+	// set ADC volume to max if IPGA volume greater 0
+	if (ipga_vol)
+		gtk_adjustment_set_value(GTK_ADJUSTMENT(av_adc_volume_adj[idx]),
+					 -127);
 }
 
 void dac_sense_update(int idx)
