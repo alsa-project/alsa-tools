@@ -1,0 +1,22 @@
+#!/bin/bash
+
+share=/usr/share/automake/missing
+
+aclocal $ACLOCAL_FLAGS
+automake --foreign
+if [ ! -r install-sh ]; then
+  cp $share/install-sh .
+fi
+if [ ! -r mkinstalldirs ]; then
+  cp $share/mkinstalldirs .
+fi
+if [ ! -r missing ]; then
+  cp $share/missing .
+fi
+autoconf
+export CFLAGS='-O2 -Wall -pipe -g'
+echo "CFLAGS=$CFLAGS"
+echo "./configure $@"
+./configure $@
+unset CFLAGS
+make
