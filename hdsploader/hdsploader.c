@@ -97,7 +97,7 @@ void upload_firmware(int card)
 
 int main(int argc, char **argv)
 {
-    char **name;
+    char *name;
     int card;
 
     snd_ctl_card_info_t *info;
@@ -113,9 +113,9 @@ int main(int argc, char **argv)
 	if (card < 0) {
 	    break;
 	} else {
-	    snd_card_get_longname(card, name);
-	    printf("Card %d : %s\n", card, *name);
-	    if (!strncmp(*name, "RME Hammerfall DSP", 18)) {
+	    snd_card_get_longname(card, &name);
+	    printf("Card %d : %s\n", card, name);
+	    if (!strncmp(name, "RME Hammerfall DSP", 18)) {
 		upload_firmware(card);
 	    } 
 	}
