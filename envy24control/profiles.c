@@ -753,7 +753,7 @@ int insert_card(char * const buffer, const int profile_number, const int card_nu
 		buffer_copy[max_length - 1] = '\0';
 		memset(buffer + pos_begin, '\0', max_length - pos_begin);
 	}
-	if (profile_number >= 0) {
+	if (profile_number > 0) {
 		place_holder = PLACE_HOLDER_NUM;
 		snprintf(profile_number_or_card_number_as_str, MAX_NUM_STR_LENGTH, "%d", profile_number);
 		profile_number_or_card_number_as_str[MAX_NUM_STR_LENGTH - 1] = '\0';
@@ -835,7 +835,7 @@ int save_profile(const int profile_number, const int card_number, const char * c
 	if (res > 0) {
 		if ((profile_begin = get_profile_begin(buffer, profile_number)) < 0) {
 			if (profile_number < MAX_PROFILES) {
-				for (profile_nr = 0; profile_nr <= MAX_PROFILES; profile_nr++)
+				for (profile_nr = 1; profile_nr <= MAX_PROFILES; profile_nr++)
 				{
 					if (profile_nr > profile_number) {
 						if ((profile_begin = get_profile_begin(buffer, profile_nr)) >= 0)
@@ -1052,8 +1052,8 @@ int get_profile_number(const char * const profile_name_given, const int card_num
 									"by replacing place holder '%c' with profile number.\n", \
 									PROFILE_HEADER_TEMPL, PLACE_HOLDER_NUM);
 						/* check profile number */
-					} else if (profile_number > MAX_PROFILES) {
-						fprintf(stderr, "profile number '%d' is incorrect. the maximum profile number will be '%d'.\n", \
+					} else if (profile_number < 1 || profile_number > MAX_PROFILES) {
+						fprintf(stderr, "profile number '%d' is incorrect. the profile number will be in [1 ... %d].\n", \
 									profile_number, MAX_PROFILES);
 						profile_number = -EINVAL;
 					}
@@ -1075,6 +1075,11 @@ char *get_profile_name(const int profile_number, const int card_number, char * c
 	int res, max_length;
 	void *buffer = NULL;
 
+	if (profile_number < 1 || profile_number > MAX_PROFILES) {
+		fprintf(stderr, "profile number '%d' is incorrect. the profile number will be in [1 ... %d].\n", \
+					profile_number, MAX_PROFILES);
+		return NULL;
+	}
 	if (cfgfile == NULL)
 		cfgfile = DEFAULT_PROFILERC;
 	res = which_cfgfile(&cfgfile);
@@ -1115,6 +1120,11 @@ int save_restore(const char * const operation, const int profile_number, const i
 {
 	int res;
 
+	if (profile_number < 1 || profile_number > MAX_PROFILES) {
+		fprintf(stderr, "profile number '%d' is incorrect. the profile number will be in [1 ... %d].\n", \
+					profile_number, MAX_PROFILES);
+		return -EINVAL;
+	}
 	if (cfgfile == NULL)
 		cfgfile = DEFAULT_PROFILERC;
 	if (!strcmp(operation, ALSACTL_OP_STORE)) {

@@ -1908,7 +1908,7 @@ static void create_profiles(GtkWidget *main, GtkWidget *notebook, int page)
 			max_digits++;
 			if (strlen(default_profile) <= max_digits) {
 				profile_number = atoi(default_profile);
-				if (profile_number > MAX_PROFILES)
+				if (profile_number < 1 || profile_number > MAX_PROFILES)
 					profile_number = get_profile_number(default_profile, card_number, profiles_file_name);
 			} else {
 				profile_number = get_profile_number(default_profile, card_number, profiles_file_name);
