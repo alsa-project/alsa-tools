@@ -6,3 +6,8 @@ bin_PROGRAMS = hdsploader
 
 hdsploader_SOURCES = hdsploader.c
 
+alsa-dist: distdir
+	@rm -rf ../distdir/hdsploader
+	@mkdir -p ../distdir/hdsploader
+	@cp -RLpv $(distdir)/* ../distdir/hdsploader
+	@rm -rf $(distdir)
