@@ -28,6 +28,7 @@
 #include <string.h>
 #include <getopt.h>
 #include <sys/errno.h>
+#include <sys/signal.h>
 #include <errno.h>
 #include "config.h"
 
@@ -74,6 +75,17 @@ ssize_t fill_buffer(uint_8 **start,uint_8 **end)
 
 	*end = *start + bytes_read;
 	return bytes_read;
+}
+
+static void ac3dec_signal_handler(int signal)
+{
+	if (!quiet)
+		fprintf(stderr, "Aborted...\n");
+	// it's important to close the PCM handle(s), because
+	// some driver settings have to be recovered
+	output_close();
+	fclose(in_file);
+	exit(EXIT_FAILURE);
 }
 
 int main(int argc,char *argv[])
@@ -176,6 +188,9 @@ int main(int argc,char *argv[])
 				fprintf(stderr, "Output open failed\n");
 				exit(EXIT_FAILURE);
 			}
+			signal(SIGINT, ac3dec_signal_handler);
+			signal(SIGTERM, ac3dec_signal_handler);
+			signal(SIGABRT, ac3dec_signal_handler);
 			do {
 				//Send the samples to the output device 
 				output_play(ac3_frame->audio_data, 256 * 6);
@@ -183,7 +198,13 @@ int main(int argc,char *argv[])
 		} else {
 			uint_8 *start, *end;
 			init_spdif();
-			output_open(&out_config);
+			if (output_open(&out_config) < 0) {
+				fprintf(stderr, "Output open failed\n");
+				exit(EXIT_FAILURE);
+			}
+			signal(SIGINT, ac3dec_signal_handler);
+			signal(SIGTERM, ac3dec_signal_handler);
+			signal(SIGABRT, ac3dec_signal_handler);
 			while (fill_buffer(&start, &end) > 0)
 				if (output_spdif(start, end) < 0)
 					break;
