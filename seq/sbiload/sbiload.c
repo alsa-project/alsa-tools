@@ -24,6 +24,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <errno.h>
 #include <alsa/asoundlib.h>
 #include <sys/time.h>
 #include <unistd.h>
@@ -150,7 +154,7 @@ show_list () {
       snd_seq_port_info_set_client(pinfo, client);
       snd_seq_port_info_set_port(pinfo, -1);
       while (snd_seq_query_next_port(seq_handle, pinfo) >= 0) {
-	  int cap;
+	  unsigned int cap;
 
 	  cap = (SND_SEQ_PORT_CAP_SUBS_WRITE | SND_SEQ_PORT_CAP_WRITE);
 	  if ((snd_seq_port_info_get_capability(pinfo) & cap) == cap) {
@@ -376,7 +380,7 @@ load_sb (int bank, int fd) {
 
   len = (file_type == SBI_FILE_TYPE_4OP) ? DATA_LEN_4OP : DATA_LEN_2OP;
   for (prg = 0;; prg++) {
-    if (read (fd, &sbi_instr.header, sizeof (sbi_header_t)) < sizeof (sbi_header_t))
+    if (read (fd, &sbi_instr.header, sizeof (sbi_header_t)) < (ssize_t)sizeof (sbi_header_t))
       break;
 
     if (!strncmp (sbi_instr.header.key, "SBI\032", 4) || !strncmp (sbi_instr.header.key, "2OP\032", 4)) {
