@@ -85,6 +85,10 @@ extern GtkWidget *hw_spdif_output_notebook;
 extern GtkWidget *hw_spdif_input_coaxial_radio;
 extern GtkWidget *hw_spdif_input_optical_radio;
 
+extern GtkObject *av_dac_volume_adj[];
+extern GtkObject *av_adc_volume_adj[];
+extern GtkWidget *av_dac_sense_radio[][4];
+extern GtkWidget *av_adc_sense_radio[][4];
 
 gint level_meters_configure_event(GtkWidget *widget, GdkEventConfigure *event);
 gint level_meters_expose_event(GtkWidget *widget, GdkEventExpose *event);
@@ -123,6 +127,26 @@ void spdif_input_update(void);
 void spdif_input_toggled(GtkWidget *togglebutton, gpointer data);
 void hardware_init(void);
 void hardware_postinit(void);
+void analog_volume_init(void);
+void analog_volume_postinit(void);
+int envy_dac_volumes(void);
+int envy_adc_volumes(void);
+int envy_dac_senses(void);
+int envy_adc_senses(void);
+int envy_dac_sense_items(void);
+int envy_adc_sense_items(void);
+const char *envy_dac_sense_enum_name(int i);
+const char *envy_adc_sense_enum_name(int i);
+int envy_analog_volume_available(void);
+
+void dac_volume_update(int idx);
+void adc_volume_update(int idx);
+void dac_sense_update(int idx);
+void adc_sense_update(int idx);
+void dac_volume_adjust(GtkAdjustment *adj, gpointer data);
+void adc_volume_adjust(GtkAdjustment *adj, gpointer data);
+void dac_sense_toggled(GtkWidget *togglebutton, gpointer data);
+void adc_sense_toggled(GtkWidget *togglebutton, gpointer data);
 
 void control_input_callback(gpointer data, gint source, GdkInputCondition condition);
 void mixer_input_callback(gpointer data, gint source, GdkInputCondition condition);

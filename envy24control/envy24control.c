@@ -76,6 +76,10 @@ GtkWidget *hw_spdif_output_notebook;
 GtkWidget *hw_spdif_input_coaxial_radio;
 GtkWidget *hw_spdif_input_optical_radio;
 
+GtkObject *av_dac_volume_adj[10];
+GtkObject *av_adc_volume_adj[10];
+GtkWidget *av_dac_sense_radio[10][4];
+GtkWidget *av_adc_sense_radio[10][4];
 
 
 static void create_mixer_frame(GtkWidget *fixed, int stream)
@@ -1005,6 +1009,123 @@ static void create_about(GtkWidget *main, GtkWidget *notebook, int page)
 	gtk_widget_set_usize(label, 736, 16);
 }
 
+static void create_analog_volume(GtkWidget *main, GtkWidget *notebook, int page)
+{
+	GtkWidget *label;
+	GtkWidget *fixed;
+	GtkWidget *fixed1;
+	GtkWidget *frame;
+	GtkObject *adj;
+	GtkWidget *vscale;
+	GtkWidget *radio;
+	GSList *group;
+	GtkWidget *scrollwin;
+	GtkWidget *viewport;
+	int i, j;
+
+	scrollwin = gtk_scrolled_window_new(NULL, NULL);
+	gtk_widget_show(scrollwin);
+	gtk_container_add(GTK_CONTAINER(notebook), scrollwin);
+
+        label = gtk_label_new("Analog Volume");
+        gtk_widget_show(label);
+	gtk_notebook_set_tab_label(GTK_NOTEBOOK(notebook), gtk_notebook_get_nth_page(GTK_NOTEBOOK(notebook), page), label);
+
+	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrollwin), GTK_POLICY_ALWAYS, GTK_POLICY_NEVER);
+	viewport = gtk_viewport_new(NULL, NULL);
+	gtk_widget_show(viewport);
+	gtk_container_add(GTK_CONTAINER(scrollwin), viewport);
+
+	fixed = gtk_fixed_new();
+	gtk_widget_show(fixed);
+	gtk_container_add(GTK_CONTAINER(viewport), fixed);	
+
+	/* create DAC */
+	for (i = 0; i < envy_dac_volumes(); i++) {
+		char name[32];
+		sprintf(name, "DAC %d", i);
+		frame = gtk_frame_new(name);
+		gtk_widget_show(frame);
+		gtk_frame_set_shadow_type(GTK_FRAME(frame), GTK_SHADOW_IN);
+		gtk_fixed_put(GTK_FIXED(fixed), frame, 2 + i * 74, 2);
+		gtk_widget_set_uposition(frame, 2 + i * 74, 2);
+		gtk_widget_set_usize(frame, 70, 288);
+
+		fixed1 = gtk_fixed_new();
+		gtk_widget_show(fixed1);
+		gtk_container_add(GTK_CONTAINER(frame), fixed1);	
+
+		adj = gtk_adjustment_new(0, -127, 0, 1, 16, 0);
+		av_dac_volume_adj[i] = adj;
+		vscale = gtk_vscale_new(GTK_ADJUSTMENT(adj));
+		gtk_scale_set_draw_value(GTK_SCALE(vscale), FALSE);
+		gtk_widget_show(vscale);
+		gtk_fixed_put(GTK_FIXED(fixed1), vscale, 2, 2);
+		gtk_widget_set_usize(vscale, 66, 200);
+
+		gtk_scale_set_value_pos(GTK_SCALE(vscale), GTK_POS_BOTTOM);
+		gtk_scale_set_digits(GTK_SCALE(vscale), 0);
+		gtk_signal_connect(GTK_OBJECT(adj), "value_changed",
+				   GTK_SIGNAL_FUNC(dac_volume_adjust), (gpointer)(i));
+		if (i >= envy_dac_senses())
+			continue;
+		group = NULL;
+		for (j = 0; j < envy_dac_sense_items(); j++) {
+			radio = gtk_radio_button_new_with_label(group, envy_dac_sense_enum_name(j));
+			av_dac_sense_radio[i][j] = radio;
+			gtk_widget_show(radio);
+			gtk_signal_connect(GTK_OBJECT(radio), "toggled",
+					   (GtkSignalFunc)dac_sense_toggled, (gpointer)((i << 8) + j));
+			gtk_fixed_put(GTK_FIXED(fixed1), radio, 2, 202 + j * 20);
+			gtk_widget_set_usize(radio, 66, 24);
+			group = gtk_radio_button_group(GTK_RADIO_BUTTON(radio));
+		}
+	}
+
+	/* create ADC */
+	for (i = 0; i < envy_adc_volumes(); i++) {
+		char name[32];
+		sprintf(name, "ADC %d", i);
+		frame = gtk_frame_new(name);
+		gtk_widget_show(frame);
+		gtk_frame_set_shadow_type(GTK_FRAME(frame), GTK_SHADOW_IN);
+		gtk_fixed_put(GTK_FIXED(fixed), frame, 2 + (i + envy_dac_volumes()) * 74, 2);
+		gtk_widget_set_uposition(frame, 2 + (i + envy_dac_volumes()) * 74, 2);
+		gtk_widget_set_usize(frame, 70, 288);
+
+		fixed1 = gtk_fixed_new();
+		gtk_widget_show(fixed1);
+		gtk_container_add(GTK_CONTAINER(frame), fixed1);	
+
+		adj = gtk_adjustment_new(0, -127, 0, 1, 16, 0);
+		av_adc_volume_adj[i] = adj;
+		vscale = gtk_vscale_new(GTK_ADJUSTMENT(adj));
+		gtk_scale_set_draw_value(GTK_SCALE(vscale), FALSE);
+		gtk_widget_show(vscale);
+		gtk_fixed_put(GTK_FIXED(fixed1), vscale, 2, 2);
+		gtk_widget_set_usize(vscale, 66, 200);
+
+		gtk_scale_set_value_pos(GTK_SCALE(vscale), GTK_POS_BOTTOM);
+		gtk_scale_set_digits(GTK_SCALE(vscale), 0);
+		gtk_signal_connect(GTK_OBJECT(adj), "value_changed",
+				   GTK_SIGNAL_FUNC(adc_volume_adjust), (gpointer)(i));
+		if (i >= envy_adc_senses())
+			continue;
+		group = NULL;
+		for (j = 0; j < envy_adc_sense_items(); j++) {
+			radio = gtk_radio_button_new_with_label(group, envy_adc_sense_enum_name(j));
+			av_adc_sense_radio[i][j] = radio;
+			gtk_widget_show(radio);
+			gtk_signal_connect(GTK_OBJECT(radio), "toggled",
+					   (GtkSignalFunc)adc_sense_toggled, (gpointer)((i << 8) + j));
+			gtk_fixed_put(GTK_FIXED(fixed1), radio, 2, 202 + j * 20);
+			gtk_widget_set_usize(radio, 66, 24);
+			group = gtk_radio_button_group(GTK_RADIO_BUTTON(radio));
+		}
+	}
+}
+
+
 static void usage(void)
 {
 	fprintf(stderr, "usage: envy24control [-D control-name]\n");
@@ -1015,12 +1136,11 @@ int main(int argc, char **argv)
         GtkWidget *notebook;
         char *name, title[128];
 	int i, c, err;
-	//snd_ctl_t *ctl; // global
 	snd_ctl_card_info_t *hw_info;
 	snd_ctl_elem_value_t *val;
 	int npfds;
 	struct pollfd *pfds;
-	// snd_mixer_filter_t filter;
+	int page;
 	static struct option long_options[] = {
 		{"device", 1, 0, 'D'},
 	};
@@ -1069,6 +1189,7 @@ int main(int argc, char **argv)
 	level_meters_init();
 	patchbay_init();
 	hardware_init();
+	analog_volume_init();
 
         /* Make the title */
         sprintf(title, "Envy24 Control Utility %s (%s)", VERSION, snd_ctl_card_info_get_longname(hw_info));
@@ -1089,10 +1210,13 @@ int main(int argc, char **argv)
         gtk_widget_show(notebook);
 	gtk_container_add(GTK_CONTAINER(window), notebook);
 
-	create_mixer(window, notebook, 0);
-	create_router(window, notebook, 1);
-	create_hardware(window, notebook, 2);
-	create_about(window, notebook, 3);
+	page = 0;
+	create_mixer(window, notebook, page++);
+	create_router(window, notebook, page++);
+	create_hardware(window, notebook, page++);
+	if (envy_analog_volume_available())
+		create_analog_volume(window, notebook, page++);
+	create_about(window, notebook, page++);
 
 	npfds = snd_ctl_poll_descriptors_count(ctl);
 	if (npfds > 0) {
@@ -1112,6 +1236,7 @@ int main(int argc, char **argv)
 	mixer_postinit();
 	patchbay_postinit();
 	hardware_postinit();
+	analog_volume_postinit();
 
 	gtk_widget_show(window);
 	gtk_main();

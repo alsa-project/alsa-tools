@@ -62,6 +62,14 @@ void control_input_callback(gpointer data, gint source, GdkInputCondition condit
 			patchbay_update();
 		else if (!strcmp(name, "IEC958 Playback Route"))
 			patchbay_update();
+		else if (!strcmp(name, "DAC Volume"))
+			dac_volume_update(index);
+		else if (!strcmp(name, "ADC Volume"))
+			adc_volume_update(index);
+		else if (!strcmp(name, "Output Sensitivity Switch"))
+			dac_sense_update(index);
+		else if (!strcmp(name, "Input Sensitivity Switch"))
+			adc_sense_update(index);
 		break;
 	default:
 		break;
