@@ -4,9 +4,14 @@ AUTOMAKE_OPTIONS = 1.3 foreign
 bin_PROGRAMS = sbiload
 #man_MANS = sbiload.1
 
+AM_CFLAGS = -DPATCHDIR=\"$(datadir)/sounds/opl3\"
+
 sbiload_SOURCES = sbiload.c
 
-EXTRA_DIST = README COPYING depcomp
+patchdir = $(datadir)/sounds/opl3
+patch_DATA = std.o3 drums.o3 std.sb drums.sb
+
+EXTRA_DIST = README COPYING depcomp std.o3 drums.o3 std.sb drums.sb
 
 alsa-dist: distdir
 	@rm -rf ../../distdir/seq/sbiload

@@ -84,6 +84,7 @@ static struct option long_opts[] = {
   {"port", HAS_ARG, NULL, 'p'},
   {"opl3", 0, NULL, '4'},
   {"list", 0, NULL, 'l'},
+  {"path", HAS_ARG, NULL, 'P'},
   {"verbose", HAS_ARG, NULL, 'v'},
   {"version", 0, NULL, 'V'},
   {0, 0, 0, 0},
@@ -111,6 +112,12 @@ int seq_client;
 int seq_port;
 int seq_dest_client;
 int seq_dest_port;
+
+#ifndef PATCHDIR
+#define PATCHDIR "/usr/share/sounds/opl3"
+#endif
+
+char *patchdir = PATCHDIR;
 
 /* Function prototypes */
 static void show_list ();
@@ -180,6 +187,7 @@ show_usage () {
     "  -p client:port  - A alsa client and port number to send midi to",
     "  -4              - four operators file type (default = two ops)",
     "  -l              - List possible output ports that could be used",
+    "  -P path         - Specify the patch path",
     "  -v level        - Verbose level (default = 0)",
     "  -V              - Show version",
   };
@@ -443,7 +451,14 @@ static int
 load_file (int bank, char *filename) {
   int fd;
 
-  fd = open (filename, O_RDONLY);
+  if (*filename == '/')
+    fd = open (filename, O_RDONLY);
+  else {
+    char path[1024];
+    snprintf(path, sizeof(path), "%s/%s", PATCHDIR, filename);
+    fd = open (path, O_RDONLY);
+  }
+
   if (fd == -1) {
       perror (filename);
       return -1;
@@ -622,6 +637,9 @@ main (int argc, char **argv) {
     case 'l':
       show_list ();
       exit (0);
+    case 'P':
+      patchdir = optarg;
+      break;
     case '?':
       show_usage ();
       exit (1);
