@@ -1,7 +1,9 @@
 # # Process this file with automake to produce Makefile.in.
 AUTOMAKE_OPTIONS = 1.3 foreign
 
-AM_CFLAGS = -DDATAPATH=\"$(datadir)/alsa/firmware\"
+MYNAME = vxloader
+
+AM_CFLAGS = -DDATAPATH=\"$(datadir)/alsa/firmware/$(MYNAME)\"
 
 SUBDIRS = firmware
 
@@ -12,7 +14,7 @@ vxloader_SOURCES = vxloader.c
 EXTRA_DIST = depcomp
 
 alsa-dist: distdir
-	@rm -rf ../distdir/vxloader
-	@mkdir -p ../distdir/vxloader
-	@cp -RLpv $(distdir)/* ../distdir/vxloader
+	@rm -rf ../distdir/$(MYNAME)
+	@mkdir -p ../distdir/$(MYNAME)
+	@cp -RLpv $(distdir)/* ../distdir/$(MYNAME)
 	@rm -rf $(distdir)
