@@ -32,16 +32,6 @@
 #include <sys/time.h>
 #include <unistd.h>
 
-/*
- * Load a SBI FM instrument patch
- *	sbiload [-p client:port] [-4] [-l] [-v level] instfile drumfile
- *
- *	-p client:port  - An ALSA client and port number to load instrument to
- *      -4              - four operators file type
- *	-l              - List possible output ports that could be used
- *	-v level        - Verbose level
- */
-
 typedef struct sbi_header
 {
   char key[4];
@@ -182,7 +172,7 @@ static void
 show_usage () {
   char **cpp;
   static char *msg[] = {
-    "Usage: sbiload [-p client:port] [-4] [-l] [-v level] instfile drumfile",
+    "Usage: sbiload [-p client:port] [-4] [-l] [-P path] [-v level] instfile drumfile",
     "",
     "  -p client:port  - A alsa client and port number to send midi to",
     "  -4              - four operators file type (default = two ops)",
@@ -455,7 +445,7 @@ load_file (int bank, char *filename) {
     fd = open (filename, O_RDONLY);
   else {
     char path[1024];
-    snprintf(path, sizeof(path), "%s/%s", PATCHDIR, filename);
+    snprintf(path, sizeof(path), "%s/%s", patchdir, filename);
     fd = open (path, O_RDONLY);
   }
 
@@ -590,11 +580,12 @@ finish_client ()
 
 /*
  * Load a .SBI FM instrument patch
- *   sbiload [-p client:port] [-l] [-v level] instfile drumfile
+ *   sbiload [-p client:port] [-l] [-P path] [-v level] instfile drumfile
  *
  *   -p, --port=client:port  - An ALSA client and port number to use
  *   -4  --opl3              - four operators file type
  *   -l, --list              - List possible output ports that could be used
+ *   -P, --path=path         - Specify the patch path
  *   -v, --verbose=level     - Verbose level
  */
 int

@@ -23,11 +23,12 @@ sound card. You need to load snd-synth-opl3 module.
 Usage
 -----
 
-	loadsbi [-p client:port] [-l] [-v level] instfile drumfile
+	loadsbi [-p client:port] [-4] [-l] [-P path] [-v level] instfile drumfile
 
 	  -p, --port=client:port  - An ALSA client and port number to use
 	  -4  --opl3              - Four operators (OPL3) file type
 	  -l, --list              - List possible output ports
+	  -P, --path=path         - Specify the patch path
 	  -v, --verbose=level     - Verbose level
 
 Because you may have more than one sound card and each sound
