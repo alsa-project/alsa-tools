@@ -203,6 +203,7 @@ int main(int argc,char *argv[])
 			ac3_frame_t *ac3_frame;
 			ac3_init(&ac3_config);
 			ac3_frame = ac3_decode_frame();
+			out_config.rate = ac3_frame->sampling_rate;
 			if (output_open(&out_config) < 0) {
 				fprintf(stderr, "Output open failed\n");
 				exit(EXIT_FAILURE);
