@@ -69,9 +69,12 @@ static int csp_command (int idx, int dev, int command, char *filename)
 {
 	int fd, err;
 	snd_hwdep_t *handle;
+	char name[16];
+
+	sprintf(name, "hw:%i,%i", idx, dev);
 
 	/* open CSP hwdep device */
-	if ((err = snd_hwdep_open(&handle, idx, dev, O_WRONLY)) < 0) {
+	if ((err = snd_hwdep_open(&handle, name, O_WRONLY)) < 0) {
 		error("CSP open (%i-%i): %s", idx, dev, snd_strerror(err));
 		exit(1);
 	}
