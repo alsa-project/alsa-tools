@@ -1958,6 +1958,7 @@ int main(int argc, char **argv)
 		{"spdif", 1, 0, 's'},
 		{"profiles_file", 1, 0, 'f'},
 		{"view_spdif_playback", 0, 0, 'v'},
+		{ NULL }
 	};
 
 
