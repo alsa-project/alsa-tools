@@ -177,7 +177,7 @@ int output_play(sint_16* output_samples, uint_32 num_frames)
 		if (res == -EPIPE)		/* underrun */
 			res = snd_pcm_prepare(pcm);
 		else if (res == -ESTRPIPE) {	/* suspend */
-			while ((res = snd_pcm_resume(pcm)) == -EBUSY)
+			while ((res = snd_pcm_resume(pcm)) == -EAGAIN)
 				sleep(1);
 			if (res < 0)
 				res = snd_pcm_prepare(pcm);
