@@ -33,7 +33,7 @@ GtkWidget *create_loopback_toggle()
 	
 	snd_ctl_elem_value_malloc(&val);
 	
-	snd_ctl_elem_value_set_interface(val, SND_CTL_ELEM_IFACE_PCM);
+	snd_ctl_elem_value_set_interface(val, SND_CTL_ELEM_IFACE_MIXER);
 	snd_ctl_elem_value_set_name(val,elem_name);
 	snd_ctl_elem_read(ctl, val);
 	
