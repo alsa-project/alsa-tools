@@ -1,0 +1,7 @@
+hdsploader - firmware loader for the RME Hammerfall DSP cards
+		Thomas Charbonnel <thomas@undata.org>
+		
+
+USAGE
+
+Just run hdsploader, the program takes care of everything.
