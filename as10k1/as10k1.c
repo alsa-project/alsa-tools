@@ -43,29 +43,28 @@ int dbg_opt=0;
 
 char version[]="As10k1 assembler version " VERSION;
 
-char help[]="
-Usage: as10k1 [option...] asmfile
-
-The as10k1 assembler is for the emu10k1 dsp processor
-found in Creative Lab's sblive series of sound cards.
-
-Author: Daniel Bertrand <d.bertrand@ieee.ca>
-
-Options:\n
-     -l [listfile]         Specify a listing file, default is none.
-     -o [emu10k1 file]     Specify an output file, default is based input,
-                           Substituting .asm to .emu10k1
-     -d [dbg_options...]   Turn on debug messages.
-            s              prints all symbols                
-            g              prints defined gprs
-            t              prints tram usage
-            i              prints instructions
-     -h                    Prints this message  
-     -v                    Prints version number. 
-
-This program is distributed under the GPL.
-
-";
+char help[]="\n"
+"Usage: as10k1 [option...] asmfile\n"
+"\n"
+"The as10k1 assembler is for the emu10k1 dsp processor\n"
+"found in Creative Lab's sblive series of sound cards.\n"
+"\n"
+"Author: Daniel Bertrand <d.bertrand@ieee.ca>\n"
+"\n"
+"Options:\n\n"
+"     -l [listfile]         Specify a listing file, default is none.\n"
+"     -o [emu10k1 file]     Specify an output file, default is based input,\n"
+"                           Substituting .asm to .emu10k1\n"
+"     -d [dbg_options...]   Turn on debug messages.\n"
+"            s              prints all symbols                \n"
+"            g              prints defined gprs\n"
+"            t              prints tram usage\n"
+"            i              prints instructions\n"
+"     -h                    Prints this message  \n"
+"     -v                    Prints version number. \n"
+"\n"
+"This program is distributed under the GPL.\n"
+"\n";
 
 //  cli==Command-Line Interface && !Creative Labs Inc.
 
