@@ -19,7 +19,7 @@
 
 #include "envy24control.h"
 
-static snd_ctl_element_t routes;
+static snd_ctl_elem_t routes;
 
 #define toggle_set(widget, state) \
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), state);
@@ -95,7 +95,7 @@ void patchbay_update(void)
 {
 	int stream, tidx, err;
 
-	if ((err = snd_ctl_element_read(card_ctl, &routes)) < 0) {
+	if ((err = snd_ctl_elem_read(card_ctl, &routes)) < 0) {
 		g_print("Multi track routes read error: %s\n", snd_strerror(err));
 		return;
 	}
@@ -169,7 +169,7 @@ static void set_routes(int stream, int idx)
 	routes.value.bytes.data[6] = (capture >> 16) & 0xff;
 	routes.value.bytes.data[7] = (capture >> 24) & 0xff;
 	// g_print("psdout = 0x%x, spdout = 0x%x, capture = 0x%x\n", psdout, spdout, capture);
-	if ((err = snd_ctl_element_write(card_ctl, &routes)) < 0)
+	if ((err = snd_ctl_elem_write(card_ctl, &routes)) < 0)
 		g_print("Multi track route write error: %s\n", snd_strerror(err));
 }
 
@@ -185,7 +185,7 @@ void patchbay_toggled(GtkWidget *togglebutton, gpointer data)
 void patchbay_init(void)
 {
 	memset(&routes, 0, sizeof(routes));
-	routes.id.iface = SND_CTL_ELEMENT_IFACE_MIXER;
+	routes.id.iface = SND_CTL_ELEM_IFACE_MIXER;
 	strcpy(routes.id.name, "Multi Track Route");
 }
 

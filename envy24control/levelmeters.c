@@ -26,16 +26,16 @@ static GdkGC *penOrangeLight[21] = { NULL, };
 static GdkGC *penRedShadow[21] = { NULL, };
 static GdkGC *penRedLight[21] = { NULL, };
 static GdkPixmap *pixmap[21] = { NULL, };
-static snd_ctl_element_t peaks;
+static snd_ctl_elem_t peaks;
 
 static void update_peak_switch(void)
 {
 	int err;
 
 	memset(&peaks, 0, sizeof(peaks));
-	peaks.id.iface = SND_CTL_ELEMENT_IFACE_MIXER;
+	peaks.id.iface = SND_CTL_ELEM_IFACE_MIXER;
 	strcpy(peaks.id.name, "Multi Track Peak");
-	if ((err = snd_ctl_element_read(card_ctl, &peaks)) < 0)
+	if ((err = snd_ctl_elem_read(card_ctl, &peaks)) < 0)
 		g_print("Unable to read peaks: %s\n", snd_strerror(err));
 }
 

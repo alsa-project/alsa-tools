@@ -1029,7 +1029,7 @@ int main(int argc, char **argv)
         char name[32], title[128];
 	int err;
 	unsigned int cards_mask;
-	snd_ctl_element_t ctl;
+	snd_ctl_elem_t ctl;
 	// snd_mixer_filter_t filter;
 
 	/* Go through gtk initialization */
@@ -1066,7 +1066,7 @@ int main(int argc, char **argv)
 
 #if 0
 	memset(&filter, 0, sizeof(filter));
-	snd_mixer_set_bit(filter.read_cmds, SND_MIXER_READ_ELEMENT_VALUE, 1);
+	snd_mixer_set_bit(filter.read_cmds, SND_MIXER_READ_ELEM_VALUE, 1);
 	if ((err = snd_mixer_put_filter(card_mixer, &filter)) < 0) {
 		fprintf(stderr, "snd_mixer_set_filter: %s\n", snd_strerror(err));
 		exit(EXIT_FAILURE);
@@ -1074,9 +1074,9 @@ int main(int argc, char **argv)
 #endif
 
 	memset(&ctl, 0, sizeof(ctl));
-	ctl.id.iface = SND_CTL_ELEMENT_IFACE_CARD;
+	ctl.id.iface = SND_CTL_ELEM_IFACE_CARD;
 	strcpy(ctl.id.name, "ICE1712 EEPROM");
-	if ((err = snd_ctl_element_read(card_ctl, &ctl)) < 0) {
+	if ((err = snd_ctl_elem_read(card_ctl, &ctl)) < 0) {
 		fprintf(stderr, "Unable to read EEPROM contents: %s\n", snd_strerror(err));
 		exit(EXIT_FAILURE);
 	}
