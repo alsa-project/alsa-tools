@@ -81,6 +81,7 @@ static struct option long_opts[] = {
   {"opl3", 0, NULL, '4'},
   {"list", 0, NULL, 'l'},
   {"verbose", HAS_ARG, NULL, 'v'},
+  {"version", 0, NULL, 'V'},
   {0, 0, 0, 0},
 };
 
@@ -130,7 +131,7 @@ error_handler (const char *file, int line, const char *function, int err, const 
 static void
 show_list () {
   snd_seq_client_info_t *cinfo;
-  int client, port, err;
+  int client, err;
 
   snd_lib_error_set_handler (error_handler);
   if ((err = snd_seq_open (&seq_handle, "hw", SND_SEQ_OPEN_DUPLEX, 0)) < 0) {
@@ -175,11 +176,20 @@ show_usage () {
     "  -4              - four operators file type (default = two ops)",
     "  -l              - List possible output ports that could be used",
     "  -v level        - Verbose level (default = 0)",
+    "  -V              - Show version",
   };
 
   for (cpp = msg; cpp < msg + NELEM (msg); cpp++) {
       fprintf (stderr, "%s\n", *cpp);
   }
+}
+
+/*
+ * Show version
+ */
+static void
+show_version () {
+  printf("Version: " VERSION "\n");
 }
 
 /*
@@ -448,8 +458,7 @@ parse_portdesc (char *portdesc) {
   char *astr;
   char *cp;
   int a[ADDR_PARTS];
-  int count, naddr;
-  int i;
+  int count;
 
   if (portdesc == NULL)
     return -1;
@@ -578,6 +587,9 @@ main (int argc, char **argv) {
     case 'v':
       verbose = atoi (optarg);
       break;
+    case 'V':
+      show_version();
+      exit (1);
     case 'l':
       show_list ();
       exit (0);
