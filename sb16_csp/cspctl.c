@@ -1,10 +1,7 @@
 /*
  *  SB16/AWE32 Creative Signal Processor (ASP/CSP) control program
- *    ver 0.2.0
  *
  *  Copyright (c) 2000 by Uros Bizjak <uros@kss-loka.si>
- *
- *   http://www.kss-loka.si/~uros/CSP.html
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -22,13 +19,13 @@
  *
  */
 
-#include <sound/sb16_csp.h>
+#include <alsa/asoundlib.h>
 #include <getopt.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <alsa/asoundlib.h>
 #include <linux/ioctl.h>
+#include <sound/sb16_csp.h>
 
 /* --- commands --- */
 enum {
@@ -64,11 +61,6 @@ static void help(char *command)
 		"  -f function      select CSP function #, defaults to 1\n"
 		"  -d description   optional codec description string\n"
 		, command);
-}
-
-static void version(void)
-{
-	printf("Version: " VERSION "\n");
 }
 
 static int csp_command (int idx, int dev, int command, char *filename)
@@ -136,20 +128,13 @@ int main(int argc, char *argv[])
 		help(argv[0]);
 		return 0;
 	}
-	if (argc > 1 && !strcmp(argv[1], "--version")) {
-		version();
-		return 0;
-	}
 
 	strcpy (microcode.info.codec_name, "UNKNOWN");
 	microcode.info.func_req = 1;
-	while ((c = getopt(argc, argv, "hvc:f:d:")) != EOF) {
+	while ((c = getopt(argc, argv, "hc:f:d:")) != EOF) {
 		switch (c) {
 		case 'h':
 			help(argv[0]);
-			return 0;
-		case 'v':
-			version();
 			return 0;
 		case 'c':
 			{
@@ -210,10 +195,10 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	// CSP chip is present only on SB16 and SBAWE cards
-	if (strcmp(snd_ctl_card_info_get_driver(card_info), "SB 16") != 0 &&
+	// CSP chip is present only on SB16 and SB AWE cards
+	if (strcmp(snd_ctl_card_info_get_driver(card_info), "SB16") != 0 &&
 	    strcmp(snd_ctl_card_info_get_driver(card_info), "SB AWE") != 0) {
-		error("not a SB_16 or SB_AWE type card");
+		error("not a SB16 or SB AWE type card");
 		exit(1);
 	}
 
