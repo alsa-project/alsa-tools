@@ -20,7 +20,7 @@
 
 #include <stdio.h>
 #include <errno.h>
-#include <sys/asoundlib.h>
+#include <alsa/asoundlib.h>
 
 typedef signed short sint_16;
 typedef unsigned int uint_32;

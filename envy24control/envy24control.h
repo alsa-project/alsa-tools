@@ -4,7 +4,7 @@
 #include <signal.h>
 #include <errno.h>
 #include <gtk/gtk.h>
-#include <sys/asoundlib.h>
+#include <alsa/asoundlib.h>
 
 #define ICE1712_SUBDEVICE_DELTA1010	0x121430d6
 #define ICE1712_SUBDEVICE_DELTADIO2496	0x121431d6

@@ -24,7 +24,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/asoundlib.h>
+#include <alsa/asoundlib.h>
 #include <sys/time.h>
 #include <unistd.h>
 

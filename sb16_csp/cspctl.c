@@ -27,7 +27,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/asoundlib.h>
+#include <alsa/asoundlib.h>
 #include <linux/ioctl.h>
 
 /* --- commands --- */
