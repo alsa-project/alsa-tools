@@ -3,5 +3,5 @@
 aclocal $ACLOCAL_FLAGS
 automake --add-missing
 autoconf
-./configure
+./configure $*
 make
