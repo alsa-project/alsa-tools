@@ -1,0 +1,14 @@
+#!/bin/sh
+# load the firmware into Tascam USB devices (FPGA design)
+
+LOADER=/usr/local/bin/usx2yloader
+
+if [ -x /usr/bin/logger ]; then
+	/usr/bin/logger -t $0 "calling $LOADER for $DEVICE"
+fi
+$LOADER
+/usr/local/bin/us428control&
+if [ -x /usr/bin/logger ]; then
+	/usr/bin/logger -t $0 "leaving"
+fi
+
