@@ -6,6 +6,7 @@ all:
 	@for i in $(SUBDIRS); do cd $(TOP)/$$i; ./cvscompile; cd ..; make -C $$i; done
 
 alsa-dist:
+	@echo $(VERSION) >> $(TOP)/version
 	@mkdir -p $(TOP)/distdir
 	@for i in $(SUBDIRS); do cd $(TOP)/$$i; ./cvscompile; cd ..; make -C $$i alsa-dist; done
 	@mv distdir alsa-tools-$(VERSION)
