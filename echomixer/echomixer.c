@@ -92,7 +92,6 @@
 
 char card[64], cardId[16];
 char dmodeName[DIGITAL_MODES][64], clocksrcName[DIGITAL_MODES][64], spdifmodeName[DIGITAL_MODES][64];
-char NominalIn[ECHO_MAXAUDIOINPUTS], NominalOut[ECHO_MAXAUDIOOUTPUTS];
 int nLOut, nIn, fdIn, fdOut, nPOut, ClockMask;
 int ndmodes, nclocksrc, nspdifmodes;
 int GMixerRow, GMixerColumn, Gang, AutoClock;
@@ -176,7 +175,7 @@ struct mixerControl_s {
 #endif
 
 
-struct VolumeControl {
+struct VolumeControl_s {
   int input, output;				// Currently selected channels
   int inputs, outputs;
   int id;
@@ -187,7 +186,13 @@ struct VolumeControl {
   int Gain[ECHO_MAXAUDIOOUTPUTS];
 } lineinControl, lineoutControl, pcmoutControl;
 
-GtkWidget *p4dbuOut[ECHO_MAXAUDIOOUTPUTS], *p4dbuIn[ECHO_MAXAUDIOINPUTS];	// +4dBu/-10dBV toggles
+struct NominalLevelControl_s {
+  int id;
+  int Channels;
+  char Level[ECHO_MAXAUDIOINPUTS];
+  GtkWidget *Button[ECHO_MAXAUDIOINPUTS];
+} NominalIn, NominalOut;
+
 GtkWidget *clocksrc_menuitem[ECHO_CLOCKS];
 GtkWidget *dmodeOpt, *clocksrcOpt, *spdifmodeOpt, *phantomChkbutton, *autoclockChkbutton;
 GtkWidget *window, *Mainwindow, *Miscwindow, *LVwindow, *VUwindow, *GMwindow;
@@ -478,22 +483,20 @@ void ReadControl(int *vol, int channels, int volId) {
 
 
 
-void ReadNominalLevels(char *NominalLevel, int numid) {
+void ReadNominalLevels(struct NominalLevelControl_s *NominalLevel) {
   snd_ctl_elem_id_t *id;
   snd_ctl_elem_value_t *control;
-  int err, i, n;
+  int err, i;
 
   snd_ctl_elem_id_alloca(&id);
   snd_ctl_elem_value_alloca(&control);
-
   snd_ctl_elem_id_set_interface(id, SND_CTL_ELEM_IFACE_MIXER);
-  n=(numid==p4InId) ? fdIn : fdOut;
-  snd_ctl_elem_id_set_numid(id, numid);
+  snd_ctl_elem_id_set_numid(id, NominalLevel->id);
   snd_ctl_elem_value_set_id(control, id);
   if ((err=snd_ctl_elem_read(ctlhandle, control))<0)
     printf("Control %s element read error: %s\n", card, snd_strerror(err));
-  for (i=0; i<n; i++)
-    NominalLevel[i]=snd_ctl_elem_value_get_integer(control, i);
+  for (i=0; i<NominalLevel->Channels; i++)
+    NominalLevel->Level[i]=snd_ctl_elem_value_get_integer(control, i);
 }
 
 
@@ -1120,7 +1123,7 @@ void PCM_volume_changed(GtkWidget *widget, gpointer ch) {
   snd_ctl_elem_value_t *control;
   char str[16];
   int err, channel, val, rval;
-  struct VolumeControl *vol;
+  struct VolumeControl_s *vol;
 
   snd_ctl_elem_id_alloca(&id);
   snd_ctl_elem_value_alloca(&control);
@@ -1345,26 +1348,24 @@ void Vmixer_vchannel_selector_clicked(GtkWidget *widget, gpointer ch) {
 void Nominal_level_toggled(GtkWidget *widget, gpointer ch) {
   snd_ctl_elem_id_t *id;
   snd_ctl_elem_value_t *control;
-  GtkWidget **button;
   int err, val, channel;
+  struct NominalLevelControl_s *NominalLevel;
 
   snd_ctl_elem_id_alloca(&id);
   snd_ctl_elem_value_alloca(&control);
+  snd_ctl_elem_id_set_interface(id, SND_CTL_ELEM_IFACE_MIXER);
 
   val=gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
-
-  snd_ctl_elem_id_set_interface(id, SND_CTL_ELEM_IFACE_MIXER);
   if ((int)ch<ECHO_MAXAUDIOINPUTS) {
     channel=(int)ch;
-    button=p4dbuIn;
-    NominalIn[channel]=!val;
-    snd_ctl_elem_id_set_numid(id, p4InId);
+    NominalLevel=&NominalIn;
   } else {
     channel=(int)ch-ECHO_MAXAUDIOINPUTS;
-    button=p4dbuOut;
-    NominalOut[channel]=!val;
-    snd_ctl_elem_id_set_numid(id, p4OutId);
+    NominalLevel=&NominalOut;
   }
+  NominalLevel->Level[channel]=!val;
+
+  snd_ctl_elem_id_set_numid(id, NominalLevel->id);
   snd_ctl_elem_value_set_id(control, id);
   if ((err=snd_ctl_elem_read(ctlhandle, control))<0)
     printf("Control %s element read error: %s\n", card, snd_strerror(err));
@@ -1372,7 +1373,7 @@ void Nominal_level_toggled(GtkWidget *widget, gpointer ch) {
   if ((err=snd_ctl_elem_write(ctlhandle, control))<0)
     printf("Control %s element write error: %s\n", card, snd_strerror(err));
   if (Gang)
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button[channel^1]), val);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(NominalLevel->Button[channel^1]), val);
 }
 
 
@@ -1680,39 +1681,7 @@ void ToggleWindow(GtkWidget *widget, gpointer window) {
 
 
 
-/*
-int LockControls(snd_ctl_elem_id_t *id, int first_id, int num) {
-  int i, err;
-
-  for (i=0; i<num; i++) {
-    snd_ctl_elem_id_set_numid(id, first_id+i);
-    err=snd_ctl_elem_lock(ctlhandle, id);
-    if (err)
-      return(err);
-  }
-  return(0);
-}
-
-int LockControls(int first_id, int num) {
-  int i, err;
-  snd_ctl_elem_id_t *id;
-
-  snd_ctl_elem_id_alloca(&id);
-  snd_ctl_elem_id_set_interface(id, first_id==clocksrcId ? SND_CTL_ELEM_IFACE_PCM : SND_CTL_ELEM_IFACE_CARD);
-
-  for (i=0; i<num; i++) {
-    snd_ctl_elem_id_set_numid(id, first_id+i);
-    err=snd_ctl_elem_lock(ctlhandle, id);
-    if (err)
-      return(err);
-  }
-  return(0);
-}
-*/
-
-
-
-// Scan all controls and store their ID's for later use.
+// Scan all controls and sets up the structures needed to access them.
 int OpenControls(const char *card, const char *cardname) {
   int err, i, o;
   int numid, count, items, item;
@@ -1724,9 +1693,9 @@ int OpenControls(const char *card, const char *cardname) {
   pcmoutId=lineoutId=vmixerId=p4InId=p4OutId=dmodeId=clocksrcId=spdifmodeId=vuswitchId=vumetersId=mixerId=0;
   memset(&vmixerControl, 0, sizeof(vmixerControl));
   memset(&mixerControl, 0, sizeof(mixerControl));
-  memset(&lineoutControl, 0, sizeof(struct VolumeControl));
-  memset(&lineinControl, 0, sizeof(struct VolumeControl));
-  memset(&pcmoutControl, 0, sizeof(struct VolumeControl));
+  memset(&lineoutControl, 0, sizeof(struct VolumeControl_s));
+  memset(&lineinControl, 0, sizeof(struct VolumeControl_s));
+  memset(&pcmoutControl, 0, sizeof(struct VolumeControl_s));
   ndmodes=nclocksrc=nspdifmodes=0;
   snd_ctl_elem_id_alloca(&id);
   snd_ctl_elem_info_alloca(&info);
@@ -1765,8 +1734,6 @@ int OpenControls(const char *card, const char *cardname) {
       }
     } else if (!strcmp("PCM Playback Volume", snd_ctl_elem_id_get_name(id))) {
       pcmoutId=pcmoutControl.id=numid;
-//printf("*** %d\n", LockControls(id, numid, 1));
-//#warning ************* usare id già pronto ?  controllo errori, eccc.
       CTLID_DEBUG(("PCM Playback Volume id=%d [%d]\n", pcmoutId, count));
     } else if (!strcmp("Line Playback Volume", snd_ctl_elem_id_get_name(id))) {
       lineoutId=numid;
@@ -1775,10 +1742,10 @@ int OpenControls(const char *card, const char *cardname) {
       lineinId=lineinControl.id=numid;
       CTLID_DEBUG(("Capture Volume id=%d [%d]\n", lineinId, count));
     } else if (!strcmp("Line Playback Switch (-10dBV)", snd_ctl_elem_id_get_name(id))) {
-      p4OutId=numid;
+      p4OutId=NominalOut.id=numid;
       CTLID_DEBUG(("Playback nominal id=%d [%d]\n", p4OutId, count));
     } else if (!strcmp("Line Capture Switch (-10dBV)", snd_ctl_elem_id_get_name(id))) {
-      p4InId=numid;
+      p4InId=NominalIn.id=numid;
       CTLID_DEBUG(("Capture nominal id=%d [%d]\n", p4InId, count));
     } else if (!strcmp("Digital mode Switch", snd_ctl_elem_id_get_name(id))) {
       dmodeId=numid;
@@ -1871,6 +1838,12 @@ printf("nIn=%d fdIn=%d nLOut=%d nPOut=%d fdOut=%d\n", nIn,fdIn,nLOut,nPOut, fdOu
       return(1);
     }
   }
+
+  if (p4InId)
+    NominalIn.Channels=fdIn;
+
+  if (p4OutId)
+    NominalOut.Channels=fdOut;
 
   //@ Assumes all mixer and vmixer controls are contiguous
   if (mixerId)
@@ -1968,8 +1941,6 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
   GMixerSection.VmixerFirst=nIn;
   GMixerSection.VmixerLast=nIn+vmixerControl.vchannels-1;
   GMixerSection.LineOut=GMixerSection.VmixerLast+1;
-  memset(NominalIn, 0, sizeof(NominalIn));
-  memset(NominalOut, 0, sizeof(NominalOut));
 
   // Read current mixer setting.
   if (mixerId)
@@ -1983,9 +1954,9 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
   if (lineoutId)
     ReadControl(lineoutControl.Gain, nLOut, lineoutId);
   if (p4InId)
-    ReadNominalLevels(NominalIn, p4InId);
+    ReadNominalLevels(&NominalIn);
   if (p4OutId)
-    ReadNominalLevels(NominalOut, p4OutId);
+    ReadNominalLevels(&NominalOut);
 
   //@@ check the values
   if (load) {
@@ -2010,11 +1981,11 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
         } else if (!strncmp("NominalOut ", str, 11)) {
           sscanf(str+11, "%d %d", &o, &n);
           if (o>=0 && o<fdOut)
-            NominalOut[o]=!!n;
+            NominalOut.Level[o]=!!n;
         } else if (!strncmp("NominalIn ", str, 10)) {
           sscanf(str+10, "%d %d", &i, &n);
           if (i>=0 && i<fdIn)
-            NominalIn[i]=!!n;
+            NominalIn.Level[i]=!!n;
         } else if (!strncmp("Mixer ", str, 6)) {
           sscanf(str+6, "%d %d %d", &o, &i, &n);
           if (o>=0 && o<nLOut && i>=0 && i<nIn)
@@ -2082,12 +2053,12 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
 
     for (i=0; i<fdIn; i++) {
       sprintf(str, "%d", i);
-      p4dbuIn[i]=gtk_toggle_button_new_with_label(str);
-      gtk_box_pack_start(GTK_BOX(hbox), p4dbuIn[i], TRUE, FALSE, 1);
-      gtk_widget_show(p4dbuIn[i]);
-      gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(p4dbuIn[i]), NominalIn[i]);	// Forces handler call
-      gtk_signal_connect(GTK_OBJECT(p4dbuIn[i]), "toggled", GTK_SIGNAL_FUNC(Nominal_level_toggled), (gpointer)i);
-      gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(p4dbuIn[i]), !NominalIn[i]);
+      button=NominalIn.Button[i]=gtk_toggle_button_new_with_label(str);
+      gtk_box_pack_start(GTK_BOX(hbox), button, TRUE, FALSE, 1);
+      gtk_widget_show(button);
+      gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), NominalIn.Level[i]);	// Forces handler call
+      gtk_signal_connect(GTK_OBJECT(button), "toggled", GTK_SIGNAL_FUNC(Nominal_level_toggled), (gpointer)i);
+      gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), !NominalIn.Level[i]);
     }
   }
 
@@ -2103,12 +2074,12 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
 
     for (i=0; i<fdOut; i++) {
       sprintf(str, "%d", i);
-      p4dbuOut[i]=gtk_toggle_button_new_with_label(str);
-      gtk_box_pack_start(GTK_BOX(hbox), p4dbuOut[i], TRUE, FALSE, 1);
-      gtk_widget_show(p4dbuOut[i]);
-      gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(p4dbuOut[i]), NominalOut[i]);
-      gtk_signal_connect(GTK_OBJECT(p4dbuOut[i]), "toggled", GTK_SIGNAL_FUNC(Nominal_level_toggled), (gpointer)(i+ECHO_MAXAUDIOINPUTS));
-      gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(p4dbuOut[i]), !NominalOut[i]);
+      button=NominalOut.Button[i]=gtk_toggle_button_new_with_label(str);
+      gtk_box_pack_start(GTK_BOX(hbox), button, TRUE, FALSE, 1);
+      gtk_widget_show(button);
+      gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), NominalOut.Level[i]);
+      gtk_signal_connect(GTK_OBJECT(button), "toggled", GTK_SIGNAL_FUNC(Nominal_level_toggled), (gpointer)(i+ECHO_MAXAUDIOINPUTS));
+      gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), !NominalOut.Level[i]);
     }
   }
 
@@ -2792,12 +2763,12 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
         if (p4InId) {
           fprintf(f, "-- NominalIn <channel> <consumer level enabled>\n");
           for (i=0; i<fdIn; i++)
-            fprintf(f, "NominalIn %2d %d\n", i, NominalIn[i]);
+            fprintf(f, "NominalIn %2d %d\n", i, NominalIn.Level[i]);
         }
         if (p4OutId) {
           fprintf(f, "-- NominalOut <channel> <consumer level enabled>\n");
           for (o=0; o<fdOut; o++)
-            fprintf(f, "NominalOut %2d %d\n", o, NominalOut[o]);
+            fprintf(f, "NominalOut %2d %d\n", o, NominalOut.Level[o]);
         }
         if (mixerId) {
           fprintf(f, "-- Mixer <output> <input> <gain>\n");
