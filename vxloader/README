@@ -38,10 +38,10 @@ the post-install command.  For example, add the following entry to
 FILES
 =====
 
-The firmware binaries are installed on /usr/share/alsa/firmware
-(or /usr/local/share/alsa/firmware, depending to the prefix option of
-configure).  There will be *.conf files, which define the dsp image
-files for each different card type.
+The firmware binaries are installed on /usr/share/alsa/firmware/vxloader
+(or /usr/local/share/alsa/firmware/vxloader, depending to the prefix
+option of configure).  There will be *.conf files, which define the dsp
+image files for each different card type.
 
 
 COPYRIGHT
