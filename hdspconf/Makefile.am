@@ -1,4 +1,8 @@
+EXTRA_DIST = hdspconf.desktop
 SUBDIRS = src pixmaps
+
+desktopdir = $(DESKTOP_DIR)
+desktop_DATA = hdspconf.desktop
 
 alsa-dist: distdir
 	@rm -rf ../distdir/hdspconf
