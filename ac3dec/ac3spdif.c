@@ -61,7 +61,7 @@ buffer_syncframe(syncinfo_t *syncinfo, uint8_t **start, uint8_t *end)
                                                                                     
   parse_syncinfo_data(syncinfo,sbuffer);
  
-  while(sbuffer_size < syncinfo->frame_size * 2 - 2)
+  while(sbuffer_size < (uint32_t)syncinfo->frame_size * 2 - 2)
     {
       if(cur >= end)
 	goto done;
