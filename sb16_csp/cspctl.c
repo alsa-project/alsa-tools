@@ -195,8 +195,8 @@ int main(int argc, char *argv[])
 	}
 
 	// CSP chip is present only on SB16 and SBAWE cards
-	if ((snd_ctl_card_info_get_type(card_info) != SND_CARD_TYPE_SB_16) &&
-	    (snd_ctl_card_info_get_type(card_info) != SND_CARD_TYPE_SB_AWE)) {
+	if (strcmp(snd_ctl_card_info_get_driver(card_info), "SB 16") != 0 &&
+	    strcmp(snd_ctl_card_info_get_driver(card_info), "SB AWE") != 0) {
 		error("not a SB_16 or SB_AWE type card");
 		exit(1);
 	}
