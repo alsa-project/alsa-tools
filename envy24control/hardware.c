@@ -45,7 +45,8 @@ void master_clock_update(void)
 	
 	if ((err = snd_ctl_elem_read(ctl, internal_clock)) < 0)
 		g_print("Unable to read Internal Clock state: %s\n", snd_strerror(err));
-	if (card_eeprom.subvendor == ICE1712_SUBDEVICE_DELTA1010) {
+	if (card_eeprom.subvendor == ICE1712_SUBDEVICE_DELTA1010 ||
+	    card_eeprom.subvendor == ICE1712_SUBDEVICE_DELTA1010LT) {
 		if ((err = snd_ctl_elem_read(ctl, word_clock_sync)) < 0)
 			g_print("Unable to read word clock sync selection: %s\n", snd_strerror(err));
 	}
@@ -78,7 +79,8 @@ static void master_clock_word_select(int on)
 {
 	int err;
 
-	if (card_eeprom.subvendor != ICE1712_SUBDEVICE_DELTA1010)
+	if (card_eeprom.subvendor != ICE1712_SUBDEVICE_DELTA1010 &&
+	    card_eeprom.subvendor != ICE1712_SUBDEVICE_DELTA1010LT)
 		return;
 	snd_ctl_elem_value_set_boolean(word_clock_sync, 0, on ? 1 : 0);
 	if ((err = snd_ctl_elem_write(ctl, word_clock_sync)) < 0)
@@ -169,7 +171,8 @@ gint internal_clock_status_timeout_callback(gpointer data)
 	
 	if ((err = snd_ctl_elem_read(ctl, internal_clock)) < 0)
 		g_print("Unable to read Internal Clock state: %s\n", snd_strerror(err));
-	if (card_eeprom.subvendor == ICE1712_SUBDEVICE_DELTA1010) {
+	if (card_eeprom.subvendor == ICE1712_SUBDEVICE_DELTA1010 ||
+	    card_eeprom.subvendor == ICE1712_SUBDEVICE_DELTA1010LT) {
 		if ((err = snd_ctl_elem_read(ctl, word_clock_sync)) < 0)
 			g_print("Unable to read word clock sync selection: %s\n", snd_strerror(err));
 	}
