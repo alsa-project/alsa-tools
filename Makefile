@@ -1,4 +1,4 @@
-VERSION = 0.9.4
+VERSION = 0.9.5
 TOP = .
 SUBDIRS = ac3dec as10k1 envy24control hdsploader hdspconf \
 	rmedigicontrol sb16_csp seq sscape_ctl vxloader
