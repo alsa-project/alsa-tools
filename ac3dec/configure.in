@@ -15,6 +15,8 @@ AC_PROG_RANLIB
 
 AC_CHECK_LIB(ossaudio, _oss_ioctl, LIBS="$LIBS -lossaudio")
 
+AM_PATH_ALSA(0.9.0)
+
 dnl Set the appropriate architecture define
 case "$host" in
 i?86-*) AC_DEFINE(__i386__);;
