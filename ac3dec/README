@@ -1,0 +1,52 @@
+ac3dec - a free AC-3 stream decoder
+
+Written by Aaron Holtzman (aholtzma@engr.uvic.ca)
+
+Contributors:
+  Michael Holzt <kju@flummi.de> - OSS output.c and misc errata
+	Jim Miller <jmiller@heli.engr.sgi.com> - IRIX output.c
+	Angelos Keromytis <angelos@dsl.cis.upenn.edu> - OpenBSD fixes
+	Don Mahurin <dmahurin@dma.org> - stdin support for extract_ac3
+	Takefumi SAYO <stake@niagara.shiojiri.ne.jp> - FreeBSD tweak
+	Charles M. Hannum <root@ihack.net> - fixes
+
+
+See the file COPYING for license details.
+
+The currently supported platforms are Linux, Solaris, IRIX, OpenBSD, and
+FreeBSD. If you want support for other platforms, take a look at 
+output_*.c for an idea of what you need to do.
+
+This software is completely useless to 99.99 percent of users
+out there. It is mostly of use to those interested in audio
+coding research and evaluating codecs. It could theoretically
+be used as a portion of a DVD playback system for unix systems. 
+
+HOW TO COMPILE
+
+Building ac3dec should be easy. Here's how:
+
+./configure && make all
+
+USAGE
+
+To find AC-3 streams on the internet, use www.google.com and 
+search for "vob trailer". A vob is a "Video Object" which is
+just an MPEG-2 stream. The site www.hollywood.com has a 
+few good MPEG-2s with AC-3 audio. The program tools/extract_ac3 
+will take an MPEG-2 stream and spit out AC-3 audio to stdout if
+it exists. You can easily pipe this data to the ac3 player like
+this:
+
+  ./tools/extract_ac3 foo.vob | ./ac3dec/
+
+You can also get AC-3 streams on a DVD. Check out 
+http://www.linuxvideo.org for details.
+
+DEBUG OUTPUT
+
+You can get a whole pile of debug info by setting the environment
+variable AC3_DEBUG=1. Be sure to pipe stderr to a file or you probably
+won't get realtime playback. You can pipe stderr to a file like so:
+
+  ./ac3dec foo.ac3 2> debug.out
