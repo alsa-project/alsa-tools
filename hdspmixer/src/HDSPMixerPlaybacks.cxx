@@ -39,6 +39,8 @@ HDSPMixerPlaybacks::HDSPMixerPlaybacks(int x, int y, int w, int h, int nchans):F
 	strips[i]->gain->relative = strips[i+1]->gain;
 	strips[i+1]->gain->relative = strips[i]->gain;
     }
+    empty_aebo[0] = new HDSPMixerEmpty((nchans-6)*STRIP_WIDTH, y, 2*STRIP_WIDTH, FULLSTRIP_HEIGHT, 0);
+    empty_aebo[1] = new HDSPMixerEmpty((nchans-4)*STRIP_WIDTH, y, 2*STRIP_WIDTH, FULLSTRIP_HEIGHT, 0);
     empty = new HDSPMixerEmpty(nchans*STRIP_WIDTH, y, 2*STRIP_WIDTH, FULLSTRIP_HEIGHT, 1);
     end();
     resizable(NULL);

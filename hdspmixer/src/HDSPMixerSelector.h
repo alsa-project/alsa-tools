@@ -75,6 +75,20 @@ static char *destinations_h9652_ds[7] = {
     "SPDIF"
 };
 
+static char *destinations_h9632_ss[8] = {
+    "A 1+2", "A 3+4", "A 5+6", "A 7+8",
+    "SPDIF", "AN 1+2", "AN 3+4", "AN 5+6"
+};
+
+static char *destinations_h9632_ds[6] = {
+    "A 1+2", "A 3+4",
+    "SPDIF", "AN 1+2", "AN 3+4", "AN 5+6"    
+};
+
+static char *destinations_h9632_qs[4] = {
+    "SPDIF", "AN 1+2", "AN 3+4", "AN 5+6"    
+};
+
 class HDSPMixerSelector:public Fl_Menu_
 {
 private:

@@ -32,6 +32,9 @@ HDSPMixerMeter::HDSPMixerMeter(int x, int y, bool not_output, HDSPMixerPeak *p):
     fast_peak_level = 1000.0;
     slow_peak_level = 1000.0;
     max_level = 1000.0;
+    /* this is no more as simple :
+       H9652 cards do have both peak and rms data for outputs
+    */
     peak_rms = not_output;
 }
 
@@ -58,7 +61,7 @@ void HDSPMixerMeter::draw()
     }
     rms_height = new_rms_height;
     
-    if ((new_peak_height != peak_height || !fine_draw) && peak_rms) {
+    if ((new_peak_height != peak_height || !fine_draw) && (peak_rms || basew->cards[basew->current_card]->type == H9652)) {
 	if ((rms_height <= (peak_height - PEAK_HEIGHT)) || rms_height == 0) { 
 	    fl_push_clip(x(), y()+(METER_HEIGHT - peak_height), w(), PEAK_HEIGHT+1);
 	    if (peak_rms) {
@@ -162,7 +165,7 @@ void HDSPMixerMeter::update(int peak, int overs, int64 rms)
     fr /= ((double)(1125899638407184.0)*(double)(8191.0));
     fr = sqrt(fr);
     
-    if (!peak_rms) {
+    if (!peak_rms && (basew->cards[basew->current_card]->type != H9652)) {
 	new_rms_height = new_peak_height;
     } else {
 	fr = -20 * log10(fr);
@@ -175,7 +178,7 @@ void HDSPMixerMeter::update(int peak, int overs, int64 rms)
     }
 
 
-    if (new_rms_height != rms_height || (new_peak_height != peak_height && peak_rms)) {
+    if (new_rms_height != rms_height || (new_peak_height != peak_height && (peak_rms || basew->cards[basew->current_card]->type == H9652))) {
 	/* FIXME: may not be SMP safe */
 	redraw();
     }    

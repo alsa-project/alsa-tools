@@ -33,6 +33,7 @@ class HDSPMixerEmpty;
 class HDSPMixerOutputs:public Fl_Group
 {
 public:
+    HDSPMixerEmpty *empty_aebo[2];
     HDSPMixerEmpty *empty;
     HDSPMixerOutput *strips[28];
     HDSPMixerOutputs(int x, int y, int w, int h, int nchannels);

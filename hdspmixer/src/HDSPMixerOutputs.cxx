@@ -32,7 +32,10 @@ HDSPMixerOutputs::HDSPMixerOutputs(int x, int y, int w, int h, int nchans):Fl_Gr
 	strips[i+1]->fader->relative = strips[i]->fader;
 	strips[i]->fader->gain = strips[i]->gain;
 	strips[i+1]->fader->gain = strips[i+1]->gain;
+	
     }
+    empty_aebo[0] = new HDSPMixerEmpty((nchans-6)*STRIP_WIDTH, y, 2*STRIP_WIDTH, SMALLSTRIP_HEIGHT, 0);
+    empty_aebo[1] = new HDSPMixerEmpty((nchans-4)*STRIP_WIDTH, y, 2*STRIP_WIDTH, SMALLSTRIP_HEIGHT, 0);
     empty = new HDSPMixerEmpty(nchans*STRIP_WIDTH, y, 2*STRIP_WIDTH, SMALLSTRIP_HEIGHT, 0);
     end();
     resizable(NULL);

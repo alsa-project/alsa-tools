@@ -39,6 +39,8 @@ HDSPMixerInputs::HDSPMixerInputs(int x, int y, int w, int h, int nchans):Fl_Grou
 	strips[i]->gain->relative = strips[i+1]->gain;
 	strips[i+1]->gain->relative = strips[i]->gain;
     }
+    empty_aebi[0] = new HDSPMixerEmpty((nchans-6)*STRIP_WIDTH, y, STRIP_WIDTH*2, FULLSTRIP_HEIGHT, 0);
+    empty_aebi[1] = new HDSPMixerEmpty((nchans-4)*STRIP_WIDTH, y, STRIP_WIDTH*2, FULLSTRIP_HEIGHT, 0);
     buttons = new HDSPMixerButtons(nchans*STRIP_WIDTH, y, 2*STRIP_WIDTH, FULLSTRIP_HEIGHT);
     end();
     resizable(NULL);

@@ -122,7 +122,7 @@ int HDSPMixerPresets::handle(int e)
 }
 
 void HDSPMixerPresets::save_preset(int prst) {
-    int speed = basew->cards[basew->current_card]->double_speed;
+    int speed = basew->cards[basew->current_card]->speed_mode;
     int card = basew->current_card;
     int p = prst-1;
     basew->dirty = 0;
@@ -164,7 +164,7 @@ void HDSPMixerPresets::save_preset(int prst) {
 }
 
 void HDSPMixerPresets::restore_preset(int prst) {
-    int speed = basew->cards[basew->current_card]->double_speed;
+    int speed = basew->cards[basew->current_card]->speed_mode;
     int card = basew->current_card;
     int p = prst-1;
     basew->dirty = 0;

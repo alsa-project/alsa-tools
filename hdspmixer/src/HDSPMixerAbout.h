@@ -37,6 +37,7 @@ private:
     HDSPMixerWindow *basew;
 public:
     HDSPMixerAbout(int w, int h, char *label, HDSPMixerWindow *w);
+    int handle(int e);
 };
 
 #endif

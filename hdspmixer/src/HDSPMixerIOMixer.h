@@ -50,11 +50,12 @@ class HDSPMixerMeter;
 class HDSPMixerIOMixer:public Fl_Group
 {
 private:
+    char **p_iomixer_xpm;
     int channel_num, relative_num, mixer_type;
     char channel_name[6];
     void update_child(Fl_Widget &widget);
 public:
-    HDSPMixerStripData *data[3][2][8]; /* data[card][mode(ds/ss)][preset number] */
+    HDSPMixerStripData *data[3][3][8]; /* data[card][mode(ss/ds/qs)][preset number] */
     HDSPMixerPan *pan;
     HDSPMixerFader *fader;
     HDSPMixerPeak *peak;

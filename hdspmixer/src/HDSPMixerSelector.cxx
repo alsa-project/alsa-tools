@@ -91,29 +91,71 @@ int HDSPMixerSelector::handle(int e) {
 void HDSPMixerSelector::setLabels()
 {
     HDSP_IO_Type type;
-    int ds;
+    hdsp_9632_aeb_t *aeb;
+    int sm;
     clear();
     type = basew->cards[basew->current_card]->type;
-    ds = basew->cards[basew->current_card]->double_speed;
-    if (type == Multiface && !ds) {
-	max_dest = 10;
-	destinations = destinations_mf_ss;
-    } else if (type == Multiface && ds) {
-	max_dest = 8;
-	destinations = destinations_mf_ds;
-    } else if (type == Digiface && !ds) {
-	max_dest = 14;
-	destinations = destinations_df_ss;
-    } else if (type == Digiface && ds) {
-	max_dest = 8;
-	destinations = destinations_df_ds;
-    } else if (type == H9652 && !ds) {
-	max_dest = 13;
-	destinations = destinations_h9652_ss;
-    } else if (type == H9652 && ds) {
-	max_dest = 7;
-	destinations = destinations_h9652_ds;
+    aeb = &basew->cards[basew->current_card]->h9632_aeb;
+    sm = basew->cards[basew->current_card]->speed_mode;
+    if (type == Multiface) {
+	switch (sm) {
+	case 0:
+	    max_dest = 10;
+	    destinations = destinations_mf_ss;
+	    break;
+	case 1:
+	    max_dest = 8;
+	    destinations = destinations_mf_ds;
+	    break;
+	case 2:
+	    /* should never happen */
+	    break;
+	}
+    } else if (type == Digiface) {
+	switch (sm) {
+	case 0:
+	    max_dest = 14;
+	    destinations = destinations_df_ss;
+	    break;
+	case 1:
+	    max_dest = 8;
+	    destinations = destinations_df_ds;
+	    break;
+	case 2:
+	    /* should never happen */
+	    break;
+	}
+    } else if (type == H9652) {
+	switch (sm) {
+	case 0:
+	    max_dest = 13;
+	    destinations = destinations_h9652_ss;
+	    break;
+	case 1:
+	    max_dest = 7;
+	    destinations = destinations_h9652_ds;
+	    break;
+	case 2:
+	    /* should never happen */
+	    break;
+	}
+    } else if (type == H9632) {
+	switch (sm) {
+	case 0:
+	    max_dest = 6 + (aeb->aebo) ? 2 : 0;
+	    destinations = destinations_h9632_ss;
+	    break;
+	case 1:
+	    max_dest = 4 + (aeb->aebo) ? 2 : 0;
+	    destinations = destinations_h9632_ds;
+	    break;
+	case 2:
+	    max_dest = 2 + (aeb->aebo) ? 2 : 0;
+	    destinations = destinations_h9632_qs;
+	    break;
+	}
     }
+    
     for (int i = 0; i < max_dest; ++i) {
 	add(destinations[i], 0, 0, 0, FL_MENU_TOGGLE);
     }

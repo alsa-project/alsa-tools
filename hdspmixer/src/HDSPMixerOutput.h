@@ -67,16 +67,31 @@ static char *labels_df_ds[16] = {
     "SP.L", "SP.R", "AN.L", "AN.R"
 };
 
+static char *labels_9632_ss[16] = {
+    "A 1", "A 2", "A 3", "A 4", "A 5", "A 6", "A 7", "A 8",
+    "SP.L", "SP.R", "AN 1", "AN 2", "AN 3", "AN 4", "AN 5", "AN 6"
+};
+
+static char *labels_9632_ds[12] = {
+    "A 1", "A 2", "A 3", "A 4",
+    "SP.L", "SP.R", "AN 1", "AN 2", "AN 3", "AN 4", "AN 5", "AN 6"
+};
+
+static char *labels_9632_qs[8] = {
+    "SP.L", "SP.R", "AN 1", "AN 2", "AN 3", "AN 4", "AN 5", "AN 6"
+};
+
 class HDSPMixerOutput:public Fl_Group
 {
 private:
     int out_num;
     char **labels;
+    char **p_output_xpm;
     HDSPMixerPeak *peak;
     HDSPMixerWindow *basew;    
     void update_child(Fl_Widget& widget);
 public:
-    HDSPMixerOutputData *data[3][2][8]; /* data[card][mode(ds/ss)][preset number] */
+    HDSPMixerOutputData *data[3][3][8]; /* data[card][mode(ss/ds/qs)][preset number] */
     HDSPMixerFader *fader;
     HDSPMixerGain *gain;
     HDSPMixerMeter *meter;

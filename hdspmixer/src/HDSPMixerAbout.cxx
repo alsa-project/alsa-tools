@@ -25,8 +25,17 @@
 HDSPMixerAbout::HDSPMixerAbout(int w, int h, char *label, HDSPMixerWindow *win):Fl_Double_Window(w, h, label)
 {
     basew = win;
-    text = new HDSPMixerAboutText(0,0,w,h);
+    text = new HDSPMixerAboutText(10,10,w-20,h-20);
     end();
     set_modal();
 }
 
+int HDSPMixerAbout::handle(int e) {
+    switch (e) {
+    case FL_PUSH:
+	hide();
+	return 1;
+    default:
+	return Fl_Window::handle(e);
+    }
+}

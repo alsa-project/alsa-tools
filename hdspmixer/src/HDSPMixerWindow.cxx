@@ -20,14 +20,6 @@
 
 #pragma implementation
 #include "HDSPMixerWindow.h"
-
-inline int64 swap_rms(int64 *rms)
-{
-    unsigned int *base = (unsigned int *)rms;
-    int64 ret = *base;
-    ret = (ret<<32) | *(base+1);
-    return ret;
-} 
     
 static void readregisters_cb(void *arg)
 {
@@ -59,27 +51,35 @@ static void readregisters_cb(void *arg)
 	for (int i = 0; i < w->cards[w->current_card]->channels; ++i) {
 	    w->inputs->strips[i]->meter->update(peak_rms.input_peaks[(w->cards[w->current_card]->meter_map[i])] & 0xffffff00,
 						peak_rms.input_peaks[(w->cards[w->current_card]->meter_map[i])] & 0xf,
-						swap_rms(&peak_rms.input_rms[(w->cards[w->current_card]->meter_map[i])]) );
+						peak_rms.input_rms[(w->cards[w->current_card]->meter_map[i])]);
 	}
     }
     if (w->inputs->buttons->playback) {
 	for (int i = 0; i < w->cards[w->current_card]->channels; ++i) {
 	    w->playbacks->strips[i]->meter->update(peak_rms.playback_peaks[(w->cards[w->current_card]->meter_map[i])] & 0xffffff00,
 						   peak_rms.playback_peaks[(w->cards[w->current_card]->meter_map[i])] & 0xf,
-						   swap_rms(&peak_rms.playback_rms[(w->cards[w->current_card]->meter_map[i])]) );
+						   peak_rms.playback_rms[(w->cards[w->current_card]->meter_map[i])]);
 	}
     }
     if (w->inputs->buttons->output) {
-	for (int i = 0; i < w->cards[w->current_card]->channels; ++i) {
-	    w->outputs->strips[i]->meter->update(peak_rms.output_peaks[(w->cards[w->current_card]->meter_map[i])] & 0xffffff00,
-						 peak_rms.output_peaks[(w->cards[w->current_card]->meter_map[i])] & 0xf,
-						 0 );
+	if (w->cards[w->current_card]->type != H9652) {
+	    for (int i = 0; i < w->cards[w->current_card]->channels; ++i) {
+		w->outputs->strips[i]->meter->update(peak_rms.output_peaks[(w->cards[w->current_card]->meter_map[i])] & 0xffffff00,
+						     peak_rms.output_peaks[(w->cards[w->current_card]->meter_map[i])] & 0xf,
+						     0 );
+	    }
+	    for (int i = 0; i < w->cards[w->current_card]->lineouts; ++i) {
+		w->outputs->strips[w->cards[w->current_card]->channels+i]->meter->update(peak_rms.output_peaks[26+i] & 0xffffff00,
+										         peak_rms.output_peaks[26+i] & 0xf,
+										         0 );
+	    } 
+	} else {
+	    for (int i = 0; i < w->cards[w->current_card]->channels; ++i) {
+		w->outputs->strips[i]->meter->update(peak_rms.output_peaks[(w->cards[w->current_card]->meter_map[i])] & 0xffffff00,
+						     peak_rms.output_peaks[(w->cards[w->current_card]->meter_map[i])] & 0xf,
+						     peak_rms.output_rms[(w->cards[w->current_card]->meter_map[i])] );
+	    }
 	}
-	for (int i = 0; i < w->cards[w->current_card]->lineouts; ++i) {
-	    w->outputs->strips[w->cards[w->current_card]->channels+i]->meter->update(peak_rms.output_peaks[26+i] & 0xffffff00,
-										     peak_rms.output_peaks[26+i] & 0xf,
-										     0 );
-	} 
     }
     
     Fl::add_timeout(0.03, readregisters_cb, w);
@@ -614,7 +614,7 @@ HDSPMixerWindow::HDSPMixerWindow(int x, int y, int w, int h, const char *label, 
     scroll->end();
     end();
     setup = new HDSPMixerSetup(400, 260, "Level Meters Setup", this);
-    about = new HDSPMixerAbout(340, 230, "About HDSPMixer", this);
+    about = new HDSPMixerAbout(360, 260, "About HDSPMixer", this);
     i = 0;
     while (cards[i] != NULL) {
 	cards[i++]->initializeCard(this);
@@ -689,7 +689,7 @@ void HDSPMixerWindow::reorder()
 
 void HDSPMixerWindow::checkState()
 {
-    int speed = cards[current_card]->double_speed;
+    int speed = cards[current_card]->speed_mode;
     int p = inputs->buttons->presets->preset-1;    
     int corrupt = 0;
     /* Mixer strips */

@@ -25,9 +25,11 @@
 #include <FL/Fl_Group.H>
 #include "HDSPMixerIOMixer.h"
 #include "HDSPMixerButtons.h"
+#include "HDSPMixerEmpty.h"
 
 class HDSPMixerButtons;
 class HDSPMixerIOMixer;
+class HDSPMixerEmpty;
 
 class HDSPMixerInputs:public Fl_Group
 {
@@ -35,6 +37,7 @@ public:
     HDSPMixerButtons *buttons;
     HDSPMixerIOMixer *strips[26];
     HDSPMixerInputs(int x, int y, int w, int h, int nchannels);
+    HDSPMixerEmpty *empty_aebi[2];
 };
 
 #endif

@@ -57,12 +57,14 @@ static void alsactl_cb(snd_async_handler_t *handler)
 	    clock_value = snd_ctl_elem_value_get_enumerated(elemval, 0);
 	    if (clock_value == 0) {
 		int new_speed = card->getAutosyncSpeed();
-		if (new_speed >= 0 && new_speed != card->double_speed) card->setMode(new_speed);
+		if (new_speed >= 0 && new_speed != card->speed_mode) card->setMode(new_speed);
 	    }
-	    if (clock_value > 3 && !card->double_speed) {
+	    if (clock_value > 3 && clock_value < 7 && card->speed_mode != 1) {
 		card->setMode(1);
-	    } else if (clock_value < 4 && card->double_speed) {
+	    } else if (clock_value < 4 && card->speed_mode != 0) {
 		card->setMode(0);
+	    } else if (clock_value > 6 && card->speed_mode != 2) {
+		card->setMode(2);
 	    }
 	}
 	snd_ctl_event_clear(event);
@@ -103,7 +105,9 @@ int HDSPMixerCard::getAutosyncSpeed()
 
     if (external_rate > 2 && external_rate < 6) {
 	return 1;
-    } else if (external_rate < 2) {
+    } else if (external_rate > 6) {
+	return 2;
+    } else if (external_rate <= 2) {
 	return 0;
     }
 }
@@ -143,9 +147,13 @@ int HDSPMixerCard::getSpeed()
     case 4:
     case 5:
     case 6:
-	/* SR > 48000 kHz - double speed */
+	/* SR > 48000 Hz - double speed */
 	return 1;
-	break;
+    case 7:
+    case 8:
+    case 9:
+	/* SR > 96000 Hz - quad speed */
+	return 2;    
     default:
 	/* Should never happen */
 	return 0;
@@ -158,8 +166,11 @@ HDSPMixerCard::HDSPMixerCard(HDSP_IO_Type cardtype, int id)
     type = cardtype;
     card_id = id;
     snprintf(name, 6, "hw:%i", card_id);
-    double_speed = getSpeed();
-    if (double_speed < 0) {
+    h9632_aeb.aebi = 0;
+    h9632_aeb.aebo = 0;
+    if (type == H9632) getAeb();
+    speed_mode = getSpeed();
+    if (speed_mode < 0) {
 	fprintf(stderr, "Error trying to determine speed mode for card %s, exiting.\n", name);
 	exit(EXIT_FAILURE);
     }
@@ -170,53 +181,117 @@ HDSPMixerCard::HDSPMixerCard(HDSP_IO_Type cardtype, int id)
     basew = NULL;
 }
 
+void HDSPMixerCard::getAeb() {
+    int err, i;
+    snd_hwdep_t *hw;
+    snd_hwdep_info_t *info;
+    snd_hwdep_info_alloca(&info);
+    if ((err = snd_hwdep_open(&hw, name, SND_HWDEP_OPEN_DUPLEX)) != 0) {
+	fprintf(stderr, "Error opening hwdep device on card %s.\n", name);
+	return; 
+    }
+    if ((err = snd_hwdep_ioctl(hw, SNDRV_HDSP_IOCTL_GET_9632_AEB, &h9632_aeb)) < 0) {
+	fprintf(stderr, "Hwdep ioctl error on card %s : %s.\n", name, snd_strerror(err));
+	snd_hwdep_close(hw);
+	return; 
+    }
+}
 
 void HDSPMixerCard::adjustSettings() {
-    if (type == Multiface && !double_speed) {
-	channels = 18;
-	channel_map = channel_map_mf_ss;
-	dest_map = dest_map_mf_ss;
-	meter_map = channel_map_mf_ss;
-	lineouts = 2;
-    } else if (type == Multiface && double_speed) {
-	channels = 14;
-	/* FIXME : this is a workaround because the driver is wrong */
-	channel_map = meter_map_ds;
-	dest_map = dest_map_ds;
-	meter_map = meter_map_ds;
-	lineouts = 2;
-    } else if (type == Digiface && !double_speed) {
-	channels = 26;
-	channel_map = channel_map_df_ss;
-	dest_map = dest_map_df_ss;
-	meter_map = channel_map_df_ss;
-	lineouts = 2;
-    } else if (type == Digiface && double_speed) {
-	channels = 14;
-	channel_map = channel_map_ds;
-	dest_map = dest_map_ds;
-	meter_map = meter_map_ds;
-	lineouts = 2;
-    } else if (type == H9652 && !double_speed) {
-	channels = 26;
-	channel_map = channel_map_df_ss;
-	dest_map = dest_map_h9652_ss;
-	meter_map = channel_map_df_ss;
-	lineouts = 0;
-    } else if (type == H9652 && double_speed) {
-	channels = 14;
-	channel_map = channel_map_ds;
-	dest_map = dest_map_h9652_ds;
-	meter_map = meter_map_ds;
-	lineouts = 0;
-    } 
+    if (type == Multiface) {
+	switch (speed_mode) {
+	case 0:
+	    channels = 18;
+	    channel_map = channel_map_mf_ss;
+	    dest_map = dest_map_mf_ss;
+	    meter_map = channel_map_mf_ss;
+	    lineouts = 2;
+	    break;
+	case 1:
+	    channels = 14;
+	    channel_map = meter_map_ds;
+	    dest_map = dest_map_ds;
+	    meter_map = meter_map_ds;
+	    lineouts = 2;
+	    break;
+	case 2:
+	    /* should never happen */
+	    break;
+	}
+    } else if (type == Digiface) {
+	switch (speed_mode) {
+	case 0:
+	    channels = 26;
+	    channel_map = channel_map_df_ss;
+	    dest_map = dest_map_df_ss;
+	    meter_map = channel_map_df_ss;
+	    lineouts = 2;
+	    break;
+	case 1:
+	    channels = 14;
+	    channel_map = channel_map_ds;
+	    dest_map = dest_map_ds;
+	    meter_map = meter_map_ds;
+	    lineouts = 2;
+	    break;
+	case 2:
+	    /* should never happen */
+	    break;
+	}
+    } else if (type == H9652) {
+	switch (speed_mode) {
+	case 0:
+	    channels = 26;
+	    channel_map = channel_map_df_ss;
+	    dest_map = dest_map_h9652_ss;
+	    meter_map = channel_map_df_ss;
+	    lineouts = 0;
+	    break;
+	case 1:
+	    channels = 14;
+	    channel_map = channel_map_ds;
+	    dest_map = dest_map_h9652_ds;
+	    meter_map = meter_map_ds;
+	    lineouts = 0;
+	    break;
+	case 2:
+	    break;
+	}
+    } else if (type == H9632) {
+	/* FIXME :  mapping values are my first guess here 
+		    this needs to be tested
+	*/
+	switch (speed_mode) {
+	case 0:
+	    channels = 12 + (h9632_aeb.aebi || h9632_aeb.aebo) ? 4 : 0;
+	    channel_map = channel_map_h9632_ss;
+	    dest_map = dest_map_h9632_ss;
+	    meter_map = channel_map_h9632_ss;
+	    lineouts = 0;
+	    break;
+	case 1:
+	    channels = 8 + (h9632_aeb.aebi || h9632_aeb.aebo) ? 4 : 0;
+	    channel_map = channel_map_h9632_ds;
+	    dest_map = dest_map_h9632_ds;
+	    meter_map = meter_map_h9632_ds;
+	    lineouts = 0;
+	    break;
+	case 2:
+	    channels = 4 + (h9632_aeb.aebi || h9632_aeb.aebo) ? 4 : 0;
+	    channel_map = channel_map_h9632_qs;
+	    dest_map = dest_map_h9632_qs;
+	    meter_map = dest_map_h9632_qs;
+	    lineouts = 0;
+	    break;
+	}
+    }
     window_width = (channels+2)*STRIP_WIDTH;
     window_height = FULLSTRIP_HEIGHT*2+SMALLSTRIP_HEIGHT+MENU_HEIGHT;
 } 
 
 void HDSPMixerCard::setMode(int mode)
 {
-    double_speed = mode;
+    speed_mode = mode;
     adjustSettings();
     actualizeStrips();
 
@@ -228,7 +303,15 @@ void HDSPMixerCard::setMode(int mode)
     for (int i = channels; i < channels+lineouts; ++i) {
 	basew->outputs->strips[i]->setLabels();    
     }
-    
+    if (h9632_aeb.aebo && !h9632_aeb.aebi) {
+	basew->inputs->empty_aebi[0]->position(STRIP_WIDTH*(channels-4), basew->inputs->empty_aebi[0]->y());
+	basew->inputs->empty_aebi[1]->position(STRIP_WIDTH*(channels-2), basew->inputs->empty_aebi[1]->y());
+    } else if (h9632_aeb.aebi && !h9632_aeb.aebo) {
+	basew->playbacks->empty_aebo[0]->position(STRIP_WIDTH*(channels-4), basew->playbacks->empty_aebo[0]->y());
+	basew->playbacks->empty_aebo[1]->position(STRIP_WIDTH*(channels-2), basew->playbacks->empty_aebo[1]->y());
+	basew->outputs->empty_aebo[0]->position(STRIP_WIDTH*(channels-4), basew->outputs->empty_aebo[0]->y());
+	basew->outputs->empty_aebo[1]->position(STRIP_WIDTH*(channels-2), basew->outputs->empty_aebo[1]->y());
+    }
     basew->inputs->buttons->position(STRIP_WIDTH*channels, basew->inputs->buttons->y());
     basew->inputs->init_sizes();
     basew->playbacks->empty->position(STRIP_WIDTH*channels, basew->playbacks->empty->y());
@@ -260,10 +343,33 @@ void HDSPMixerCard::actualizeStrips()
 	    basew->outputs->strips[i]->hide();
 	}
     }
-    for (int i = channels; i < channels+lineouts; ++i) {
-	basew->outputs->strips[i]->show();
+    for (int i = channels; i < channels+2; ++i) {
+	if (i < channels+lineouts) {
+	    basew->outputs->strips[i]->show();
+	} else {
+	    basew->outputs->strips[i]->hide();
+	}
     }
-    if (type != H9652) basew->outputs->empty->hide();
+    if (h9632_aeb.aebi && !h9632_aeb.aebo) {
+	for (int i = 0; i < 2; ++i) {
+	    basew->inputs->empty_aebi[i]->hide();
+	    basew->playbacks->empty_aebo[i]->show();
+	    basew->outputs->empty_aebo[i]->show();
+	}    
+    } else if (h9632_aeb.aebo && !h9632_aeb.aebi) { 
+	for (int i = 0; i < 2; ++i) {
+	    basew->inputs->empty_aebi[i]->show();
+	    basew->playbacks->empty_aebo[i]->hide();
+	    basew->outputs->empty_aebo[i]->hide();
+	}        
+    } else {
+	for (int i = 0; i < 2; ++i) {
+	    basew->inputs->empty_aebi[i]->hide();
+	    basew->playbacks->empty_aebo[i]->hide();
+	    basew->outputs->empty_aebo[i]->hide();
+	}
+    }
+    if (type != H9652 && type != H9632) basew->outputs->empty->hide();
 }
 
 int HDSPMixerCard::initializeCard(HDSPMixerWindow *w)

@@ -28,7 +28,13 @@ HDSPMixerOutput::HDSPMixerOutput(int x, int y, int w, int h, int num):Fl_Group(x
 	for (int i = 0; i < 8; ++i) {
 	    data[j][0][i] = new HDSPMixerOutputData();
 	    data[j][1][i] = new HDSPMixerOutputData();
+	    data[j][2][i] = new HDSPMixerOutputData();
 	}
+    }
+    if (num%2) {
+	p_output_xpm = output_r_xpm;
+    } else {
+	p_output_xpm = output_xpm;
     }
     basew = (HDSPMixerWindow *)window();
     setLabels();
@@ -43,15 +49,29 @@ HDSPMixerOutput::HDSPMixerOutput(int x, int y, int w, int h, int num):Fl_Group(x
 void HDSPMixerOutput::setLabels()
 {
     HDSP_IO_Type type = basew->cards[basew->current_card]->type;
-    int ds = basew->cards[basew->current_card]->double_speed;
-    if (type == Multiface && !ds) {
-	labels = labels_mf_ss;
-    } else if (type == Multiface && ds) {
-	labels = labels_mf_ds;
-    } else if (!ds) {
-	labels = labels_df_ss;
-    } else if (ds) {
-	labels = labels_df_ds;
+    int sm = basew->cards[basew->current_card]->speed_mode;
+    if (type == H9632) {
+	switch (sm) {
+	case 0:
+	    labels = labels_9632_ss;
+	    break;
+	case 1:
+	    labels = labels_9632_ds;
+	    break;	
+	case 2:
+	    labels = labels_9632_qs;
+	    break;
+	}
+    } else if (type == Multiface) {
+	if (sm)
+	    labels = labels_mf_ds;
+	else 
+	    labels = labels_mf_ss;
+    } else {
+	if (sm)
+	    labels = labels_df_ds;
+	else
+	    labels = labels_df_ss;
     }
 }
 
@@ -63,7 +83,7 @@ void HDSPMixerOutput::draw_background()
 void HDSPMixerOutput::draw_background(int xpos, int ypos, int w, int h)
 {
     fl_push_clip(xpos, ypos, w, h);
-    fl_draw_pixmap(output_xpm, x(), y());
+    fl_draw_pixmap(p_output_xpm, x(), y());
     fl_pop_clip();    
 }
 

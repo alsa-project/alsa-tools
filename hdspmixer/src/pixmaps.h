@@ -49,6 +49,16 @@ extern char * output_xpm[];
 extern char * over_xpm[];
 extern char * peak_xpm[];
 extern char * solo_xpm[];
+extern char * iomixer_r_xpm[];
+extern char * output_r_xpm[];
+extern char * matrix_white_xpm[];
+extern char * matrix_black_xpm[];
+extern char * matrix_yellow_xpm[];
+extern char * matrix_mute_xpm[];
+extern char * matrix_grey_xpm[];
+extern char * matrix_grey_l_xpm[];
+extern char * matrix_grey_ol_xpm[];
+extern char * matrix_grey_o_xpm[];
 
 #endif
 

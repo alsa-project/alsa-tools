@@ -1,5 +1,5 @@
 AC_INIT(src/hdspmixer.cxx)
-AM_INIT_AUTOMAKE(hdspmixer, 1.1)
+AM_INIT_AUTOMAKE(hdspmixer, 1.4)
 
 AC_PROG_CXX
 AC_PROG_MAKE_SET
@@ -51,9 +51,12 @@ fi
 
 AC_PATH_PROG(FLTK_CONFIG, fltk-config, no)
 if test "$FLTK_CONFIG" = "no"; then
-  AC_MSG_WARN(no fltk-config is found)
+    AC_MSG_ERROR(fltk-config is required)
 fi
-LIBS="-s `fltk-config --ldflags` -lasound"
-CXXFLAGS="`fltk-config --cxxflags` -fno-exceptions $ALSA_CFLAGS"
+FLTK_CXXFLAGS="`$FLTK_CONFIG --cxxflags` -fno-exceptions"
+FLTK_LIBS="`$FLTK_CONFIG --ldflags`"
+
+CXXFLAGS="$CXXFLAGS $ALSA_CFLAGS $FLTK_CXXFLAGS"
+LDFLAGS="$LDFLAGS $ALSA_LIBS $FLTK_LIBS"
 
 AC_OUTPUT(Makefile src/Makefile pixmaps/Makefile)

@@ -65,5 +65,33 @@ static char dest_map_h9652_ds[7] = {
     0, 2, 8, 10, 16, 18, 24 
 };
 
+static char dest_map_h9632_ss[8] = {
+    0, 2, 4, 6, 8, 10, 12, 14
+};
+
+static char dest_map_h9632_ds[6] = {
+    0, 2, 8, 10, 12, 14
+};
+
+static char dest_map_h9632_qs[4] = {
+    8, 10, 12, 14
+};
+
+static char channel_map_h9632_ss[16] = {
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
+};
+
+static char channel_map_h9632_ds[12] = {
+    1, 3, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15
+};
+
+static char meter_map_h9632_ds[12] = {
+    0, 1, 2, 3, 8, 9, 10, 11, 12, 13, 14, 15
+};
+
+static char channel_map_h9632_qs[8] = {
+    8, 9, 10, 11, 12, 13, 14, 15
+};
+
 #endif
 

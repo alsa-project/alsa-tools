@@ -1,3 +1,16 @@
+Version 1.4 (01/11/2003):
+    * Adds support for H9632 cards
+
+Version 1.3 (no public release):
+    * Adds metering for H9652 cards
+    * Stops shipping unused pixmaps
+    * Shows stereo relationships in the mixer
+    * pixmap directory has been cleaned up 
+
+Version 1.2 (no public release):
+    * Fixes a graphical bug for H9652 cards
+    * Changes FLTK detection scheme in configure
+
 Version 1.1 (27/07/2003):
     * Fixes a typo for Digiface and H9652 cards in HDSPMixerSelector.cxx
       (caused a crash on startup)

@@ -23,7 +23,7 @@
 
 HDSPMixerAboutText::HDSPMixerAboutText(int x, int y, int w, int h):Fl_Widget(x, y, w, h, "About Text")
 {
-	text = "HDSPMixer (C) 2003 Thomas Charbonnel <thomas@@undata.org>\n\n"
+	text = "HDSPMixer " VERSION " (C) 2003 Thomas Charbonnel <thomas@@undata.org>\n\n"
 	       "Bitmaps by Ralf Brunner\n"
 	       "Many thanks to Martin Björnsen, Matthias Carstens and Paul Davis\n\n"
 	       "This Program is free software; you can redistribute it and/or modify\n"

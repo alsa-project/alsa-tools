@@ -32,13 +32,16 @@ HDSPMixerIOMixer::HDSPMixerIOMixer(int x, int y, int w, int h, int ch, int type)
     channel_num = ch;
     if (channel_num%2) {
 	relative_num = channel_num+1;
+	p_iomixer_xpm = iomixer_xpm;
     } else {
 	relative_num = channel_num-1;
+	p_iomixer_xpm = iomixer_r_xpm;
     }
     for (int j = 0; j < 3; ++j) {
 	for (int i = 0; i < 8; ++i) {
 	    data[j][0][i] = new HDSPMixerStripData();
 	    data[j][1][i] = new HDSPMixerStripData();
+	    data[j][2][i] = new HDSPMixerStripData();
 	}
     }
     mutesolo = new HDSPMixerMuteSolo(x+3, y+3, 0, 0, channel_num, type);
@@ -59,7 +62,7 @@ void HDSPMixerIOMixer::draw_background()
 void HDSPMixerIOMixer::draw_background(int xpos, int ypos, int w, int h)
 {
     fl_push_clip(xpos, ypos, w, h);
-    fl_draw_pixmap(iomixer_xpm, x(), y());
+    fl_draw_pixmap(p_iomixer_xpm, x(), y());
     fl_pop_clip();
 }
 

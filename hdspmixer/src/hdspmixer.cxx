@@ -49,7 +49,6 @@ int main(int argc, char **argv)
 	if (card < 0) {
 	    break;
 	} else {
-
 	    snd_card_get_longname(card, &name);
 	    printf("Card %d : %s\n", card, name);
 	    if (!strncmp(name, "RME Hammerfall DSP + Multiface", 30)) {
@@ -64,6 +63,12 @@ int main(int argc, char **argv)
 		printf("HDSP 9652 found !\n");
 		hdsp_cards[cards] = new HDSPMixerCard(H9652, card);
 		cards++;
+	    } else if (!strncmp(name, "RME Hammerfall HDSP 9632", 24)) {
+		printf("HDSP 9632 found !\n");
+		hdsp_cards[cards] = new HDSPMixerCard(H9632, card);
+		cards++;
+	    } else if (!strncmp(name, "RME Hammerfall DSP", 18)) {
+		printf("Uninitialized HDSP card found.\nUse hdsploader to upload configuration data to the card.\n");
 	    } 
 	}
     }

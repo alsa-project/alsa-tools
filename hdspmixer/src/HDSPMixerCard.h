@@ -46,13 +46,15 @@ public:
     char *channel_map;
     char *dest_map;
     char *meter_map;
-    int double_speed;
+    int speed_mode;
     void setMode(int mode);
     int initializeCard(HDSPMixerWindow *w);
     int getSpeed();
     int getAutosyncSpeed();
     void actualizeStrips();
     void adjustSettings();
+    void getAeb();
+    hdsp_9632_aeb_t h9632_aeb;
 };
 
 #endif
