@@ -1,15 +1,16 @@
 # # Process this file with automake to produce Makefile.in.
-
-SUBDIRS = firmware
+MYNAME = hdsploader
 
 bin_PROGRAMS = hdsploader
+
+AM_CFLAGS = -DDATAPATH=\"$(datadir)/alsa/firmware/$(MYNAME)\"
 
 hdsploader_SOURCES = hdsploader.c
 
 EXTRA_DIST = depcomp
 
 alsa-dist: distdir
-	@rm -rf ../distdir/hdsploader
-	@mkdir -p ../distdir/hdsploader
-	@cp -RLpv $(distdir)/* ../distdir/hdsploader
+	@rm -rf ../distdir/$(MYNAME)
+	@mkdir -p ../distdir/$(MYNAME)
+	@cp -RLpv $(distdir)/* ../distdir/$(MYNAME)
 	@rm -rf $(distdir)

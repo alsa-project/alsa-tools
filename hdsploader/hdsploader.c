@@ -20,14 +20,38 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <endian.h>
 #include <sys/ioctl.h>
 #include <alsa/asoundlib.h>
 #include <sound/hdsp.h>
 
-#include "firmware/multiface_firmware.dat"
-#include "firmware/digiface_firmware.dat"
-#include "firmware/multiface_firmware_rev11.dat"
-#include "firmware/digiface_firmware_rev11.dat"
+static u_int32_t code[24413];
+
+int read_bin_file(u_int32_t *array, const char *filename)
+{
+	FILE *out;
+
+	if ((out = fopen(filename, "r")) == NULL) {
+		fprintf(stderr, "Unable to open file '%s' for reading\n", filename);
+		return -1;
+	}
+	if (fread(array, 4, 24413, out) != 24413) {
+		fclose(out);
+		return -1;
+	}
+	fclose(out);
+#if __BYTE_ORDER == __BIG_ENDIAN
+	{
+		unsigned int idx;
+		for (idx = 0; idx < 24413; idx++)
+			array[idx] = ((array[idx] & 0x000000ff) << 16) |
+				     ((array[idx] & 0x0000ff00) << 8)  |
+				     ((array[idx] & 0x00ff0000) >> 8)  |
+				     ((array[idx] & 0xff000000) >> 16);
+	}
+#endif
+	return 0;
+}
 
 void upload_firmware(int card)
 {
@@ -54,20 +78,21 @@ void upload_firmware(int card)
 	snd_hwdep_close(hw);
 	return;
     }
-    
+
+    firmware.firmware_data = (unsigned long *)code;
     switch (version.io_type) {
     case Multiface:
 	if (version.firmware_rev == 0xa) {
-	    firmware.firmware_data = multiface_firmware;
+	    err = read_bin_file(code, DATAPATH "multiface_firmware.bin");
 	} else {
-	    firmware.firmware_data = multiface_firmware_rev11;
+	    err = read_bin_file(code, DATAPATH "multiface_firmware_rev11.bin");
 	}
 	break;
     case Digiface:
 	if (version.firmware_rev == 0xa) {
-	    firmware.firmware_data = digiface_firmware;
+	    err = read_bin_file(code, DATAPATH "digiface_firmware.bin");
 	} else {
-	    firmware.firmware_data = digiface_firmware_rev11;
+	    err = read_bin_file(code, DATAPATH "digiface_firmware_rev11.bin");
 	}
 	break;
     default:
@@ -75,6 +100,8 @@ void upload_firmware(int card)
 	snd_hwdep_close(hw);
 	return;
     }	
+    if (err < 0)
+    	return;
     
     if ((err = snd_hwdep_ioctl(hw, SNDRV_HDSP_IOCTL_UPLOAD_FIRMWARE, &firmware)) < 0) {
 	fprintf(stderr, "Hwdep ioctl error on card %s : %s.\n", card_name, snd_strerror(err));
@@ -115,4 +142,3 @@ int main(int argc, char **argv)
     }
     return 0;    
 }
-

@@ -49,4 +49,4 @@ else
   fi
 fi
 
-AC_OUTPUT(Makefile firmware/Makefile)
+AC_OUTPUT(Makefile)
