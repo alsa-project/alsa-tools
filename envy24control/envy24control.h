@@ -6,10 +6,23 @@
 #include <gtk/gtk.h>
 #include <alsa/asoundlib.h>
 
+/* MidiMan */
 #define ICE1712_SUBDEVICE_DELTA1010	0x121430d6
 #define ICE1712_SUBDEVICE_DELTADIO2496	0x121431d6
 #define ICE1712_SUBDEVICE_DELTA66	0x121432d6
 #define ICE1712_SUBDEVICE_DELTA44	0x121433d6
+#define ICE1712_SUBDEVICE_AUDIOPHILE    0x121434d6
+#define ICE1712_SUBDEVICE_DELTA410      0x121438d6
+#define ICE1712_SUBDEVICE_DELTA1010LT   0x12143bd6
+
+/* Terratec */
+#define ICE1712_SUBDEVICE_EWX2496       0x3b153011
+#define ICE1712_SUBDEVICE_EWS88MT       0x3b151511
+#define ICE1712_SUBDEVICE_EWS88D        0x3b152b11
+#define ICE1712_SUBDEVICE_DMX6FIRE      0x3b153811
+
+/* Hoontech */
+#define ICE1712_SUBDEVICE_STDSP24       0x12141217      /* Hoontech SoundTrack Audio DSP 24 */
 
 typedef struct {
 	unsigned int subvendor;	/* PCI[2c-2f] */
