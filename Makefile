@@ -1,4 +1,4 @@
-VERSION = 0.9.0rc8
+VERSION = 0.9.1
 TOP = .
 SUBDIRS = ac3dec as10k1 envy24control sb16_csp seq sscape_ctl vxloader
 
