@@ -18,13 +18,13 @@ AC_C_BIGENDIAN
 AM_PATH_ALSA(0.9.0)
 
 dnl Set the appropriate architecture define
-case "$host" in
-i?86-*) AC_DEFINE(__i386__, 1, [Using i386 architecture]);;
-alpha*-*) AC_DEFINE(__alpha__, 1, [Using Alpha architecture]);;
-sparc-*) AC_DEFINE(__sparc__, 1, [Using SPARC architecture]);;
-ppc-*|powerpc-*) AC_DEFINE(__ppc__, 1, [Using PowerPC architecture]);;
-ia64-*) AC_DEFINE(__ia64__, 1, [Using IA-64 architecture]);;
-*) echo "$host is not currently supported by ac3dec"; exit 1;;
-esac
+dnl case "$host" in
+dnl i?86-*) AC_DEFINE(__i386__, 1, [Using i386 architecture]);;
+dnl alpha*-*) AC_DEFINE(__alpha__, 1, [Using Alpha architecture]);;
+dnl sparc-*) AC_DEFINE(__sparc__, 1, [Using SPARC architecture]);;
+dnl ppc-*|powerpc-*) AC_DEFINE(__ppc__, 1, [Using PowerPC architecture]);;
+dnl ia64-*) AC_DEFINE(__ia64__, 1, [Using IA-64 architecture]);;
+dnl *) echo "$host is not currently supported by ac3dec"; exit 1;;
+dnl esac
 
 AC_OUTPUT(libac3/Makefile tools/Makefile test/Makefile Makefile ) 
