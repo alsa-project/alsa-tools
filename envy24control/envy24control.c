@@ -464,7 +464,10 @@ static void create_router_frame(GtkWidget *box, int stream, int pos)
 	label = gtk_label_new("");
 	gtk_widget_show(label);
 
-	if(stream <= MAX_OUTPUT_CHANNELS + MAX_SPDIF_CHANNELS) {
+	/* the digital mixer can only be routed to HW1/2 or SPDIF1/2 */
+	if( (stream <= 2) /* hw1/2 */ ||
+	    ((stream > MAX_OUTPUT_CHANNELS) && (stream <= MAX_OUTPUT_CHANNELS + 2)) /* spdif1/2 */
+	    ) {
 		radiobutton = gtk_radio_button_new_with_label(group, stream & 1 ? "Digital Mix L" : "Digital Mix R");
 		router_radio[stream-1][1] = radiobutton;
 		group = gtk_radio_button_group(GTK_RADIO_BUTTON(radiobutton));
