@@ -1,4 +1,4 @@
-VERSION = 1.0.0pre1
+VERSION = 1.0.0pre3
 TOP = .
 SUBDIRS = ac3dec as10k1 envy24control hdsploader hdspconf hdspmixer \
 	mixartloader rmedigicontrol sb16_csp seq sscape_ctl us428control \

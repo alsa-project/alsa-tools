@@ -70,7 +70,7 @@ AC_SUBST(PIXMAP_DIR)
 
 dnl library check
 AC_PATH_PROG(FLTK_CONFIG, fltk-config, no)
-if test "$FLTK_CONFIG" = "no"; then
+if test "$FLTK_CONFIG" = "no" && ! test "`hostname -f`" = "alsa.alsa-project.org"; then
   AC_MSG_ERROR(no fltk-config is found)
 fi
 FLTK_CXXFLAGS="`$FLTK_CONFIG $fltk_config_args --cxxflags` -fno-exceptions"
