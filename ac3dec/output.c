@@ -94,6 +94,8 @@ int output_open(output_t *output)
 		}
 		pcm_name = devstr;
 	}
+	if (!output->quiet)
+		fprintf(stdout, "Using PCM device '%s'\n", pcm_name);
 	if ((err = snd_pcm_open(&pcm, pcm_name, SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
 		fprintf(stderr, "snd_pcm_open: %s\n", snd_strerror(err));
 		return err;
