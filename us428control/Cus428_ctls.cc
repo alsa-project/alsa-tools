@@ -36,26 +36,29 @@ Cus428_ctls::dump(int n)
 }
 
 void 
-Cus428_ctls::analyse(Cus428_ctls& Previous, unsigned n)
+Cus428_ctls::analyse(Cus428_ctls *Previous, unsigned n)
 {
+	Cus428_ctls *PreviousL = Previous ? Previous : new Cus428_ctls();
 	OneState->Set_us428_ctls(this);
 	for (; n < 9; n++) {			//Sliders
-		char Diff = ((unsigned char*)this)[n] - ((unsigned char*)&Previous)[n];
+		char Diff = DiffValAt(PreviousL, n);
 		if (Diff)
-			OneState->SliderChangedTo(n, ((unsigned char*)this)[n]);		
+			OneState->SliderChangedTo(n, ValAt(n));		
 	}
 	for (; n < 16; n++) {			//Knobs
-		unsigned char Diff = ((unsigned char*)this)[n] ^ ((unsigned char*)&Previous)[n];
+		unsigned char Diff = DiffBitAt(PreviousL, n);
 		unsigned o = 0;
 		while (o < 8) {
 			if (Diff & (1 << o))
-				OneState->KnobChangedTo((Cus428State::eKnobs)(8*n + o), ((unsigned char*)this)[n] & (1 << o));
+				OneState->KnobChangedTo((Cus428State::eKnobs)(8*n + o), ValAt(n) & (1 << o));
 			++o;
 		}
 	}
 	for (; n < sizeof(*this); n++) {	//wheels
-		char Diff = ((unsigned char*)this)[ n] - ((unsigned char*)&Previous)[n];
+		char Diff = DiffValAt(PreviousL, n);
 		if (Diff)
 			OneState->WheelChangedTo((E_In84)n, Diff);				
-	}	
+	}
+	if (0 == Previous)
+		delete PreviousL;
 }

@@ -121,14 +121,16 @@ int US428Control(const char* DevName)
 		if (verbose > 1)
 			printf("Last is %i\n", Last);
 		while (us428ctls_sharedmem->CtlSnapShotRed != Last) {
+			static Cus428_ctls *Red = 0;
 			int Read = us428ctls_sharedmem->CtlSnapShotRed + 1;
-			if (Read >= N_us428_ctl_BUFS)
+			if (Read >= N_us428_ctl_BUFS || Read < 0)
 				Read = 0;
 			Cus428_ctls* PCtlSnapShot = ((Cus428_ctls*)(us428ctls_sharedmem->CtlSnapShot)) + Read;
 			int DiffAt = us428ctls_sharedmem->CtlSnapShotDiffersAt[Read];
 			if (verbose > 1)
 				PCtlSnapShot->dump(DiffAt);
-			PCtlSnapShot->analyse(((Cus428_ctls*)(us428ctls_sharedmem->CtlSnapShot))[us428ctls_sharedmem->CtlSnapShotRed], DiffAt );
+			PCtlSnapShot->analyse(Red, DiffAt);
+			Red = PCtlSnapShot;
 			us428ctls_sharedmem->CtlSnapShotRed = Read;
 		}
 	}

@@ -38,7 +38,8 @@ void us428_lights::init_us428_lights()
 
 void Cus428State::InitDevice(void)
 {
-	SliderChangedTo(eFaderM, ((unsigned char*)(us428ctls_sharedmem->CtlSnapShot + us428ctls_sharedmem->CtlSnapShotLast))[eFaderM]);
+	if (us428ctls_sharedmem->CtlSnapShotLast >= 0)
+		SliderChangedTo(eFaderM, ((unsigned char*)(us428ctls_sharedmem->CtlSnapShot + us428ctls_sharedmem->CtlSnapShotLast))[eFaderM]);
 }
 
 

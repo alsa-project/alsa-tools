@@ -25,10 +25,23 @@
 
 class Cus428_ctls: public us428_ctls{
  public:
+	Cus428_ctls() {
+		memset(this, 0, sizeof(*this));
+	}
 	void dump(int n = 0);
-	void analyse(Cus428_ctls& Previous, unsigned n = 0);
+	void analyse(Cus428_ctls *Previous, unsigned n = 0);
 	bool Knob( int K) {
 		return ((char*)this)[K / 8] & (1 << K % 8);
+	}
+ protected:
+	unsigned char ValAt(int i) {
+		return ((unsigned char*)this)[i];
+	}
+	unsigned char DiffValAt(Cus428_ctls *Other, int i) {
+		return ValAt(i) - Other->ValAt(i);
+	}
+	unsigned char DiffBitAt(Cus428_ctls *Other, int i) {
+		return ValAt(i) ^ Other->ValAt(i);
 	}
 };
 
