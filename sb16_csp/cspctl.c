@@ -24,6 +24,11 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <assert.h>
+#include <string.h>
+#include <errno.h>
 #include <linux/ioctl.h>
 #include <sound/sb16_csp.h>
 
