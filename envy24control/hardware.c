@@ -26,6 +26,10 @@ static snd_ctl_elem_value_t *rate_reset;
 static snd_ctl_elem_value_t *volume_rate;
 static snd_ctl_elem_value_t *spdif_input;
 static snd_ctl_elem_value_t *spdif_output;
+static snd_ctl_elem_value_t *analog_input_select;
+static snd_ctl_elem_value_t *breakbox_led;
+static snd_ctl_elem_value_t *spdif_on_off;
+static snd_ctl_elem_value_t *phono_input;
 
 #define toggle_set(widget, state) \
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), state);
@@ -553,7 +557,7 @@ void spdif_input_update(void)
 {
 	int err;
 	
-	if (card_eeprom.subvendor != ICE1712_SUBDEVICE_DELTADIO2496)
+	if ((card_eeprom.subvendor != ICE1712_SUBDEVICE_DELTADIO2496) && (card_eeprom.subvendor != ICE1712_SUBDEVICE_DMX6FIRE))
 		return;
 	if ((err = snd_ctl_elem_read(ctl, spdif_input)) < 0)
 		g_print("Unable to read S/PDIF input switch: %s\n", snd_strerror(err));
@@ -579,6 +583,145 @@ void spdif_input_toggled(GtkWidget *togglebutton, gpointer data)
 		g_print("Unable to write S/PDIF input switch: %s\n", snd_strerror(err));
 }
 
+void analog_input_select_update(void)
+{
+	int err, input_interface;
+
+	if (card_eeprom.subvendor != ICE1712_SUBDEVICE_DMX6FIRE)
+		return;
+	if ((err = snd_ctl_elem_read(ctl, analog_input_select)) < 0)
+		g_print("Unable to read analog input switch: %s\n", snd_strerror(err));
+	input_interface = snd_ctl_elem_value_get_enumerated(analog_input_select, 0);
+	switch (input_interface) {
+	case 0: toggle_set(input_interface_internal, TRUE); break;
+	case 1: toggle_set(input_interface_front_input, TRUE); break;
+	case 2: toggle_set(input_interface_rear_input, TRUE); break;
+	case 3: toggle_set(input_interface_wavetable, TRUE); break;
+	default:
+		g_print("Error in analogue input: %d\n", input_interface);
+		break;
+	}
+}
+
+void analog_input_select_set(int value)
+{
+	int err;
+
+        snd_ctl_elem_value_set_enumerated(analog_input_select, 0, value);
+        if ((err = snd_ctl_elem_write(ctl, analog_input_select)) < 0)
+                g_print("Unable to write analog input selection: %s\n", snd_strerror(err));
+}
+
+void analog_input_select_toggled(GtkWidget *togglebutton, gpointer data)
+{
+	char *what = (char *) data;
+
+        if (!is_active(togglebutton))
+                return;
+        if (!strcmp(what, "Internal")) {
+                analog_input_select_set(0);
+        } else if (!strcmp(what, "Front Input")) {
+                analog_input_select_set(1);
+        } else if (!strcmp(what, "Rear Input")) {
+                analog_input_select_set(2);
+        } else if (!strcmp(what, "Wave Table")) {
+                analog_input_select_set(3);
+        } else {
+                g_print("analog_input_select_toggled: %s ???\n", what);
+        }
+}
+
+
+void breakbox_led_update(void)
+{
+	int err;
+
+	 if (card_eeprom.subvendor != ICE1712_SUBDEVICE_DMX6FIRE)
+		return;
+	if ((err = snd_ctl_elem_read(ctl, breakbox_led)) < 0)
+		g_print("Unable to read breakbox LED switch: %s\n", snd_strerror(err));
+	if (snd_ctl_elem_value_get_boolean(breakbox_led, 0)) {
+		 toggle_set(hw_breakbox_led_on_radio, TRUE);
+	} else {
+		 toggle_set(hw_breakbox_led_off_radio, TRUE);
+	}
+}
+
+void breakbox_led_toggled(GtkWidget *togglebutton, gpointer data)
+{
+	int err;
+		char *str = (char *)data;
+
+	 if (!is_active(togglebutton))
+		return;
+	if (!strcmp(str, "On"))
+			snd_ctl_elem_value_set_boolean(breakbox_led, 0, 1);
+	else
+			snd_ctl_elem_value_set_boolean(breakbox_led, 0, 0);
+	if ((err = snd_ctl_elem_write(ctl, breakbox_led)) < 0)
+		g_print("Unable to write breakbox LED switch: %s\n", snd_strerror(err));
+}
+
+void spdif_on_off_update(void)
+{
+        int err;
+
+        if (card_eeprom.subvendor != ICE1712_SUBDEVICE_DMX6FIRE)
+                return;
+        if ((err = snd_ctl_elem_read(ctl, spdif_on_off)) < 0)
+                g_print("Unable to read S/PDIF on/off switch: %s\n", snd_strerror(err));
+        if (snd_ctl_elem_value_get_boolean(spdif_on_off, 0)) {
+                toggle_set(hw_spdif_switch_on_radio, TRUE);
+        } else {
+                toggle_set(hw_spdif_switch_off_radio, TRUE);
+        }
+}
+
+void spdif_on_off_toggled(GtkWidget *togglebutton, gpointer data)
+{
+        int err;
+        char *str = (char *) data;
+
+        if (!is_active(togglebutton))
+                return;
+        if (!strcmp(str, "On"))
+                snd_ctl_elem_value_set_boolean(spdif_input, 0, 1);
+        else
+                snd_ctl_elem_value_set_boolean(spdif_input, 0, 0);
+        if ((err = snd_ctl_elem_write(ctl, spdif_input)) < 0)
+                g_print("Unable to write S/PDIF on/off switch: %s\n", snd_strerror(err));
+}
+
+void phono_input_update(void)
+{
+        int err;
+
+        if (card_eeprom.subvendor != ICE1712_SUBDEVICE_DMX6FIRE)
+                return;
+        if ((err = snd_ctl_elem_read(ctl, phono_input)) < 0)
+                g_print("Unable to read phono input switch: %s\n", snd_strerror(err));
+        if (snd_ctl_elem_value_get_boolean(phono_input, 0)) {
+                toggle_set(hw_phono_input_on_radio, TRUE);
+        } else {
+                toggle_set(hw_phono_input_off_radio, TRUE);
+        }
+}
+
+void phono_input_toggled(GtkWidget *togglebutton, gpointer data)
+{
+        int err;
+        char *str = (char *) data;
+
+        if (!is_active(togglebutton))
+                return;
+        if (!strcmp(str, "On"))
+                snd_ctl_elem_value_set_boolean(phono_input, 0, 1);
+        else
+                snd_ctl_elem_value_set_boolean(phono_input, 0, 0);
+        if ((err = snd_ctl_elem_write(ctl, phono_input)) < 0)
+                g_print("Unable to write phono input switch: %s\n", snd_strerror(err));
+}
+
 void hardware_init(void)
 {
 	if (snd_ctl_elem_value_malloc(&internal_clock) < 0 ||
@@ -587,7 +730,11 @@ void hardware_init(void)
 	    snd_ctl_elem_value_malloc(&rate_reset) < 0 ||
 	    snd_ctl_elem_value_malloc(&volume_rate) < 0 ||
 	    snd_ctl_elem_value_malloc(&spdif_input) < 0 ||
-	    snd_ctl_elem_value_malloc(&spdif_output) < 0) {
+	    snd_ctl_elem_value_malloc(&spdif_output) < 0 ||
+	    snd_ctl_elem_value_malloc(&analog_input_select) < 0 ||
+	    snd_ctl_elem_value_malloc(&breakbox_led) < 0 ||
+	    snd_ctl_elem_value_malloc(&spdif_on_off) < 0 ||
+	    snd_ctl_elem_value_malloc(&phono_input) < 0) {
 		g_print("Cannot allocate memory\n");
 		exit(1);
 	}
@@ -607,11 +754,29 @@ void hardware_init(void)
 	snd_ctl_elem_value_set_interface(volume_rate, SND_CTL_ELEM_IFACE_MIXER);
 	snd_ctl_elem_value_set_name(volume_rate, "Multi Track Volume Rate");
 
+	if(card_eeprom.subvendor == ICE1712_SUBDEVICE_DMX6FIRE){
+		snd_ctl_elem_value_set_interface(spdif_input, SND_CTL_ELEM_IFACE_MIXER);
+		snd_ctl_elem_value_set_name(spdif_input, "Optical Digital Input Switch");
+	} else {
 	snd_ctl_elem_value_set_interface(spdif_input, SND_CTL_ELEM_IFACE_PCM);
 	snd_ctl_elem_value_set_name(spdif_input, "IEC958 Input Optical");
+	}
 
 	snd_ctl_elem_value_set_interface(spdif_output, SND_CTL_ELEM_IFACE_PCM);
 	snd_ctl_elem_value_set_name(spdif_output, "IEC958 Playback Default");
+
+	snd_ctl_elem_value_set_interface(analog_input_select, SND_CTL_ELEM_IFACE_MIXER);
+	snd_ctl_elem_value_set_name(analog_input_select, "Analog Input Select");
+
+	snd_ctl_elem_value_set_interface(breakbox_led, SND_CTL_ELEM_IFACE_MIXER);
+	snd_ctl_elem_value_set_name(breakbox_led, "Breakbox LED");
+
+	snd_ctl_elem_value_set_interface(spdif_on_off, SND_CTL_ELEM_IFACE_MIXER);
+	snd_ctl_elem_value_set_name(spdif_on_off, "Front Digital Input Switch");
+
+	snd_ctl_elem_value_set_interface(phono_input, SND_CTL_ELEM_IFACE_MIXER);
+	snd_ctl_elem_value_set_name(phono_input, "Phono Analog Input Switch");
+
 }
 
 void hardware_postinit(void)
@@ -622,4 +787,8 @@ void hardware_postinit(void)
 	volume_change_rate_update();
 	spdif_input_update();
 	spdif_output_update();
+	analog_input_select_update();
+	breakbox_led_update();
+	spdif_on_off_update();
+	phono_input_update();
 }

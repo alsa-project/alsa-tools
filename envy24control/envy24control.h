@@ -109,6 +109,19 @@ extern GtkWidget *hw_spdif_output_notebook;
 extern GtkWidget *hw_spdif_input_coaxial_radio;
 extern GtkWidget *hw_spdif_input_optical_radio;
 
+extern GtkWidget *hw_breakbox_led_on_radio;
+extern GtkWidget *hw_breakbox_led_off_radio;
+
+extern GtkWidget *hw_phono_input_on_radio;
+extern GtkWidget *hw_phono_input_off_radio;
+
+extern GtkWidget *hw_spdif_switch_on_radio;
+extern GtkWidget *hw_spdif_switch_off_radio;
+
+extern GtkWidget *input_interface_internal;
+extern GtkWidget *input_interface_front_input;
+extern GtkWidget *input_interface_rear_input;
+extern GtkWidget *input_interface_wavetable;
 extern GtkObject *av_dac_volume_adj[];
 extern GtkObject *av_adc_volume_adj[];
 extern GtkObject *av_ipga_volume_adj[];
@@ -158,6 +171,11 @@ void spdif_output_update(void);
 void spdif_output_toggled(GtkWidget *togglebutton, gpointer data);
 void spdif_input_update(void);
 void spdif_input_toggled(GtkWidget *togglebutton, gpointer data);
+void analog_input_select_toggled(GtkWidget *togglebutton, gpointer data);
+void breakbox_led_toggled(GtkWidget *togglebutton, gpointer data);
+void spdif_on_off_toggled(GtkWidget *togglebutton, gpointer data);
+void phono_input_toggled(GtkWidget *togglebutton, gpointer data);
+
 void hardware_init(void);
 void hardware_postinit(void);
 void analog_volume_init(void);

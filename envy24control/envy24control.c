@@ -94,6 +94,20 @@ GtkWidget *hw_spdif_output_notebook;
 GtkWidget *hw_spdif_input_coaxial_radio;
 GtkWidget *hw_spdif_input_optical_radio;
 
+GtkWidget *input_interface_internal;
+GtkWidget *input_interface_front_input;
+GtkWidget *input_interface_rear_input;
+GtkWidget *input_interface_wavetable;
+
+GtkWidget *hw_breakbox_led_on_radio;
+GtkWidget *hw_breakbox_led_off_radio;
+
+GtkWidget *hw_phono_input_on_radio;
+GtkWidget *hw_phono_input_off_radio;
+
+GtkWidget *hw_spdif_switch_on_radio;
+GtkWidget *hw_spdif_switch_off_radio;
+
 GtkObject *av_dac_volume_adj[10];
 GtkObject *av_adc_volume_adj[10];
 GtkObject *av_ipga_volume_adj[10];
@@ -119,6 +133,18 @@ static void create_mixer_frame(GtkWidget *box, int stream)
 
 	if (stream <= 10) {
 		sprintf(str, "PCM Out %i", stream);
+	} else if ((card_eeprom.subvendor == ICE1712_SUBDEVICE_DMX6FIRE) && (stream == 11)) {
+		sprintf(str, "CD In L");
+	} else if ((card_eeprom.subvendor == ICE1712_SUBDEVICE_DMX6FIRE) && (stream == 12)) {
+		sprintf(str, "CD In R");
+	} else if ((card_eeprom.subvendor == ICE1712_SUBDEVICE_DMX6FIRE) && (stream == 13)) {
+		sprintf(str, "Line In L");
+	} else if ((card_eeprom.subvendor == ICE1712_SUBDEVICE_DMX6FIRE) && (stream == 14)) {
+		sprintf(str, "Line In R");
+	} else if ((card_eeprom.subvendor == ICE1712_SUBDEVICE_DMX6FIRE) && (stream == 15)) {
+		sprintf(str, "Phono/Mic In L");
+	} else if ((card_eeprom.subvendor == ICE1712_SUBDEVICE_DMX6FIRE) && (stream == 16)) {
+		sprintf(str, "Phono/Mic In R");
 	} else if (stream <= 18) {
 		sprintf(str, "H/W In %i", stream - 10);
 	} else if (stream == 19) {
@@ -1092,7 +1118,7 @@ static void create_spdif_input_select(GtkWidget *box)
 	GSList *group = NULL;
 	int hide = 1;
 
-	if(card_eeprom.subvendor == ICE1712_SUBDEVICE_DELTADIO2496)
+	if((card_eeprom.subvendor == ICE1712_SUBDEVICE_DELTADIO2496) || (card_eeprom.subvendor == ICE1712_SUBDEVICE_DMX6FIRE))
 		hide = 0;
 
 	frame = gtk_frame_new("S/PDIF Input");
@@ -1127,11 +1153,202 @@ static void create_spdif_input_select(GtkWidget *box)
 		gtk_widget_hide_all(frame);
 }
 
+static void create_spdif_on_off(GtkWidget *box)
+{
+        GtkWidget *frame;
+        GtkWidget *vbox;
+        GtkWidget *radiobutton;
+        GSList *group = NULL;
+        int hide = 1;
+
+        if( card_eeprom.subvendor == ICE1712_SUBDEVICE_DMX6FIRE)
+                hide = 0;
+
+        frame = gtk_frame_new("S/PDIF On/Off");
+        gtk_widget_show(frame);
+        gtk_box_pack_start(GTK_BOX(box), frame, FALSE, TRUE, 0);
+        gtk_container_set_border_width(GTK_CONTAINER(frame), 6);
+
+        vbox = gtk_vbox_new(FALSE, 0);
+        gtk_widget_show(vbox);
+        gtk_container_add(GTK_CONTAINER(frame), vbox);
+        gtk_container_set_border_width(GTK_CONTAINER(vbox), 6);
+
+        radiobutton = gtk_radio_button_new_with_label(group, "On");
+        hw_spdif_switch_on_radio = radiobutton;
+        group = gtk_radio_button_group(GTK_RADIO_BUTTON(radiobutton));
+        gtk_widget_show(radiobutton);
+        gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
+        gtk_signal_connect(GTK_OBJECT(radiobutton), "toggled",
+                          (GtkSignalFunc)spdif_on_off_toggled,
+                          (gpointer)"On");
+
+        radiobutton = gtk_radio_button_new_with_label(group, "Off");
+        hw_spdif_switch_off_radio = radiobutton;
+        group = gtk_radio_button_group(GTK_RADIO_BUTTON(radiobutton));
+        gtk_widget_show(radiobutton);
+        gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
+        gtk_signal_connect(GTK_OBJECT(radiobutton), "toggled",
+                          (GtkSignalFunc)spdif_on_off_toggled,
+                          (gpointer)"Off");
+
+        if(hide)
+                gtk_widget_hide_all(frame);
+}
+
+static void create_breakbox_led(GtkWidget *box)
+{
+        GtkWidget *frame;
+        GtkWidget *vbox;
+        GtkWidget *radiobutton;
+        GSList *group = NULL;
+        int hide = 1;
+
+        if( card_eeprom.subvendor == ICE1712_SUBDEVICE_DMX6FIRE)
+                hide = 0;
+
+        frame = gtk_frame_new("Breakbox LED On/Off");
+        gtk_widget_show(frame);
+        gtk_box_pack_start(GTK_BOX(box), frame, FALSE, TRUE, 0);
+        gtk_container_set_border_width(GTK_CONTAINER(frame), 6);
+
+        vbox = gtk_vbox_new(FALSE, 0);
+        gtk_widget_show(vbox);
+        gtk_container_add(GTK_CONTAINER(frame), vbox);
+        gtk_container_set_border_width(GTK_CONTAINER(vbox), 6);
+
+        radiobutton = gtk_radio_button_new_with_label(group, "On");
+        hw_breakbox_led_on_radio = radiobutton;
+        group = gtk_radio_button_group(GTK_RADIO_BUTTON(radiobutton));
+        gtk_widget_show(radiobutton);
+        gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
+        gtk_signal_connect(GTK_OBJECT(radiobutton), "toggled",
+                          (GtkSignalFunc)breakbox_led_toggled,
+                          (gpointer)"On");
+
+        radiobutton = gtk_radio_button_new_with_label(group, "Off");
+        hw_breakbox_led_off_radio = radiobutton;
+        group = gtk_radio_button_group(GTK_RADIO_BUTTON(radiobutton));
+        gtk_widget_show(radiobutton);
+        gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
+        gtk_signal_connect(GTK_OBJECT(radiobutton), "toggled",
+                          (GtkSignalFunc)breakbox_led_toggled,
+                          (gpointer)"Off");
+
+        if(hide)
+                gtk_widget_hide_all(frame);
+}
+
+static void create_phono_input(GtkWidget *box)
+{
+        GtkWidget *frame;
+        GtkWidget *vbox;
+        GtkWidget *radiobutton;
+        GSList *group = NULL;
+        int hide = 1;
+
+        if( card_eeprom.subvendor == ICE1712_SUBDEVICE_DMX6FIRE)
+                hide = 0;
+
+        frame = gtk_frame_new("Phono Input Switch");
+        gtk_widget_show(frame);
+        gtk_box_pack_start(GTK_BOX(box), frame, FALSE, TRUE, 0);
+        gtk_container_set_border_width(GTK_CONTAINER(frame), 6);
+
+        vbox = gtk_vbox_new(FALSE, 0);
+        gtk_widget_show(vbox);
+        gtk_container_add(GTK_CONTAINER(frame), vbox);
+        gtk_container_set_border_width(GTK_CONTAINER(vbox), 6);
+
+        radiobutton = gtk_radio_button_new_with_label(group, "Phono");
+        hw_phono_input_on_radio = radiobutton;
+        group = gtk_radio_button_group(GTK_RADIO_BUTTON(radiobutton));
+        gtk_widget_show(radiobutton);
+        gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
+        gtk_signal_connect(GTK_OBJECT(radiobutton), "toggled",
+                          (GtkSignalFunc)phono_input_toggled,
+                          (gpointer)"Phono");
+
+        radiobutton = gtk_radio_button_new_with_label(group, "Mic");
+        hw_phono_input_off_radio = radiobutton;
+        group = gtk_radio_button_group(GTK_RADIO_BUTTON(radiobutton));
+        gtk_widget_show(radiobutton);
+        gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
+        gtk_signal_connect(GTK_OBJECT(radiobutton), "toggled",
+                          (GtkSignalFunc)phono_input_toggled,
+                          (gpointer)"Mic");
+
+        if(hide)
+                gtk_widget_hide_all(frame);
+}
+
+static void create_input_interface(GtkWidget *box)
+{
+        GtkWidget *frame;
+        GtkWidget *vbox;
+        GtkWidget *radiobutton;
+        GSList *group = NULL;
+        int hide = 1;
+
+        if( card_eeprom.subvendor == ICE1712_SUBDEVICE_DMX6FIRE)
+                hide = 0;
+
+        frame = gtk_frame_new("Line In Selector");
+        gtk_widget_show(frame);
+        gtk_box_pack_start(GTK_BOX(box), frame, FALSE, TRUE, 0);
+        gtk_container_set_border_width(GTK_CONTAINER(frame), 6);
+
+        vbox = gtk_vbox_new(FALSE, 0);
+        gtk_widget_show(vbox);
+        gtk_container_add(GTK_CONTAINER(frame), vbox);
+        gtk_container_set_border_width(GTK_CONTAINER(vbox), 6);
+
+        radiobutton = gtk_radio_button_new_with_label(group, "Internal");
+        input_interface_internal = radiobutton;
+        group = gtk_radio_button_group(GTK_RADIO_BUTTON(radiobutton));
+        gtk_widget_show(radiobutton);
+        gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
+        gtk_signal_connect(GTK_OBJECT(radiobutton), "toggled",
+                          (GtkSignalFunc)analog_input_select_toggled,
+                          (gpointer)"Internal");
+
+        radiobutton = gtk_radio_button_new_with_label(group, "Front Input");
+        input_interface_front_input = radiobutton;
+        group = gtk_radio_button_group(GTK_RADIO_BUTTON(radiobutton));
+        gtk_widget_show(radiobutton);
+        gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
+        gtk_signal_connect(GTK_OBJECT(radiobutton), "toggled",
+                          (GtkSignalFunc)analog_input_select_toggled,
+                          (gpointer)"Front Input");
+
+        radiobutton = gtk_radio_button_new_with_label(group, "Rear Input");
+        input_interface_rear_input = radiobutton;
+        group = gtk_radio_button_group(GTK_RADIO_BUTTON(radiobutton));
+        gtk_widget_show(radiobutton);
+        gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
+        gtk_signal_connect(GTK_OBJECT(radiobutton), "toggled",
+                          (GtkSignalFunc)analog_input_select_toggled,
+                          (gpointer)"Rear Input");
+
+        radiobutton = gtk_radio_button_new_with_label(group, "Wave Table");
+        input_interface_wavetable = radiobutton;
+        group = gtk_radio_button_group(GTK_RADIO_BUTTON(radiobutton));
+        gtk_widget_show(radiobutton);
+        gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
+        gtk_signal_connect(GTK_OBJECT(radiobutton), "toggled",
+                          (GtkSignalFunc)analog_input_select_toggled,
+                          (gpointer)"Wave Table");
+
+        if(hide)
+                gtk_widget_hide_all(frame);
+}
+
 static void create_hardware(GtkWidget *main, GtkWidget *notebook, int page)
 {
 	GtkWidget *label;
 	GtkWidget *hbox;
 	GtkWidget *vbox;
+	GtkWidget *vbox2;
 
 	hbox = gtk_hbox_new(FALSE, 0);
 	gtk_widget_show(hbox);
@@ -1148,6 +1365,11 @@ static void create_hardware(GtkWidget *main, GtkWidget *notebook, int page)
 	gtk_box_pack_start(GTK_BOX(hbox), vbox, FALSE, TRUE, 0);
 	gtk_container_set_border_width(GTK_CONTAINER(vbox), 6);
 
+	vbox2 = gtk_vbox_new(FALSE, 0);
+	gtk_widget_show(vbox2);
+	gtk_box_pack_end(GTK_BOX(hbox),vbox2, FALSE, FALSE, 0);
+	gtk_container_set_border_width(GTK_CONTAINER(vbox2), 6);
+
 	create_master_clock(vbox);
 	create_rate_state(vbox);
 	create_actual_rate(vbox);
@@ -1155,7 +1377,11 @@ static void create_hardware(GtkWidget *main, GtkWidget *notebook, int page)
 
  	create_spdif_output_settings(hbox); 
 
- 	create_spdif_input_select(hbox); 
+ 	create_spdif_input_select(vbox2);
+	create_input_interface(vbox2);
+	create_breakbox_led(vbox2);
+	create_phono_input(vbox2);
+	create_spdif_on_off(vbox2);
 }
 
 static void create_about(GtkWidget *main, GtkWidget *notebook, int page)
