@@ -10,7 +10,9 @@ if [ -x /usr/bin/logger ]; then
 	/usr/bin/logger -t $0 "calling $LOADER for $DEVICE"
 fi
 $LOADER
-@bin@/us428control &
+if [ -x @bindir@/us428control ]; then
+	@bindir@/us428control &
+fi
 if [ -x /usr/bin/logger ]; then
 	/usr/bin/logger -t $0 "leaving"
 fi
