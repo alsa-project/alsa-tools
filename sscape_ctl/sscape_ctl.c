@@ -16,6 +16,23 @@ const char default_dir[] = "/sndscape";
 const char scope[] = "scope.cod";
 
 
+static void
+show_usage(void)
+{
+  printf("sscape_ctl: [--card card number]\n"
+         "            [--directory firmware directory]\n"
+         "sscape_ctl: --help\n"
+         "sscape_ctl: --version\n");
+}
+
+
+static void
+show_version(void)
+{
+  printf("ALSA SoundScape control utility: v" VERSION "\n");
+}
+
+
 void
 safe_close(int fd)
 {
@@ -120,13 +137,16 @@ load_microcode(const char *fname, struct sscape_microcode *microcode)
   return err;
 }
 
+
 static const struct option long_option[] = {
   { "card", 1, NULL, 'c' },
   { "directory", 1, NULL, 'd' },
+  { "help", 0, NULL, 'h' },
+  { "version", 0, NULL, 'v' },
   { NULL, 0, NULL, '\0' }
 };
 
-static const char option[] = "c:d:";
+static const char option[] = "c:d:hv";
 
 int
 main(int argc, char *argv[])
@@ -157,14 +177,21 @@ main(int argc, char *argv[])
       directory = optarg;
       break;
 
+    case 'h':
+      show_usage();
+      return EXIT_SUCCESS;
+
+    case 'v':
+      show_version();
+      return EXIT_SUCCESS;
+
     default:
-      fprintf(stderr, "Unknown option \'%c\'\n", c);
-      break;
+      return EXIT_FAILURE;
     } /* switch */
   } /* while */
 
   ret = EXIT_FAILURE;
-  sprintf(devicename, "hw:%i,0", card);
+  snprintf(devicename, sizeof(devicename), "hw:%i,0", card);
   err = snd_hwdep_open(&handle, devicename, O_WRONLY);
   if (err < 0)
   {
