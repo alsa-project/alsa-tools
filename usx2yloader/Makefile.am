@@ -1,7 +1,7 @@
 # # Process this file with automake to produce Makefile.in.
 AUTOMAKE_OPTIONS = 1.3 foreign
 
-MYNAME = vxloader
+MYNAME = usx2yloader
 
 AM_CFLAGS = -DDATAPATH=\"$(datadir)/alsa/firmware/$(MYNAME)\"
 
