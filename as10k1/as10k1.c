@@ -214,7 +214,7 @@ int main( int argc, char *argv[] )
         /* write binary code */
         
 
-        for (i = 0; i < ip; i++) {
+        for (i = 0; i < ip * 2; i++) {
         	val = __cpu_to_le32(dsp_code[i]);
                 fwrite(&val,sizeof(u32),1,fp);
 		//for (j = 3; j >= 0; j--)
