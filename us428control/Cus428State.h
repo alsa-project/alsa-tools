@@ -29,6 +29,8 @@ class Cus428State: public us428_lights{
 		:us428ctls_sharedmem(Pus428ctls_sharedmem)
 		,MuteInputMonitor(0)
 		,Mute(0)
+		,SelectInputMonitor(0)
+		,Select(0)
 		,us428_ctls(0)
 		{
 			init_us428_lights();
