@@ -61,7 +61,7 @@ int output_open(output_t *output)
 		switch (output->channels) {
 		case 1:
 		case 2:
-			sprintf(devstr, "plug:%d,%d", card, dev);
+			sprintf(devstr, "default");
 			break;
 		case 4:
 			sprintf(devstr, "surround40:%d,%d", card, dev);
@@ -186,10 +186,26 @@ int output_open(output_t *output)
 			fprintf(stderr, "Unable to open the control interface '%s': %s\n", ctl_name, snd_strerror(err));
 			goto __diga_end;
 		}
-		if ((err = snd_ctl_elem_write(ctl_handle, ctl)) < 0) {
-			fprintf(stderr, "Unable to update the IEC958 control: %s\n", snd_strerror(err));
-			goto __diga_end;
+		if (!strcasecmp(snd_pcm_info_get_name(info), "EMU10K1 FX8010")) {
+			/* EMU10K1 hack, don't use, alsa-lib will provide more clean solution */
+			snd_ctl_elem_value_set_interface(ctl, SND_CTL_ELEM_IFACE_MIXER);
+			snd_ctl_elem_value_set_device(ctl, 0);
+			snd_ctl_elem_value_set_subdevice(ctl, 0);
+			snd_ctl_elem_value_set_name(ctl, "IEC958 Optical Raw Playback Switch");
+			snd_ctl_elem_value_set_boolean(ctl, 0, 1);
+			snd_ctl_elem_value_set_boolean(ctl, 1, 1);
+			if ((err = snd_ctl_elem_write(ctl_handle, ctl)) < 0) {
+				fprintf(stderr, "Unable to update the IEC958 Optical Raw control: %s\n", snd_strerror(err));
+				goto __diga_close;
+			}
+		} else {
+			if ((err = snd_ctl_elem_write(ctl_handle, ctl)) < 0) {
+				fprintf(stderr, "Unable to update the IEC958 control: %s\n", snd_strerror(err));
+				goto __diga_close;
+			}
 		}
+
+	      __diga_close:
 		snd_ctl_close(ctl_handle);
 	      __diga_end:
 	}
