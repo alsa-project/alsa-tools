@@ -25,7 +25,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <alsa/asoundlib.h>
-#include <sound/hdsp.h>
+#include <alsa/sound/hdsp.h>
 #include "defines.h"
 #include "HDSPMixerWindow.h"
 

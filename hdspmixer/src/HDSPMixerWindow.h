@@ -39,7 +39,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <alsa/asoundlib.h>
-#include <sound/hdsp.h>
+#include <alsa/sound/hdsp.h>
 #include "HDSPMixerCard.h"
 #include "HDSPMixerInputs.h"
 #include "HDSPMixerOutputs.h"

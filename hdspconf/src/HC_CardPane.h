@@ -23,7 +23,7 @@
 #define HC_CardPane_H
 
 #include <stdio.h>
-#include <sound/hdsp.h>
+#include <alsa/sound/hdsp.h>
 #include <FL/Fl_Group.H>
 #include "HC_SyncCheck.h"
 #include "HC_SpdifFreq.h"

@@ -27,7 +27,7 @@
 #include <FL/Fl_Menu_.H>
 #include <FL/Fl_Menu_Item.H>
 #include <FL/fl_draw.H>
-#include <sound/hdsp.h>
+#include <alsa/sound/hdsp.h>
 #include "HDSPMixerWindow.h"
 #include "HDSPMixerIOMixer.h"
 #include "defines.h"

@@ -24,7 +24,7 @@
 #include <errno.h>
 #include <sys/ioctl.h>
 #include <alsa/asoundlib.h>
-#include <sound/hdsp.h>
+#include <alsa/sound/hdsp.h>
 #include <FL/Fl.H>
 #include <FL/Fl_Window.H>
 #include <FL/Fl_Group.H>

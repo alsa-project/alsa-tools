@@ -24,7 +24,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <alsa/asoundlib.h>
-#include <sound/hdsp.h>
+#include <alsa/sound/hdsp.h>
 #include <FL/Fl.H>
 #include <FL/Fl_Preferences.H>
 #include "pixmaps.h"

@@ -25,7 +25,7 @@
 #include <FL/Fl.H>
 #include <FL/Fl_Group.H>
 #include <FL/fl_draw.H>
-#include <sound/hdsp.h>
+#include <alsa/sound/hdsp.h>
 #include "HDSPMixerFader.h"
 #include "HDSPMixerPeak.h"
 #include "HDSPMixerGain.h"
