@@ -25,25 +25,28 @@ void control_input_callback(gpointer data, gint source, GdkInputCondition condit
 	snd_ctl_event_t *ev;
 	const char *name;
 	int index;
+	unsigned int mask;
 
 	snd_ctl_event_alloca(&ev);
 	if (snd_ctl_read(ctl, ev) < 0)
 		return;
 	name = snd_ctl_event_elem_get_name(ev);
 	index = snd_ctl_event_elem_get_index(ev);
+	mask = snd_ctl_event_elem_get_mask(ev);
+	if (! (mask & (SND_CTL_EVENT_MASK_VALUE | SND_CTL_EVENT_MASK_INFO)))
+		return;
+
 	switch (snd_ctl_event_elem_get_interface(ev)) {
 	case SND_CTL_ELEM_IFACE_PCM:
-		if (!strcmp(name, "Multi Track Route"))
-			patchbay_update();
-		else if (!strcmp(name, "Multi Track S/PDIF Master"))
+		if (!strcmp(name, "Multi Track IEC958 Master"))
 			master_clock_update();
 		else if (!strcmp(name, "Word Clock Sync"))
 			master_clock_update();
 		else if (!strcmp(name, "Multi Track Volume Rate"))
 			volume_change_rate_update();
-		else if (!strcmp(name, "S/PDIF Input Optical"))
+		else if (!strcmp(name, "IEC958 Input Optical"))
 			spdif_input_update();
-		else if (!strcmp(name, "Delta S/PDIF Output Defaults"))
+		else if (!strcmp(name, "Delta IEC958 Output Defaults"))
 			spdif_output_update();
 		break;
 	case SND_CTL_ELEM_IFACE_MIXER:
@@ -55,6 +58,10 @@ void control_input_callback(gpointer data, gint source, GdkInputCondition condit
 			mixer_update_stream(index + 1, 0, 1);
 		else if (!strcmp(name, "Multi Capture Switch"))
 			mixer_update_stream(index + 11, 0, 1);
+		else if (!strcmp(name, "H/W Playback Route"))
+			patchbay_update();
+		else if (!strcmp(name, "IEC958 Playback Route"))
+			patchbay_update();
 		break;
 	default:
 		break;

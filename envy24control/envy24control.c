@@ -31,7 +31,6 @@ GtkWidget *mixer_clear_peaks_button;
 GtkWidget *mixer_drawing[20];
 GtkObject *mixer_adj[20][2];
 GtkWidget *mixer_vscale[20][2];
-GtkWidget *mixer_solo_toggle[20][2];
 GtkWidget *mixer_mute_toggle[20][2];
 GtkWidget *mixer_stereo_toggle[20];
 
@@ -121,7 +120,7 @@ static void create_mixer_frame(GtkWidget *fixed, int stream)
         gtk_widget_show(vscale);
 	gtk_fixed_put(GTK_FIXED(fixed1), vscale, 8, 8);
 	gtk_widget_set_uposition(vscale, 7, 8);
-	gtk_widget_set_usize(vscale, 18, 146);	
+	gtk_widget_set_usize(vscale, 18, 168);	
 	gtk_scale_set_value_pos(GTK_SCALE(vscale), GTK_POS_BOTTOM);
 	gtk_scale_set_digits(GTK_SCALE(vscale), 0);
 	gtk_signal_connect(GTK_OBJECT(adj), "value_changed",
@@ -139,7 +138,7 @@ static void create_mixer_frame(GtkWidget *fixed, int stream)
 	gtk_widget_set_events(drawing, GDK_EXPOSURE_MASK);
 	gtk_fixed_put(GTK_FIXED(fixed1), drawing, 24, 9);
 	gtk_widget_set_uposition(drawing, 24, 9);
-	gtk_widget_set_usize(drawing, 45, 130);	
+	gtk_widget_set_usize(drawing, 45, 152);	
 
 	adj = gtk_adjustment_new(96, 0, 96, 1, 16, 0);
 	mixer_adj[stream-1][1] = adj;
@@ -148,7 +147,7 @@ static void create_mixer_frame(GtkWidget *fixed, int stream)
         gtk_widget_show(vscale);
 	gtk_fixed_put(GTK_FIXED(fixed1), vscale, 70, 8);
 	gtk_widget_set_uposition(vscale, 69, 8);
-	gtk_widget_set_usize(vscale, 18, 146);	
+	gtk_widget_set_usize(vscale, 18, 168);	
 	gtk_scale_set_value_pos(GTK_SCALE(vscale), GTK_POS_BOTTOM);
 	gtk_scale_set_digits(GTK_SCALE(vscale), 0);
 	gtk_signal_connect(GTK_OBJECT(adj), "value_changed",
@@ -156,36 +155,16 @@ static void create_mixer_frame(GtkWidget *fixed, int stream)
 
         label = gtk_label_new("Left");
         gtk_widget_show(label);
-	gtk_fixed_put(GTK_FIXED(fixed1), label, 0, 160);
-	gtk_widget_set_uposition(label, 0, 160);
+	gtk_fixed_put(GTK_FIXED(fixed1), label, 0, 182);
+	gtk_widget_set_uposition(label, 0, 182);
 	gtk_widget_set_usize(label, 41, 16);	
 
         label = gtk_label_new("Right");
         gtk_widget_show(label);
-	gtk_fixed_put(GTK_FIXED(fixed1), label, 45, 160);
-	gtk_widget_set_uposition(label, 45, 160);
+	gtk_fixed_put(GTK_FIXED(fixed1), label, 45, 182);
+	gtk_widget_set_uposition(label, 45, 182);
 	gtk_widget_set_usize(label, 41, 16);
 
-	toggle = gtk_toggle_button_new_with_label("On");
-	mixer_solo_toggle[stream-1][0] = toggle;
-	gtk_widget_show(toggle);
-	gtk_fixed_put(GTK_FIXED(fixed1), toggle, 8, 176);
-	gtk_widget_set_uposition(toggle, 8, 176);
-	gtk_widget_set_usize(toggle, 36, 22);	
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(toggle), FALSE);
-	gtk_signal_connect(GTK_OBJECT(toggle), "toggled",
-			   (GtkSignalFunc)mixer_toggled_solo, (gpointer)((stream << 16) + 0));
-	
-	toggle = gtk_toggle_button_new_with_label("On");
-	mixer_solo_toggle[stream-1][1] = toggle;
-	gtk_widget_show(toggle);
-	gtk_fixed_put(GTK_FIXED(fixed1), toggle, 48, 176);
-	gtk_widget_set_uposition(toggle, 48, 176);
-	gtk_widget_set_usize(toggle, 36, 22);	
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(toggle), FALSE);
-	gtk_signal_connect(GTK_OBJECT(toggle), "toggled",
-			   (GtkSignalFunc)mixer_toggled_solo, (gpointer)((stream << 16) + 1));
-	
 	toggle = gtk_toggle_button_new_with_label("Mute");
 	mixer_mute_toggle[stream-1][0] = toggle;
 	gtk_widget_show(toggle);
@@ -312,7 +291,7 @@ static void create_mixer(GtkWidget *main, GtkWidget *notebook, int page)
 		create_mixer_frame(fixed, stream);
 }
 
-static void create_router_frame(GtkWidget *fixed, int stream)
+static void create_router_frame(GtkWidget *fixed, int stream, int pos)
 {
 	GtkWidget *frame;
 	GtkWidget *fixed1;
@@ -347,8 +326,8 @@ static void create_router_frame(GtkWidget *fixed, int stream)
 
 	frame = gtk_frame_new(str);
 	gtk_widget_show(frame);
-	gtk_fixed_put(GTK_FIXED(fixed), frame, 2 + (stream - 1) * 101, 2);
-	gtk_widget_set_uposition(frame, 2 + (stream - 1) * 101, 2);
+	gtk_fixed_put(GTK_FIXED(fixed), frame, 2 + pos * 101, 2);
+	gtk_widget_set_uposition(frame, 2 + pos * 101, 2);
 	gtk_widget_set_usize(frame, 98, 284);
 
 	fixed1 = gtk_fixed_new();
@@ -408,7 +387,7 @@ static void create_router(GtkWidget *main, GtkWidget *notebook, int page)
 	GtkWidget *scrollwin;
 	GtkWidget *viewport;
 	GtkWidget *fixed;
-	int stream;
+	int stream, pos;
 
 	scrollwin = gtk_scrolled_window_new(NULL, NULL);
 	gtk_widget_show(scrollwin);
@@ -424,8 +403,11 @@ static void create_router(GtkWidget *main, GtkWidget *notebook, int page)
 	gtk_widget_show(fixed);
 	gtk_container_add(GTK_CONTAINER(viewport), fixed);	
 
-	for (stream = 1; stream <= 10; stream++)
-		create_router_frame(fixed, stream);
+	pos = 0;
+	for (stream = 1; stream <= 10; stream++) {
+		if (patchbay_stream_is_active(stream))
+			create_router_frame(fixed, stream, pos++);
+	}
 }
 
 static void create_master_clock(GtkWidget *fixed)
@@ -1121,6 +1103,7 @@ int main(int argc, char **argv)
 				      GDK_INPUT_READ,
 				      control_input_callback,
 				      ctl);
+		snd_ctl_subscribe_events(ctl, 1);
 	}
 	gtk_timeout_add(40, level_meters_timeout_callback, NULL);
 	gtk_timeout_add(100, master_clock_status_timeout_callback, NULL);

@@ -19,10 +19,13 @@
 
 #include "envy24control.h"
 
-static snd_ctl_elem_value_t *routes;
+#define SPDIF_PLAYBACK_ROUTE_NAME	"IEC958 Playback Route"
+#define ANALOG_PLAYBACK_ROUTE_NAME	"H/W Playback Route"
 
 #define toggle_set(widget, state) \
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), state);
+
+static int stream_active[10];
 
 static int is_active(GtkWidget *widget)
 {
@@ -31,146 +34,82 @@ static int is_active(GtkWidget *widget)
 
 static int get_toggle_index(int stream)
 {
-	unsigned short psdout = snd_ctl_elem_value_get_byte(routes, 0) |
-				(snd_ctl_elem_value_get_byte(routes, 1) << 8);
-	unsigned short spdout = snd_ctl_elem_value_get_byte(routes, 2) |
-				(snd_ctl_elem_value_get_byte(routes, 3) << 8);
-	unsigned int capture = snd_ctl_elem_value_get_byte(routes, 4) |
-			       (snd_ctl_elem_value_get_byte(routes, 5) << 8) |
-			       (snd_ctl_elem_value_get_byte(routes, 6) << 16) |
-			       (snd_ctl_elem_value_get_byte(routes, 7) << 24);
-	int right = (stream - 1) & 1;
-	int source = (stream - 1) >> 1;
+	int err, out;
+	snd_ctl_elem_value_t *val;
 
 	stream--;
 	if (stream < 0 || stream > 9) {
 		g_print("get_toggle_index (1)\n");
 		return 0;
 	}
-	if (stream < 8) {	/* SPDOUT */
-		int psdout_shift = (source << 1) + (right ? 8 : 0);
-		int capture_shift = (source << 3) + (right ? 4 : 0);
-		int setup = (psdout >> psdout_shift) & 3;
-		int csetup = (capture >> capture_shift) & 15;
-		
-		switch (setup) {
-		case 0:					/* PCM Out */
-			return 0;
-		case 1:					/* digital mixer */
-			if (stream == 0 || stream == 1)
-				return 1;
-			return 0;
-		case 2:
-			return (csetup & 7) + 4;
-		case 3:
-			if (csetup & 8)
-				return 3;		/* S/PDIF right */
-			return 2;			/* S/PDIF left */
-		}
-	} else {	/* SPDOUT */
-		int spdout_shift = right ? 2 : 0;
-		int spdout_shift1 = right ? 12 : 8;
-		int setup = (spdout >> spdout_shift) & 3;
-		int setup1 = (spdout >> spdout_shift1) & 15;
-		
-		switch (setup) {
-		case 0:					/* PCM Out */
-			return 0;
-		case 1:					/* digital mixer */
-			if (stream == 0 || stream == 1)
-				return 1;
-			return 0;
-		case 2:
-			return (setup1 & 7) + 4;
-		case 3:
-			if (setup1 & 8)
-				return 3;		/* S/PDIF right */
-			return 2;			/* S/PDIF left */
-		}
+	snd_ctl_elem_value_alloca(&val);
+	snd_ctl_elem_value_set_interface(val, SND_CTL_ELEM_IFACE_MIXER);
+	if (stream >= 8) {
+		snd_ctl_elem_value_set_name(val, SPDIF_PLAYBACK_ROUTE_NAME);
+		snd_ctl_elem_value_set_index(val, stream - 8);
+	} else {
+		snd_ctl_elem_value_set_name(val, ANALOG_PLAYBACK_ROUTE_NAME);
+		snd_ctl_elem_value_set_index(val, stream);
 	}
-	return 0;
+	if ((err = snd_ctl_elem_read(ctl, val)) < 0)
+		return 0;
+	out = snd_ctl_elem_value_get_enumerated(val, 0);
+	if (out >= 11) {
+		if (stream >= 8 || stream < 2)
+			return 1; /* digital mixer */
+	} else if (out >= 9)
+		return out - 9 + 2; /* spdif left (=2) / right (=3) */
+	else if (out >= 1)
+		return out + 3; /* analog (4-) */
+
+	return 0; /* pcm */
 }
 
 void patchbay_update(void)
 {
-	int stream, tidx, err;
+	int stream, tidx;
 
-	if ((err = snd_ctl_elem_read(ctl, routes)) < 0) {
-		g_print("Multi track routes read error: %s\n", snd_strerror(err));
-		return;
-	}
 	for (stream = 1; stream <= 10; stream++) {
-		tidx = get_toggle_index(stream);
-		toggle_set(router_radio[stream - 1][tidx], TRUE);
+		if (stream_active[stream - 1]) {
+			tidx = get_toggle_index(stream);
+			toggle_set(router_radio[stream - 1][tidx], TRUE);
+		}
 	}
 }
 
 static void set_routes(int stream, int idx)
 {
-	unsigned short psdout = snd_ctl_elem_value_get_byte(routes, 0) |
-				(snd_ctl_elem_value_get_byte(routes, 1) << 8);
-	unsigned short spdout = snd_ctl_elem_value_get_byte(routes, 2) |
-				(snd_ctl_elem_value_get_byte(routes, 3) << 8);
-	unsigned int capture = snd_ctl_elem_value_get_byte(routes, 4) |
-			       (snd_ctl_elem_value_get_byte(routes, 5) << 8) |
-			       (snd_ctl_elem_value_get_byte(routes, 6) << 16) |
-			       (snd_ctl_elem_value_get_byte(routes, 7) << 24);
-	int right = (stream - 1) & 1;
-	int source = (stream - 1) >> 1;
 	int err;
+	unsigned int out;
+	snd_ctl_elem_value_t *val;
 
 	stream--;
 	if (stream < 0 || stream > 9) {
 		g_print("set_routes (1)\n");
 		return;
 	}
-	if (stream < 8) {	/* SPDOUT */
-		int psdout_shift = (source << 1) + (right ? 8 : 0);
-		int capture_shift = (source << 3) + (right ? 4 : 0);
-		psdout &= ~(3 << psdout_shift);
-		if (idx == 0) {				/* PCM Out */
-			/* nothing */ ;
-		} else if (idx == 1) {			/* digital mixer */
-			if (stream == 0 || stream == 1)
-				psdout |= 1 << psdout_shift;
-		} else if (idx == 2 || idx == 3) {	/* S/PDIF left & right */
-			psdout |= 3 << psdout_shift;
-			capture &= ~(1 << (capture_shift + 3));
-			capture |= (idx - 2) << (capture_shift + 3);
-		} else {
-			psdout |= 2 << psdout_shift;
-			capture &= ~(7 << capture_shift);
-			capture |= ((idx - 4) & 7) << capture_shift;
-		}
-	} else {	/* SPDOUT */
-		int spdout_shift = right ? 2 : 0;
-		int spdout_shift1 = right ? 12 : 8;
-		spdout &= ~(3 << spdout_shift);
-		if (idx == 0) {				/* PCM Out 9 & 10 */
-			/* nothing */ ;
-		} else if (idx == 1) {			/* digital mixer */
-			spdout |= 1 << spdout_shift;
-		} else if (idx == 2 || idx == 3) {	/* S/PDIF left & right */
-			spdout |= 3 << spdout_shift;
-			spdout &= ~(1 << (spdout_shift1 + 3));
-			spdout |= (idx - 2) << (spdout_shift1 + 3);
-		} else {
-			spdout |= 2 << spdout_shift;
-			spdout &= ~(7 << spdout_shift1);
-			spdout |= ((idx - 4) & 7) << spdout_shift1;
-		}
-	}
-	snd_ctl_elem_value_set_byte(routes, 0, psdout & 0xff);
-	snd_ctl_elem_value_set_byte(routes, 1, (psdout >> 8) & 0xff);
-	snd_ctl_elem_value_set_byte(routes, 2, spdout & 0xff);
-	snd_ctl_elem_value_set_byte(routes, 3, (spdout >> 8) & 0xff);
-	snd_ctl_elem_value_set_byte(routes, 4, capture & 0xff);
-	snd_ctl_elem_value_set_byte(routes, 5, (capture >> 8) & 0xff);
-	snd_ctl_elem_value_set_byte(routes, 6, (capture >> 16) & 0xff);
-	snd_ctl_elem_value_set_byte(routes, 7, (capture >> 24) & 0xff);
-	// g_print("psdout = 0x%x, spdout = 0x%x, capture = 0x%x\n", psdout, spdout, capture);
+	if (! stream_active[stream])
+		return;
+	out = 0;
+	if (idx == 1)
+		out = 11;
+	else if (idx == 2 || idx == 3)	/* S/PDIF left & right */
+		out = idx + 7; /* 9-10 */
+	else if (idx >= 4) /* analog */
+		out = idx - 3; /* 1-8 */
 
-	if ((err = snd_ctl_elem_write(ctl, routes)) < 0)
+	snd_ctl_elem_value_alloca(&val);
+	snd_ctl_elem_value_set_interface(val, SND_CTL_ELEM_IFACE_MIXER);
+	if (stream >= 8) {
+		snd_ctl_elem_value_set_name(val, SPDIF_PLAYBACK_ROUTE_NAME);
+		snd_ctl_elem_value_set_index(val, stream - 8);
+	} else {
+		snd_ctl_elem_value_set_name(val, ANALOG_PLAYBACK_ROUTE_NAME);
+		snd_ctl_elem_value_set_index(val, stream);
+	}
+
+	snd_ctl_elem_value_set_enumerated(val, 0, out);
+	if ((err = snd_ctl_elem_write(ctl, val)) < 0)
 		g_print("Multi track route write error: %s\n", snd_strerror(err));
 }
 
@@ -183,11 +122,35 @@ void patchbay_toggled(GtkWidget *togglebutton, gpointer data)
 		set_routes(stream, what);
 }
 
+int patchbay_stream_is_active(int stream)
+{
+	return stream_active[stream - 1];
+}
+
 void patchbay_init(void)
 {
-	snd_ctl_elem_value_malloc(&routes);
-	snd_ctl_elem_value_set_interface(routes, SND_CTL_ELEM_IFACE_MIXER);
-	snd_ctl_elem_value_set_name(routes, "Multi Track Route");
+	int i;
+	snd_ctl_elem_value_t *val;
+
+	snd_ctl_elem_value_alloca(&val);
+	snd_ctl_elem_value_set_interface(val, SND_CTL_ELEM_IFACE_MIXER);
+	snd_ctl_elem_value_set_name(val, ANALOG_PLAYBACK_ROUTE_NAME);
+	for (i = 0; i < 8; i++) {
+		snd_ctl_elem_value_set_numid(val, 0);
+		snd_ctl_elem_value_set_index(val, i);
+		if (snd_ctl_elem_read(ctl, val) < 0)
+			continue;
+
+		stream_active[i] = 1;
+	}
+	snd_ctl_elem_value_set_name(val, SPDIF_PLAYBACK_ROUTE_NAME);
+	for (i = 0; i < 2; i++) {
+		snd_ctl_elem_value_set_numid(val, 0);
+		snd_ctl_elem_value_set_index(val, i);
+ 		if (snd_ctl_elem_read(ctl, val) < 0)
+			continue;
+		stream_active[i + 8] = 1;
+	}
 }
 
 void patchbay_postinit(void)

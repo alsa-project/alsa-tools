@@ -99,6 +99,7 @@ void mixer_toggled_mute(GtkWidget *togglebutton, gpointer data);
 void mixer_adjust(GtkAdjustment *adj, gpointer data);
 void mixer_postinit(void);
 
+int patchbay_stream_is_active(int stream);
 void patchbay_update(void);
 void patchbay_toggled(GtkWidget *togglebutton, gpointer data);
 void patchbay_init(void);

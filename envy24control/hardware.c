@@ -401,7 +401,7 @@ void hardware_init(void)
 	snd_ctl_elem_value_set_interface(word_clock_sync, SND_CTL_ELEM_IFACE_PCM);
 	snd_ctl_elem_value_set_name(word_clock_sync, "Word Clock Sync");
 
-	snd_ctl_elem_value_set_interface(volume_rate, SND_CTL_ELEM_IFACE_PCM);
+	snd_ctl_elem_value_set_interface(volume_rate, SND_CTL_ELEM_IFACE_MIXER);
 	snd_ctl_elem_value_set_name(volume_rate, "Multi Track Volume Rate");
 
 	snd_ctl_elem_value_set_interface(spdif_input, SND_CTL_ELEM_IFACE_PCM);

@@ -42,10 +42,10 @@ void mixer_update_stream(int stream, int vol_flag, int sw_flag)
 			g_print("Unable to read multi playback volume: %s\n", snd_strerror(err));
 		v[0] = snd_ctl_elem_value_get_integer(vol, 0);
 		v[1] = snd_ctl_elem_value_get_integer(vol, 1);
-		gtk_adjustment_set_value(GTK_ADJUSTMENT(mixer_adj[stream-1][0]), 96 - v[0]);
-		gtk_adjustment_set_value(GTK_ADJUSTMENT(mixer_adj[stream-1][1]), 96 - v[1]);
 		if (v[0] != v[1])
 			toggle_set(mixer_stereo_toggle[stream-1], FALSE);
+		gtk_adjustment_set_value(GTK_ADJUSTMENT(mixer_adj[stream-1][0]), 96 - v[0]);
+		gtk_adjustment_set_value(GTK_ADJUSTMENT(mixer_adj[stream-1][1]), 96 - v[1]);
 	}
 	if (sw_flag) {
 		snd_ctl_elem_value_t *sw;
@@ -58,19 +58,17 @@ void mixer_update_stream(int stream, int vol_flag, int sw_flag)
 			g_print("Unable to read multi playback switch: %s\n", snd_strerror(err));
 		v[0] = snd_ctl_elem_value_get_boolean(sw, 0);
 		v[1] = snd_ctl_elem_value_get_boolean(sw, 1);
-		toggle_set(mixer_solo_toggle[stream-1][0], v[0] ? TRUE : FALSE);
-		toggle_set(mixer_solo_toggle[stream-1][1], v[1] ? TRUE : FALSE);
-		toggle_set(mixer_mute_toggle[stream-1][0], !v[0] ? TRUE : FALSE);
-		toggle_set(mixer_mute_toggle[stream-1][1], !v[1] ? TRUE : FALSE);
 		if (v[0] != v[1])
 			toggle_set(mixer_stereo_toggle[stream-1], FALSE);
+		toggle_set(mixer_mute_toggle[stream-1][0], !v[0] ? TRUE : FALSE);
+		toggle_set(mixer_mute_toggle[stream-1][1], !v[1] ? TRUE : FALSE);
 	}
 }
 
 static void set_switch1(int stream, int left, int right)
 {
 	snd_ctl_elem_value_t *sw;
-	int err;
+	int err, changed = 0;
 	
 	snd_ctl_elem_value_alloca(&sw);
 	snd_ctl_elem_value_set_interface(sw, SND_CTL_ELEM_IFACE_MIXER);
@@ -78,45 +76,19 @@ static void set_switch1(int stream, int left, int right)
 	snd_ctl_elem_value_set_index(sw, (stream - 1) % 10);
 	if ((err = snd_ctl_elem_read(ctl, sw)) < 0)
 		g_print("Unable to read multi switch: %s\n", snd_strerror(err));
-	if (left >= 0)
-		snd_ctl_elem_value_set_boolean(sw, 0, left != 0);
-	if (right >= 0)
-		snd_ctl_elem_value_set_boolean(sw, 1, right != 0);
-	if ((err = snd_ctl_elem_write(ctl, sw)) < 0 && err != -EBUSY)
-		g_print("Unable to write multi switch: %s\n", snd_strerror(err));
-}
-
-void mixer_toggled_solo(GtkWidget *togglebutton, gpointer data)
-{
-	int stream = (long)data >> 16;
-	int button = (long)data & 1;
-	int stereo = is_active(mixer_stereo_toggle[stream-1]) ? 1 : 0;
-	int vol[2] = { -1, -1 };
-
-	if (is_active(togglebutton)) {
-		if (is_active(mixer_mute_toggle[stream-1][button]))
-			toggle_set(mixer_mute_toggle[stream-1][button], FALSE);
-		vol[button] = 1;
-		if (stereo) {
-			if (!is_active(mixer_solo_toggle[stream-1][button ^ 1]))
-				toggle_set(mixer_solo_toggle[stream-1][button ^ 1], TRUE);
-			if (is_active(mixer_mute_toggle[stream-1][button ^ 1]))
-				toggle_set(mixer_mute_toggle[stream-1][button ^ 1], FALSE);
-			vol[button ^ 1] = 1;
-		}
-	} else {
-		if (!is_active(mixer_mute_toggle[stream-1][button]))
-			toggle_set(mixer_mute_toggle[stream-1][button], TRUE);
-		vol[button] = 0;
-		if (stereo) {
-			if (is_active(mixer_solo_toggle[stream-1][button ^ 1]))
-				toggle_set(mixer_solo_toggle[stream-1][button ^ 1], FALSE);
-			if (!is_active(mixer_mute_toggle[stream-1][button ^ 1]))
-				toggle_set(mixer_mute_toggle[stream-1][button ^ 1], TRUE);
-			vol[button ^ 1] = 0;
-		}
+	if (left >= 0 && left != snd_ctl_elem_value_get_boolean(sw, 0)) {
+		snd_ctl_elem_value_set_boolean(sw, 0, left);
+		changed = 1;
 	}
-	set_switch1(stream, vol[0], vol[1]);
+	if (right >= 0 && right != snd_ctl_elem_value_get_boolean(sw, 1)) {
+		snd_ctl_elem_value_set_boolean(sw, 1, right);
+		changed = 1;
+	}
+	if (changed) {
+		err = snd_ctl_elem_write(ctl, sw);
+		if (err < 0)
+			g_print("Unable to write multi switch: %s\n", snd_strerror(err));
+	}
 }
 
 void mixer_toggled_mute(GtkWidget *togglebutton, gpointer data)
@@ -124,30 +96,14 @@ void mixer_toggled_mute(GtkWidget *togglebutton, gpointer data)
 	int stream = (long)data >> 16;
 	int button = (long)data & 1;
 	int stereo = is_active(mixer_stereo_toggle[stream-1]) ? 1 : 0;
+	int mute;
 	int vol[2] = { -1, -1 };
-
-	if (is_active(togglebutton)) {
-		if (is_active(mixer_solo_toggle[stream-1][button]))
-			toggle_set(mixer_solo_toggle[stream-1][button], FALSE);
-		vol[button] = 0;
-		if (stereo) {
-			if (!is_active(mixer_mute_toggle[stream-1][button ^ 1]))
-				toggle_set(mixer_mute_toggle[stream-1][button ^ 1], TRUE);
-			if (is_active(mixer_solo_toggle[stream-1][button ^ 1]))
-				toggle_set(mixer_solo_toggle[stream-1][button ^ 1], FALSE);
-			vol[button ^ 1] = 0;
-		}
-	} else {
-		if (!is_active(mixer_solo_toggle[stream-1][button]))
-			toggle_set(mixer_solo_toggle[stream-1][button], TRUE);
-		vol[button] = 1;
-		if (stereo) {
-			if (is_active(mixer_mute_toggle[stream-1][button ^ 1]))
-				toggle_set(mixer_mute_toggle[stream-1][button ^ 1], FALSE);
-			if (!is_active(mixer_solo_toggle[stream-1][button ^ 1]))
-				toggle_set(mixer_solo_toggle[stream-1][button ^ 1], TRUE);
-			vol[button ^ 1] = 1;
-		}
+	
+	mute = is_active(mixer_mute_toggle[stream-1][button]);
+	vol[button] = !mute;
+	if (stereo) {
+		toggle_set(mixer_mute_toggle[stream-1][button^1], mute);
+		vol[button^1] = !mute;
 	}
 	set_switch1(stream, vol[0], vol[1]);
 }
@@ -155,6 +111,7 @@ void mixer_toggled_mute(GtkWidget *togglebutton, gpointer data)
 static void set_volume1(int stream, int left, int right)
 {
 	snd_ctl_elem_value_t *vol;
+	int change = 0;
 	int err;
 	
 	snd_ctl_elem_value_alloca(&vol);
@@ -163,12 +120,18 @@ static void set_volume1(int stream, int left, int right)
 	snd_ctl_elem_value_set_index(vol, (stream - 1) % 10);
 	if ((err = snd_ctl_elem_read(ctl, vol)) < 0)
 		g_print("Unable to read multi volume: %s\n", snd_strerror(err));
-	if (left >= 0)
+	if (left >= 0) {
+		change |= (snd_ctl_elem_value_get_integer(vol, 0) != left);
 		snd_ctl_elem_value_set_integer(vol, 0, left);
-	if (right >= 0)
+	}
+	if (right >= 0) {
+		change |= (snd_ctl_elem_value_get_integer(vol, 1) != right);
 		snd_ctl_elem_value_set_integer(vol, 1, right);
-	if ((err = snd_ctl_elem_write(ctl, vol)) < 0 && err != -EBUSY)
-		g_print("Unable to write multi volume: %s\n", snd_strerror(err));
+	}
+	if (change) {
+		if ((err = snd_ctl_elem_write(ctl, vol)) < 0 && err != -EBUSY)
+			g_print("Unable to write multi volume: %s\n", snd_strerror(err));
+	}
 }
 
 void mixer_adjust(GtkAdjustment *adj, gpointer data)
