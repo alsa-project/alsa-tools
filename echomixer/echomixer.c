@@ -16,7 +16,7 @@
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#define EM_VERSION "%s Echomixer v1.0.2"
+#define EM_VERSION "%s Echomixer v" VERSION
 
 
 /*******
@@ -75,8 +75,8 @@
 // REAL is for debugging only.
 #define REAL
 
-#define CTLID_DEBUG(x) printf x
-//#define CTLID_DEBUG(x)
+//#define CTLID_DEBUG(x) printf x
+#define CTLID_DEBUG(x)
 
 #define UI_DEBUG(x)
 //#define UI_DEBUG(x) printf x
@@ -92,6 +92,7 @@
 
 char card[64], cardId[16];
 char dmodeName[DIGITAL_MODES][64], clocksrcName[DIGITAL_MODES][64], spdifmodeName[DIGITAL_MODES][64];
+char NominalIn[ECHO_MAXAUDIOINPUTS], NominalOut[ECHO_MAXAUDIOOUTPUTS];
 int nLOut, nIn, fdIn, fdOut, nPOut, ClockMask;
 int ndmodes, nclocksrc, nspdifmodes;
 int GMixerRow, GMixerColumn, Gang;
@@ -102,6 +103,7 @@ int mouseY, mouseButton;
 int dmodeVal, clocksrcVal, spdifmodeVal;
 int VUwidth, VUheight, Mixwidth, Mixheight;
 
+#define DONT_DRAW (ECHOGAIN_MUTED-1)
 #define NOPOS 999999
 struct geometry {
   int st;		// window status: 0 = hidden ; 1 = visible ; NOPOS = no stored setting
@@ -358,8 +360,8 @@ void GetVUmeters(int *InLevel, int *InPeak, int *OutLevel, int *OutPeak, int *Vi
     }
 #else
     for (i=0; i<nPOut; i++) {
-      VirLevel[i]=-20;
-      VirPeak[i]=-10;
+      VirLevel[i]=i*5-100;
+      VirPeak[i]=i*5-90;
     }
 #endif
   }
@@ -436,34 +438,6 @@ void SetSensitivity(int enable) {
 #endif // REVERSE
 
 
-// At startup this functions reads the current nominal levels and sets the switches accordingly.
-void InitNominalLevelGUI(int numid) {
-  snd_ctl_elem_id_t *id;
-  snd_ctl_elem_value_t *control;
-  int err, i, n;
-  GtkWidget **w;
-
-  snd_ctl_elem_id_alloca(&id);
-  snd_ctl_elem_value_alloca(&control);
-
-  snd_ctl_elem_id_set_interface(id, SND_CTL_ELEM_IFACE_MIXER);
-  if (numid==p4InId) {
-    snd_ctl_elem_id_set_numid(id, p4InId);
-    n=fdIn;
-    w=p4dbuIn;
-  } else {
-    snd_ctl_elem_id_set_numid(id, p4OutId);
-    n=fdOut;
-    w=p4dbuOut;
-  }
-  snd_ctl_elem_value_set_id(control, id);
-  if ((err=snd_ctl_elem_read(ctlhandle, control))<0)
-    printf("Control %s element read error: %s\n", card, snd_strerror(err));
-  for (i=0; i<n; i++)
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w[i]), !snd_ctl_elem_value_get_integer(control, i));	// FALSE is +4 here
-}
-
-
 
 // At startup this functions reads if the dithering is enabled sets the button accordingly.
 void InitPhantomPowerGUI(int numid) {
@@ -501,6 +475,26 @@ void ReadControl(int *vol, int channels, int volId) {
 
   for (ch=0; ch<channels; ch++)
     vol[ch]=snd_ctl_elem_value_get_integer(control, ch);
+}
+
+
+
+void ReadNominalLevels(char *NominalLevel, int numid) {
+  snd_ctl_elem_id_t *id;
+  snd_ctl_elem_value_t *control;
+  int err, i, n;
+
+  snd_ctl_elem_id_alloca(&id);
+  snd_ctl_elem_value_alloca(&control);
+
+  snd_ctl_elem_id_set_interface(id, SND_CTL_ELEM_IFACE_MIXER);
+  n=(numid==p4InId) ? fdIn : fdOut;
+  snd_ctl_elem_id_set_numid(id, numid);
+  snd_ctl_elem_value_set_id(control, id);
+  if ((err=snd_ctl_elem_read(ctlhandle, control))<0)
+    printf("Control %s element read error: %s\n", card, snd_strerror(err));
+  for (i=0; i<n; i++)
+    NominalLevel[i]=snd_ctl_elem_value_get_integer(control, i);
 }
 
 
@@ -578,7 +572,7 @@ void GetChannels(void) {
 
 
 
-// Read what input clocks are valid and sets the pop-down menu accordingly
+// Read what input clocks are valid and (de)activate the pop-down menu items accordingly
 gint CheckInputs(gpointer unused) {
   int i;
 
@@ -590,6 +584,48 @@ gint CheckInputs(gpointer unused) {
 
 
 
+void DrawBar(int x, int y, int level, int peak, int gain) {
+  GdkColor Bars={0x00FF00, 0, 0, 0};
+  GdkColor Bars1={0x000000, 0, 0, 0};
+  GdkColor Peak={0x1BABFF, 0, 0, 0};
+  GdkColor Level={0xC0B000, 0, 0, 0};
+  int db;
+
+  x=XMETER+XCELLTOT*x;
+  y=YCELLTOT*y+YCELLBORDER;
+
+  if (level>ECHOGAIN_MUTED) {
+    // Draw the "integer" part of the bar
+    db=level>>2;
+    gdk_gc_set_foreground(gc, &Bars);
+    gdk_draw_rectangle(Mixpixmap, gc, TRUE, x, y-db, GM_BARWIDTH, YCELLDIM+db);
+
+    // Draw the antialiased part
+    Bars1.pixel=(level&3) << (6 + 8);	// 4 levels (256/4==64==2^6) of green (2^8)
+    if (Bars1.pixel) {
+      gdk_gc_set_foreground(gc, &Bars1);
+      gdk_draw_rectangle(Mixpixmap, gc, TRUE, x, y-db-1, GM_BARWIDTH, 1);
+    }
+  }
+
+  // Draw the peak
+  if (peak>ECHOGAIN_MUTED) {
+    db=peak>>2;
+    gdk_gc_set_foreground(gc, &Peak);
+    gdk_draw_rectangle(Mixpixmap, gc, TRUE, x, y-db, GM_BARWIDTH, 1);
+  }
+
+  // Draw the mixer gain
+  if (gain>=ECHOGAIN_MUTED) {
+    db=gain>>2;
+    gdk_gc_set_foreground(gc, &Level);
+    gdk_draw_rectangle(Mixpixmap, gc, TRUE, x-XMETER+XVOLUME, y, 1, YCELLDIM);
+    gdk_draw_rectangle(Mixpixmap, gc, TRUE, x-XMETER+XVOLUME-2, y-db, 5, 1);
+  }
+}
+
+
+
 // Draw the matrix mixer
 gint DrawMixer(gpointer unused) {
   GdkRectangle update_rect;
@@ -597,18 +633,14 @@ gint DrawMixer(gpointer unused) {
   int InPeak[ECHO_MAXAUDIOINPUTS];
   int OutLevel[ECHO_MAXAUDIOOUTPUTS];
   int OutPeak[ECHO_MAXAUDIOOUTPUTS];
-  int VirLevel[ECHO_MAXAUDIOOUTPUTS];//maxpipes
+  int VirLevel[ECHO_MAXAUDIOOUTPUTS];
   int VirPeak[ECHO_MAXAUDIOOUTPUTS];
   static int InClip[ECHO_MAXAUDIOINPUTS];
   static int OutClip[ECHO_MAXAUDIOOUTPUTS];
   char str[8];
-  int i, o, y, dB, db, inchannels, outchannels;
+  int i, o, dB, inchannels, outchannels;
   GdkColor Grid={0x787878, 0, 0, 0};
   GdkColor Labels={0x9694C4, 0, 0, 0};
-  GdkColor Bars={0x00FF00, 0, 0, 0};
-  GdkColor Bars1={0x000000, 0, 0, 0};
-  GdkColor Peak={0x1BABFF, 0, 0, 0};
-  GdkColor Level={0xC0B000, 0, 0, 0};
   GdkColor Hilight={0x000078, 0, 0, 0};
   GdkColor Hilight2={0x600000, 0, 0, 0};
 
@@ -650,6 +682,7 @@ gint DrawMixer(gpointer unused) {
   }
 
   // Draw the grid
+
   gdk_gc_set_font(gc, fnt);
   // Horizontal lines and input channel labels
   for (i=0; i<GMixerSection.LineOut; i++) {
@@ -664,6 +697,7 @@ gint DrawMixer(gpointer unused) {
     gdk_gc_set_foreground(gc, &Labels);
     gdk_draw_string(Mixpixmap, fnt, gc, 1, YCELLTOT*i+(YCELLTOT/2)+4, str);
   }
+
   // Vertical lines and output channel labels
   for (o=0; o<nLOut; o++) {
     gdk_gc_set_foreground(gc, &Grid);
@@ -681,107 +715,32 @@ gint DrawMixer(gpointer unused) {
   gdk_draw_rectangle(Mixpixmap, gc, TRUE, 0, YCELLTOT*(GMixerSection.LineOut+1)-1, Mixwidth, 1);
 
   // Draw input levels and peaks
-  for (i=0; i<inchannels; i++) {
-    y=YCELLTOT*i+YCELLBORDER;
-    dB=InLevel[i];
-    db=dB>>2;
-    gdk_gc_set_foreground(gc, &Bars);
-    gdk_draw_rectangle(Mixpixmap, gc, TRUE, XMETER, y-db, GM_BARWIDTH, YCELLDIM+db);
-    if ((Bars1.pixel=(((dB&3)*0x40)<<8))) {
-      gdk_gc_set_foreground(gc, &Bars1);
-      gdk_draw_rectangle(Mixpixmap, gc, TRUE, XMETER, y-db-1, GM_BARWIDTH, 1);
-    }
-  }
-  gdk_gc_set_foreground(gc, &Peak);
-  for (i=0; i<inchannels; i++) {
-    db=InPeak[i]>>2;
-    gdk_draw_rectangle(Mixpixmap, gc, TRUE, XMETER, YCELLTOT*i+YCELLBORDER-db, GM_BARWIDTH, 1);
-  }
+  for (i=0; i<inchannels; i++)
+    DrawBar(0, i, InLevel[i], InPeak[i], DONT_DRAW);
 
   // Draw vchannels levels and peaks (Vmixer cards only)
   if (vmixerId) {
-    for (i=0; i<vmixerControl.vchannels; i++) {
-      y=YCELLTOT*(i+GMixerSection.VmixerFirst)+YCELLBORDER;
-      dB=VirLevel[i];
-      db=dB>>2;
-      gdk_gc_set_foreground(gc, &Bars);
-      gdk_draw_rectangle(Mixpixmap, gc, TRUE, XMETER, y-db, GM_BARWIDTH, YCELLDIM+db);
-      if ((Bars1.pixel=(((dB&3)*0x40)<<8))) {
-        gdk_gc_set_foreground(gc, &Bars1);
-        gdk_draw_rectangle(Mixpixmap, gc, TRUE, XMETER, y-db-1, GM_BARWIDTH, 1);
-      }
-    }
-    gdk_gc_set_foreground(gc, &Peak);
-    for (i=0; i<vmixerControl.vchannels; i++) {
-      db=VirPeak[i]>>2;
-      gdk_draw_rectangle(Mixpixmap, gc, TRUE, XMETER, YCELLTOT*(i+GMixerSection.VmixerFirst)+YCELLBORDER-db, GM_BARWIDTH, 1);
-    }
+    for (i=0; i<vmixerControl.vchannels; i++)
+      DrawBar(0, i+GMixerSection.VmixerFirst, VirLevel[i], VirPeak[i], DONT_DRAW);
   }
 
   // Draw output levels, peaks and volumes
-  y=YCELLTOT*GMixerSection.LineOut+YCELLBORDER;
-  for (o=0; o<outchannels; o++) {
-    dB=OutLevel[o];
-    db=dB>>2;
-    gdk_gc_set_foreground(gc, &Bars);
-    gdk_draw_rectangle(Mixpixmap, gc, TRUE, XMETER+XCELLTOT*(o+1), y-db, GM_BARWIDTH, YCELLDIM+db);
-    if ((Bars1.pixel=(((dB&3)*0x40)<<8))) {
-      gdk_gc_set_foreground(gc, &Bars1);
-      gdk_draw_rectangle(Mixpixmap, gc, TRUE, XMETER+XCELLTOT*(o+1), y-db-1, GM_BARWIDTH, 1);
-    }
-    db=OutPeak[o]>>2;
-    gdk_gc_set_foreground(gc, &Peak);
-    gdk_draw_rectangle(Mixpixmap, gc, TRUE, XMETER+XCELLTOT*(o+1), y-db, GM_BARWIDTH, 1);
-    gdk_gc_set_foreground(gc, &Level);
-    gdk_draw_rectangle(Mixpixmap, gc, TRUE, XVOLUME+XCELLTOT*(o+1), y, 1, YCELLDIM);
-    db=lineoutControl.Gain[o]>>2;
-    gdk_draw_rectangle(Mixpixmap, gc, TRUE, XVOLUME-2+XCELLTOT*(o+1), y-db, 5, 1);
-  }
+  for (o=0; o<outchannels; o++)
+    DrawBar(o+1, GMixerSection.LineOut, OutLevel[o], OutPeak[o], lineoutControl.Gain[o]);
 
   // Draw monitor mixer elements
   for (o=0; o<outchannels; o++) {
     for (i=0; i<inchannels; i++) {
-      y=YCELLTOT*i+YCELLBORDER;
       dB=Add_dB(mixerControl.mixer[o][i].Gain, InLevel[i]);
-      db=dB>>2;
-      if (db<-YCELLDIM)
-        db=-YCELLDIM;
-      gdk_gc_set_foreground(gc, &Bars);
-      gdk_draw_rectangle(Mixpixmap, gc, TRUE, XMETER+XCELLTOT*(o+1), y-db, GM_BARWIDTH, YCELLDIM+db);
-      if (dB>-(YCELLDIM<<2))
-        if ((Bars1.pixel=(((dB&3)*0x40)<<8))) {
-          gdk_gc_set_foreground(gc, &Bars1);
-          gdk_draw_rectangle(Mixpixmap, gc, TRUE, XMETER+XCELLTOT*(o+1), y-db-1, GM_BARWIDTH, 1);
-        }
-      gdk_gc_set_foreground(gc, &Level);
-      gdk_draw_rectangle(Mixpixmap, gc, TRUE, XVOLUME+XCELLTOT*(o+1), y, 1, YCELLDIM);
-      db=mixerControl.mixer[o][i].Gain>>2;
-      gdk_draw_rectangle(Mixpixmap, gc, TRUE, XVOLUME-2+XCELLTOT*(o+1), y-db, 5, 1);
+      DrawBar(o+1, i, dB, DONT_DRAW, mixerControl.mixer[o][i].Gain);
     }
   }
 
-  // Draw vmixer elements
+  // Draw vmixer elements (Vmixer cards only)
   if (vmixerId) {
-    for (o=0; o<outchannels; o++) {
-      for (i=0; i<vmixerControl.vchannels; i++) {
-        y=YCELLTOT*(i+GMixerSection.VmixerFirst)+YCELLBORDER;
-        dB=Add_dB(vmixerControl.mixer[o][i].Gain, VirLevel[i]);
-        db=dB>>2;
-        if (db<-YCELLDIM)
-          db=-YCELLDIM;
-        gdk_gc_set_foreground(gc, &Bars);
-        gdk_draw_rectangle(Mixpixmap, gc, TRUE, XMETER+XCELLTOT*(o+1), y-db, GM_BARWIDTH, YCELLDIM+db);
-        if (dB>-(YCELLDIM<<2))
-          if ((Bars1.pixel=(((dB&3)*0x40)<<8))) {
-            gdk_gc_set_foreground(gc, &Bars1);
-            gdk_draw_rectangle(Mixpixmap, gc, TRUE, XMETER+XCELLTOT*(o+1), y-db-1, GM_BARWIDTH, 1);
-          }
-        gdk_gc_set_foreground(gc, &Level);
-        gdk_draw_rectangle(Mixpixmap, gc, TRUE, XVOLUME+XCELLTOT*(o+1), y, 1, YCELLDIM);
-        db=vmixerControl.mixer[o][i].Gain>>2;
-        gdk_draw_rectangle(Mixpixmap, gc, TRUE, XVOLUME-2+XCELLTOT*(o+1), y-db, 5, 1);
-      }
-    }
+    for (o=0; o<outchannels; o++)
+      for (i=0; i<vmixerControl.vchannels; i++)
+        DrawBar(o+1, i+GMixerSection.VmixerFirst, VirLevel[i], DONT_DRAW, vmixerControl.mixer[o][i].Gain);
   }
 
   gtk_widget_draw(Mixdarea, &update_rect);
@@ -797,7 +756,7 @@ gint DrawVUmeters(gpointer unused) {
   int InPeak[ECHO_MAXAUDIOINPUTS];
   int OutLevel[ECHO_MAXAUDIOOUTPUTS];
   int OutPeak[ECHO_MAXAUDIOOUTPUTS];
-  int VirLevel[ECHO_MAXAUDIOOUTPUTS];//maxpipes
+  int VirLevel[ECHO_MAXAUDIOOUTPUTS];
   int VirPeak[ECHO_MAXAUDIOOUTPUTS];
   static int InClip[ECHO_MAXAUDIOINPUTS];
   static int OutClip[ECHO_MAXAUDIOOUTPUTS];
@@ -1393,10 +1352,12 @@ void Nominal_level_toggled(GtkWidget *widget, gpointer ch) {
   if ((int)ch<ECHO_MAXAUDIOINPUTS) {
     channel=(int)ch;
     button=p4dbuIn;
+    NominalIn[channel]=!val;
     snd_ctl_elem_id_set_numid(id, p4InId);
   } else {
     channel=(int)ch-ECHO_MAXAUDIOINPUTS;
     button=p4dbuOut;
+    NominalOut[channel]=!val;
     snd_ctl_elem_id_set_numid(id, p4OutId);
   }
   snd_ctl_elem_value_set_id(control, id);
@@ -1497,7 +1458,7 @@ static gint VU_expose(GtkWidget *widget, GdkEventExpose *event) {
 
 // Create a new backing pixmap of the appropriate size
 static gint Gmixer_configure_event(GtkWidget *widget, GdkEventConfigure *event) {
-  
+
   if (Mixpixmap)
     gdk_pixmap_unref(Mixpixmap);
   Mixpixmap=gdk_pixmap_new(widget->window, widget->allocation.width, widget->allocation.height, -1);
@@ -1971,6 +1932,9 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
   GMixerSection.VmixerFirst=nIn;
   GMixerSection.VmixerLast=nIn+vmixerControl.vchannels-1;
   GMixerSection.LineOut=GMixerSection.VmixerLast+1;
+  memset(NominalIn, 0, sizeof(NominalIn));
+  memset(NominalOut, 0, sizeof(NominalOut));
+
   // Read current mixer setting.
   if (mixerId)
     ReadMixer(&mixerControl);
@@ -1982,6 +1946,10 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
     ReadControl(lineinControl.Gain, nIn, lineinControl.id);
   if (lineoutId)
     ReadControl(lineoutControl.Gain, nLOut, lineoutId);
+  if (p4InId)
+    ReadNominalLevels(NominalIn, p4InId);
+  if (p4OutId)
+    ReadNominalLevels(NominalOut, p4OutId);
 
   //@@ check the values
   if (load) {
@@ -2003,6 +1971,14 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
           sscanf(str+7, "%d %d", &o, &n);
           if (o>=0 && o<nPOut)
             pcmoutControl.Gain[o]=n;
+        } else if (!strncmp("NominalOut ", str, 11)) {
+          sscanf(str+11, "%d %d", &o, &n);
+          if (o>=0 && o<fdOut)
+            NominalOut[o]=!!n;
+        } else if (!strncmp("NominalIn ", str, 10)) {
+          sscanf(str+10, "%d %d", &i, &n);
+          if (i>=0 && i<fdIn)
+            NominalIn[i]=!!n;
         } else if (!strncmp("Mixer ", str, 6)) {
           sscanf(str+6, "%d %d %d", &o, &i, &n);
           if (o>=0 && o<nLOut && i>=0 && i<nIn)
@@ -2074,8 +2050,8 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
       gtk_box_pack_start(GTK_BOX(hbox), p4dbuIn[i], TRUE, FALSE, 1);
       gtk_widget_show(p4dbuIn[i]);
       gtk_signal_connect(GTK_OBJECT(p4dbuIn[i]), "toggled", GTK_SIGNAL_FUNC(Nominal_level_toggled), (gpointer)i);
+      gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(p4dbuIn[i]), !NominalIn[i]);
     }
-    InitNominalLevelGUI(p4InId);
   }
 
 
@@ -2094,8 +2070,8 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
       gtk_box_pack_start(GTK_BOX(hbox), p4dbuOut[i], TRUE, FALSE, 1);
       gtk_widget_show(p4dbuOut[i]);
       gtk_signal_connect(GTK_OBJECT(p4dbuOut[i]), "toggled", GTK_SIGNAL_FUNC(Nominal_level_toggled), (gpointer)(i+ECHO_MAXAUDIOINPUTS));
+      gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(p4dbuOut[i]), !NominalOut[i]);
     }
-    InitNominalLevelGUI(p4OutId);
   }
 
 
@@ -2760,15 +2736,28 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
         fprintf(f, "-- PcmOut <channel> <gain>\n");
         for (i=0; i<nPOut; i++)
           fprintf(f, "PcmOut %2d %d\n", i, pcmoutControl.Gain[i]);
-        fprintf(f, "-- Mixer <output> <input> <gain>\n");
-        for (o=0; o<nLOut; o++)
-          for (i=0; i<nIn; i++)
-            fprintf(f, "Mixer %2d %2d %d\n", o, i, mixerControl.mixer[o][i].Gain);
-        fprintf(f, "-- Vmixer <output> <vchannel> <gain>\n");
-        if (vmixerId)
+        if (p4InId) {
+          fprintf(f, "-- NominalIn <channel> <consumer level enabled>\n");
+          for (i=0; i<fdIn; i++)
+            fprintf(f, "NominalIn %2d %d\n", i, NominalIn[i]);
+        }
+        if (p4OutId) {
+          fprintf(f, "-- NominalOut <channel> <consumer level enabled>\n");
+          for (o=0; o<fdOut; o++)
+            fprintf(f, "NominalOut %2d %d\n", o, NominalOut[o]);
+        }
+        if (mixerId) {
+          fprintf(f, "-- Mixer <output> <input> <gain>\n");
+          for (o=0; o<nLOut; o++)
+            for (i=0; i<nIn; i++)
+              fprintf(f, "Mixer %2d %2d %d\n", o, i, mixerControl.mixer[o][i].Gain);
+        }
+        if (vmixerId) {
+          fprintf(f, "-- Vmixer <output> <vchannel> <gain>\n");
           for (o=0; o<nLOut; o++)
             for (i=0; i<nPOut; i++)
               fprintf(f, "Vmixer %2d %2d %d\n", o, i, vmixerControl.mixer[o][i].Gain);
+        }
         fprintf(f, "-- xxWindow <x> <y> <width> <height> <visible>\n");
         fprintf(f, "MainWindow %d %d %d %d\n", Mainw_geom.x, Mainw_geom.y, Mainw_geom.w, Mainw_geom.h);
         if (VUwindow)
@@ -2825,11 +2814,4 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
   snd_ctl_close(ctlhandle);
   return(0);
 }
-
-/*
-TODO:
-non controlla se c'è mixerId e forse altri
-controllare tutorial su GdkColor e tracciamento
-*/
-
 
