@@ -1,4 +1,4 @@
-cfg_files = index \
+cfg_files = vx222.conf vxboard.conf vxpocket.conf vxp440.conf \
 	bd56002.boot \
 	bd563s3.boot \
 	bd563v2.boot \
@@ -15,6 +15,6 @@ cfg_files = index \
 
 EXTRA_DIST = $(cfg_files)
 
-firmwaredir = $(datadir)/vxloader
+firmwaredir = $(datadir)/alsa/firmware
 firmware_DATA = $(cfg_files)
 

@@ -38,12 +38,10 @@ the post-install command.  For example, add the following entry to
 FILES
 =====
 
-The firmware binaries are installed on /usr/share/vxloader
-(or /usr/local/share/vxloader, depending to the prefix option of
-configure).  The file "index" specifies which files are used for each
-type of the soundcard.  There are "board", "vx222", "vxpocket" and
-"vxp440" types for the old VX222, VX222 v2/Mic, VXpocket v2, VXpocket
-440, respectively.
+The firmware binaries are installed on /usr/share/alsa/firmware
+(or /usr/local/share/alsa/firmware, depending to the prefix option of
+configure).  There will be *.conf files, which define the dsp image
+files for each different card type.
 
 
 COPYRIGHT

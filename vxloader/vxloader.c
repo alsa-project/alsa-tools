@@ -30,24 +30,15 @@
 #include <stdarg.h>
 #include <alsa/asoundlib.h>
 
-#include <sound/vx_load.h>
 
-#define PROGNAME	"vxload"
+#define PROGNAME	"vxloader"
 
-
-/* directory containing the firmware binaries */
-#ifndef DATAPATH
-#define DATAPATH	"/usr/share/vxloader"
-#endif
-
-/* firmware index file */
-#define INDEX_FILE	DATAPATH "/index"
 
 /* max. number of cards (shouldn't be in the public header?) */
 #define SND_CARDS	8
 
 
-static int verbose;
+static int verbose = 0;
 
 static void usage(void)
 {
@@ -71,11 +62,12 @@ static void error(const char *fmt, ...)
 /*
  * read a xilinx bitstream file
  */
-static int read_xilinx_image(struct snd_vx_image *img, const char *fname)
+static int read_xilinx_image(snd_hwdep_dsp_image_t *img, const char *fname)
 {
 	FILE *fp;
 	char buf[256];
 	int data, c, idx, length;
+	unsigned char *imgbuf;
 	char *p;
 
 	if ((fp = fopen(fname, "r")) == NULL) {
@@ -83,7 +75,7 @@ static int read_xilinx_image(struct snd_vx_image *img, const char *fname)
 		return -ENODEV;
 	}
 
-	strcpy(img->name, fname);
+	snd_hwdep_dsp_image_set_name(img, fname);
 
 	c = 0;
 	data = 0;
@@ -105,13 +97,14 @@ static int read_xilinx_image(struct snd_vx_image *img, const char *fname)
 				fclose(fp);
 				return -EINVAL;
 			}
-			img->length = length;
-			img->image = malloc(length);
-			if (! img->image) {
+			snd_hwdep_dsp_image_set_length(img, length);
+			imgbuf = malloc(length);
+			if (! imgbuf) {
 				error("cannot alloc %d bytes\n", length);
 				fclose(fp);
 				return -ENOMEM;
 			}
+			snd_hwdep_dsp_image_set_image(img, imgbuf);
 			continue;
 		}
 		if (buf[0] != '0' && buf[1] != '1')
@@ -125,7 +118,7 @@ static int read_xilinx_image(struct snd_vx_image *img, const char *fname)
 			data |= (*p - '0') << c;
 			c++;
 			if (c >= 8) {
-				img->image[idx] = data;
+				imgbuf[idx] = data;
 				data = 0;
 				c = 0;
 				idx++;
@@ -135,7 +128,7 @@ static int read_xilinx_image(struct snd_vx_image *img, const char *fname)
 		}
 	}
 	if (c)
-		img->image[idx++] = data;
+		imgbuf[idx++] = data;
 	if (idx != length) {
 		error("length doesn't match: %d != %d\n", idx, length);
 		fclose(fp);
@@ -149,35 +142,38 @@ static int read_xilinx_image(struct snd_vx_image *img, const char *fname)
 /*
  * read a binary image file
  */
-static int read_boot_image(struct snd_vx_image *img, const char *fname)
+static int read_boot_image(snd_hwdep_dsp_image_t *img, const char *fname)
 {
 	struct stat st;
-	int fd;
+	int fd, length;
+	unsigned char *imgbuf;
 
-	strcpy(img->name, fname);
+	snd_hwdep_dsp_image_set_name(img, fname);
 	if (stat(fname, &st) < 0) {
 		error("cannot call stat %s\n", fname);
 		return -ENODEV;
 	}
-	img->length = st.st_size;
-	if (img->length == 0) {
+	length = st.st_size;
+	if (length == 0) {
 		error("zero file size %s\n", fname);
 		return -EINVAL;
 	}
 
-	img->image = malloc(img->length);
-	if (! img->image) {
-		error("cannot malloc %d bytes\n", img->length);
+	imgbuf = malloc(st.st_size);
+	if (! imgbuf) {
+		error("cannot malloc %d bytes\n", length);
 		return -ENOMEM;
 	}
+	snd_hwdep_dsp_image_set_length(img, length);
+	snd_hwdep_dsp_image_set_image(img, imgbuf);
 
 	fd = open(fname, O_RDONLY);
 	if (fd < 0) {
 		error("cannot open %s\n", fname);
 		return -ENODEV;
 	}
-	if (read(fd, img->image, img->length) != (ssize_t)img->length) {
-		error("cannot read %d bytes from %s\n", img->length, fname);
+	if (read(fd, imgbuf, length) != length) {
+		error("cannot read %d bytes from %s\n", length, fname);
 		close(fd);
 		return -EINVAL;
 	}
@@ -193,19 +189,20 @@ static int read_boot_image(struct snd_vx_image *img, const char *fname)
 
 #define MAX_PATH	128
 
-static int get_file_name(const char *key, const char *type, char *fname)
+static int get_file_name(const char *key, unsigned int idx, char *fname)
 {
 	FILE *fp;
 	char buf[128];
 	char temp[32], *p;
 	int len;
 
-	if ((fp = fopen(INDEX_FILE, "r")) == NULL) {
-		error("cannot open the index file %s\n", INDEX_FILE);
+	snprintf(buf, sizeof(buf), "%s/%s.conf", DATAPATH, key);
+	if ((fp = fopen(buf, "r")) == NULL) {
+		error("cannot open the index file %s\n", buf);
 		return -ENODEV;
 	}
 
-	sprintf(temp, "%s.%s", key, type);
+	sprintf(temp, "dsp%d", idx);
 	len = strlen(temp);
 
 	while (fgets(buf, sizeof(buf), fp)) {
@@ -233,39 +230,56 @@ static int get_file_name(const char *key, const char *type, char *fname)
 
 
 /*
- * read the firmware binaries
+ * read and transfer the firmware binary
  */
-static int read_firmware(int type, const char *key, struct snd_vx_loader *xilinx, struct snd_vx_loader *dsp)
+static int load_firmware(snd_hwdep_t *hw, const char *id, unsigned int idx, int is_pcmcia)
 {
 	int err;
 	char fname[MAX_PATH];
+	int is_xilinx = 0;
+	snd_hwdep_dsp_image_t *dsp;
 
-	if (type >= VX_TYPE_VXPOCKET) {
-		if (get_file_name(key, "boot", fname) < 0)
-			return -EINVAL;
-		err = read_boot_image(&xilinx->boot, fname);
-		if (err < 0)
-			return err;
+	if (get_file_name(id, idx, fname) < 0)
+		return -EINVAL;
+	if (is_pcmcia) {
+		if (idx == 1)
+			is_xilinx = 1;
+	} else {
+		if (idx == 0)
+			is_xilinx = 1;
 	}
 
-	if (get_file_name(key, "xilinx", fname) < 0)
-		return -EINVAL;
-	err = read_xilinx_image(&xilinx->binary, fname);
+	snd_hwdep_dsp_image_alloca(&dsp);
+	snd_hwdep_dsp_image_set_index(dsp, idx);
+	if (is_xilinx)
+		err = read_xilinx_image(dsp, fname);
+	else
+		err = read_boot_image(dsp, fname);
 	if (err < 0)
 		return err;
 
-	if (get_file_name(key, "dspboot", fname) < 0)
-		return -EINVAL;
-	err = read_boot_image(&dsp->boot, fname);
+	err = snd_hwdep_dsp_load(hw, dsp);
 	if (err < 0)
-		return err;
-
-	if (get_file_name(key, "dspimage", fname) < 0)
-		return -EINVAL;
-	err = read_boot_image(&dsp->binary, fname);
+		error("error in loading %s\n", fname);
 	return err;
 }
 
+
+/*
+ * check the name id of the given hwdep handle
+ */
+static int check_hwinfo(snd_hwdep_t *hw, const char *id)
+{
+	snd_hwdep_info_t *info;
+	int err;
+
+	snd_hwdep_info_alloca(&info);
+	if ((err = snd_hwdep_info(hw, info)) < 0)
+		return err;
+	if (strcmp(snd_hwdep_info_get_id(info), id))
+		return -ENODEV;
+	return 0; /* ok */
+}
 
 /*
  * load the firmware binaries
@@ -273,65 +287,52 @@ static int read_firmware(int type, const char *key, struct snd_vx_loader *xilinx
 static int vx_boot(const char *devname)
 {
 	snd_hwdep_t *hw;
-	const char *key;
-	int err;
-	struct snd_vx_version version;
-	struct snd_vx_loader xilinx, dsp;
+	const char *id;
+	int err, is_pcmcia;
+	unsigned int idx, dsps, loaded;
+	snd_hwdep_dsp_status_t *stat;
 
 	if ((err = snd_hwdep_open(&hw, devname, O_RDWR)) < 0) {
 		error("cannot open hwdep %s\n", devname);
 		return err;
 	}
 
+	if (check_hwinfo(hw, "VX Loader") < 0) {
+		error("invalid hwdep %s\n", devname);
+		snd_hwdep_close(hw);
+		return -ENODEV;
+	}
+
+	snd_hwdep_dsp_status_alloca(&stat);
 	/* get the current status */
-	if ((err = snd_hwdep_ioctl(hw, SND_VX_HWDEP_IOCTL_VERSION, &version)) < 0) {
+	if ((err = snd_hwdep_dsp_status(hw, stat)) < 0) {
 		error("cannot get version for %s\n", devname);
+		snd_hwdep_close(hw);
 		return err;
 	}
 
-	switch (version.type) {
-	case VX_TYPE_BOARD:
-		key = "board";
-		break;
-	case VX_TYPE_V2:
-	case VX_TYPE_MIC:
-		key = "vx222";
-		break;
-	case VX_TYPE_VXPOCKET:
-		key = "vxpocket";
-		break;
-	case VX_TYPE_VXP440:
-		key = "vxp440";
-		break;
-	default:
-		error("invalid VX board type %d\n", version.type);
-		return -EINVAL;
+	if (snd_hwdep_dsp_status_get_chip_ready(stat))
+		return 0; /* already loaded */
+
+	id = snd_hwdep_dsp_status_get_id(stat);
+	if (strcmp(id, "vxpocket") == 0 ||
+	    strcmp(id, "vxp440") == 0)
+		is_pcmcia = 1;
+	else
+		is_pcmcia = 0;
+
+	dsps = snd_hwdep_dsp_status_get_num_dsps(stat);
+	loaded = snd_hwdep_dsp_status_get_dsp_loaded(stat);
+
+	for (idx = 0; idx < dsps; idx++) {
+		if (loaded & (1 << idx))
+			continue;
+		if ((err = load_firmware(hw, id, idx, is_pcmcia)) < 0) {
+			snd_hwdep_close(hw);
+			return err;
+		}
 	}
 
-	memset(&xilinx, 0, sizeof(xilinx));
-	memset(&dsp, 0, sizeof(dsp));
-	
-	if ((err = read_firmware(version.type, key, &xilinx, &dsp)) < 0)
-		return err;
-
-	//fprintf(stderr, "loading xilinx..\n");
-	if (! (version.status & VX_STAT_XILINX_LOADED) &&
-	    (err = snd_hwdep_ioctl(hw, SND_VX_HWDEP_IOCTL_LOAD_XILINX, &xilinx)) < 0) {
-		error("cannot load xilinx\n");
-		return err;
-	}
-	//fprintf(stderr, "loading dsp..\n");
-	if (! (version.status & VX_STAT_DSP_LOADED) &&
-	    (err = snd_hwdep_ioctl(hw, SND_VX_HWDEP_IOCTL_LOAD_DSP, &dsp)) < 0) {
-		error("cannot load DSP\n");
-		return err;
-	}
-	//fprintf(stderr, "starting devices..\n");
-	if (! (version.status & VX_STAT_DEVICE_INIT) &&
-	    (err = snd_hwdep_ioctl(hw, SND_VX_HWDEP_IOCTL_INIT_DEVICE, 0)) < 0) {
-		error("cannot initialize devices\n");
-		return err;
-	}
 	snd_hwdep_close(hw);
 	return 0;
 }
