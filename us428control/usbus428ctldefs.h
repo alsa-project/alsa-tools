@@ -148,8 +148,17 @@ struct us428_lights{
 	public:
 	enum eLight{
 		eL_Select0 = 0,
+		eL_Rec0 = 8,
 		eL_Mute0 = 16,
-		eL_InputMonitor = 25
+		eL_Solo = 24,
+		eL_InputMonitor = 25,
+		eL_BankL = 26,
+		eL_BankR = 27,
+		eL_Rew = 28,
+		eL_FFwd = 29,
+		eL_Play = 30,
+		eL_Record = 31,
+		eL_Null
 	};
 	bool LightIs(int L){
 		return Light[L / 8].Value & (1 << (L % 8));

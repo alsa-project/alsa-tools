@@ -19,6 +19,48 @@
 
 #include "Cus428State.h"
 
+// MMC Command Codes.
+#define MMC_CMD_STOP                    0x01
+#define MMC_CMD_PLAY                    0x02
+#define MMC_CMD_DEFERRED_PLAY           0x03
+#define MMC_CMD_FAST_FORWARD            0x04
+#define MMC_CMD_REWIND                  0x05
+#define MMC_CMD_RECORD_STROBE           0x06
+#define MMC_CMD_RECORD_EXIT             0x07
+#define MMC_CMD_RECORD_PAUSE            0x08
+#define MMC_CMD_PAUSE                   0x09
+#define MMC_CMD_EJECT                   0x0a
+#define MMC_CMD_CHASE                   0x0b
+#define MMC_CMD_COMMAND_ERROR_RESET     0x0c
+#define MMC_CMD_MMC_RESET               0x0d
+#define MMC_CMD_JOG_START               0x20
+#define MMC_CMD_JOG_STOP                0x21
+#define MMC_CMD_WRITE                   0x40
+#define MMC_CMD_MASKED_WRITE            0x41
+#define MMC_CMD_READ                    0x42
+#define MMC_CMD_UPDATE                  0x43
+#define MMC_CMD_LOCATE                  0x44
+#define MMC_CMD_VARIABLE_PLAY           0x45
+#define MMC_CMD_SEARCH                  0x46
+#define MMC_CMD_SHUTTLE                 0x47
+#define MMC_CMD_STEP                    0x48
+#define MMC_CMD_ASSIGN_SYSTEM_MASTER    0x49
+#define MMC_CMD_GENERATOR_COMMAND       0x4a
+#define MMC_CMD_MTC_COMMAND             0x4b
+#define MMC_CMD_MOVE                    0x4c
+#define MMC_CMD_ADD                     0x4d
+#define MMC_CMD_SUBTRACT                0x4e
+#define MMC_CMD_DROP_FRAME_ADJUST       0x4f
+#define MMC_CMD_PROCEDURE               0x50
+#define MMC_CMD_EVENT                   0x51
+#define MMC_CMD_GROUP                   0x52
+#define MMC_CMD_COMMAND_SEGMENT         0x53
+#define MMC_CMD_DEFERRED_VARIABLE_PLAY  0x54
+#define MMC_CMD_RECORD_STROBE_VARIABLE  0x55
+#define MMC_CMD_WAIT                    0x7c
+#define MMC_CMD_RESUME                  0x7f
+
+
 class Cus428Midi {
  public:
 	Cus428Midi():
@@ -30,9 +72,9 @@ class Cus428Midi {
 			snd_seq_set_client_name(Seq, "US-428");
 			Err = snd_seq_create_simple_port(Seq, "Controls",
 							 SND_SEQ_PORT_CAP_READ
-							 //|SND_SEQ_PORT_CAP_WRITE	FIXME: Next Step is to make Lights switchable
+							 |SND_SEQ_PORT_CAP_WRITE
 							 |SND_SEQ_PORT_CAP_SUBS_READ
-							 /*|SND_SEQ_PORT_CAP_SUBS_WRITE*/,
+							 |SND_SEQ_PORT_CAP_SUBS_WRITE,
 							 SND_SEQ_PORT_TYPE_MIDI_GENERIC);
 			if (Err >= 0) {
 				Port = Err;
@@ -55,8 +97,16 @@ class Cus428Midi {
 		return SendMidiControl(KnobParam[K - Cus428State::eK_RECORD], Down ? 0x7F : 0);
 	}
 
- private:
+	// To parse and dispatch input MIDI events.
+	void ProcessMidiEvents();
+
+	// Send MMC command.
+	void SendMmcCommand(unsigned char MmcCmd, unsigned char *MmcData = 0, unsigned char MmcLen = 0);
+
+	// Made public for friendliness.
 	snd_seq_t *Seq;
+
+ private:
 	int Port;
 	snd_seq_event_t Ev;
 	int SubMitEvent(){

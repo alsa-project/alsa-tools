@@ -25,7 +25,9 @@
 
 extern int verbose;
 
-
+// Differential wheel tracking constants.
+#define W_DELTA_MAX	0xff
+#define W_DELTA_MIN	(W_DELTA_MAX >> 1)
 
 void us428_lights::init_us428_lights()
 {
@@ -71,11 +73,14 @@ void Cus428State::SliderChangedTo(int S, unsigned char New)
 		V.SetTo(S, New);
 		if (S == eFaderM || !LightIs(eL_Mute0 + S))
 			SendVolume(V);
-	} else
-		Midi.SendMidiControl(0x40 + S, ((unsigned char*)us428_ctls)[S] / 2);
-
+	}
+	else SliderSend(S);
 }
 
+void Cus428State::SliderSend(int S)
+{
+	Midi.SendMidiControl(0x40 + S, ((unsigned char*)us428_ctls)[S] / 2);
+}
 
 void Cus428State::KnobChangedTo(eKnobs K, bool V)
 {
@@ -103,6 +108,73 @@ void Cus428State::KnobChangedTo(eKnobs K, bool V)
 		break;
 	default:
 		switch (K) {
+		case eK_STOP:
+			if (verbose > 1)
+				printf("Knob STOP now %i\n", V);
+			if (V) TransportToggle(T_STOP);
+			Midi.SendMidiControl(K, V);
+			break;
+		case eK_PLAY:
+			if (verbose > 1)
+				printf("Knob PLAY now %i", V);
+			if (V) TransportToggle(T_PLAY);
+			if (verbose > 1)
+				printf(" Light is %i\n", LightIs(eL_Play));
+			Midi.SendMidiControl(K, V);
+			break;
+		case eK_REW:
+			if (verbose > 1)
+				printf("Knob REW now %i", V);
+			if (V) TransportToggle(T_REW);
+			if (verbose > 1)
+				printf(" Light is %i\n", LightIs(eL_Rew));
+			Midi.SendMidiControl(K, V);
+			break;
+		case eK_FFWD:
+			if (verbose > 1)
+				printf("Knob FFWD now %i", V);
+			if (V) TransportToggle(T_F_FWD);
+			if (verbose > 1)
+				printf(" Light is %i\n", LightIs(eL_FFwd));
+			Midi.SendMidiControl(K, V);
+			break;
+		case eK_RECORD:
+			if (verbose > 1)
+				printf("Knob RECORD now %i", V);
+			if (V) TransportToggle(T_RECORD);
+			if (verbose > 1)
+				printf(" Light is %i\n", LightIs(eL_Record));
+			Midi.SendMidiControl(K, V);
+			break;
+		case eK_SET:
+			if (verbose > 1)
+				printf("Knob SET now %i", V);
+			bSetLocate = V;
+			break;
+		case eK_LOCATE_L:
+			if (verbose > 1)
+				printf("Knob LOCATE_L now %i", V);
+			if (V) {
+				if (bSetLocate)
+					aWheel_L = aWheel;
+				else {
+					aWheel = aWheel_L;
+					LocateSend();
+				}
+			}
+			break;
+		case eK_LOCATE_R:
+			if (verbose > 1)
+				printf("Knob LOCATE_R now %i", V);
+			if (V) {
+				if (bSetLocate)
+					aWheel_R = aWheel;
+				else {
+					aWheel = aWheel_R;
+					LocateSend();
+				}
+			}
+			break;
 		case eK_InputMonitor:
 			if (verbose > 1)
 				printf("Knob InputMonitor now %i", V);
@@ -163,7 +235,166 @@ void Cus428State::WheelChangedTo(E_In84 W, char Diff)
 		break;
 	case eWheel:
 		Param = 0x60;
+		// Update the absolute wheel position.
+		WheelDelta((int) ((unsigned char*) us428_ctls)[W]);
+		LocateSend();
 		break;
 	}
 	Midi.SendMidiControl(Param, ((unsigned char*)us428_ctls)[W]);
 }
+
+
+// Convert time-code (hh:mm:ss:ff:fr) into absolute wheel position.
+void Cus428State::LocateWheel ( unsigned char *tc )
+{
+#if 0
+	aWheel  = (60 * 60 * 30) * (int) tc[0]		// hh - hours    [0..23]
+			+ (     60 * 30) * (int) tc[1]		// mm - minutes  [0..59]
+			+ (          30) * (int) tc[2]		// ss - seconds  [0..59]
+			+                  (int) tc[3];		// ff - frames   [0..29]
+#else
+	aWheel  = (60 * 60 * 3) * (int) tc[0]		// hh - hours    [0..23]
+			+ (     60 * 3) * (int) tc[1]		// mm - minutes  [0..59]
+			+ (          3) * (int) tc[2]		// ss - seconds  [0..59]
+			+                 (int) tc[3] / 10;	// ff - frames   [0..29]
+#endif
+}
+
+
+// Convert absolute wheel position into time-code (hh:mm:ss:ff:fr)
+void Cus428State::WheelTimecode ( unsigned char *tc )
+{
+	int W = aWheel;
+#if 0
+	tc[0] = W / (60 * 60 * 30); W -= (60 * 60 * 30) * (int) tc[0];
+	tc[1] = W / (     60 * 30); W -= (     60 * 30) * (int) tc[1];
+	tc[2] = W / (          30); W -= (          30) * (int) tc[2];
+	tc[3] = W;
+	tc[4] = 0;
+#else
+	tc[0] = W / (60 * 60 * 3); W -= (60 * 60 * 3) * (int) tc[0];
+	tc[1] = W / (     60 * 3); W -= (     60 * 3) * (int) tc[1];
+	tc[2] = W / (          3); W -= (          3) * (int) tc[2];
+	tc[3] = W * 10;
+	tc[4] = 0;
+#endif
+}
+
+
+// Get the wheel differential.
+void Cus428State::WheelDelta ( int W )
+{
+	// Compute the wheel differential.
+	int dW = W - W0;
+	if (dW > 0 && dW > +W_DELTA_MIN)
+		dW -= W_DELTA_MAX;
+	else
+	if (dW < 0 && dW < -W_DELTA_MIN)
+		dW += W_DELTA_MAX;
+
+	W0 = W;
+	aWheel += dW;
+
+	// Can't be less than zero.
+	if (aWheel < 0)
+		aWheel = 0;
+}
+
+
+// Send the MMC wheel locate command...
+void Cus428State::LocateSend ()
+{
+	unsigned char MmcData[6];
+	// Timecode's embedded on MMC command.
+	MmcData[0] = 0x01;
+	WheelTimecode(&MmcData[1]);
+	// Send the MMC locate command...
+	Midi.SendMmcCommand(MMC_CMD_LOCATE, MmcData, sizeof(MmcData));
+}
+
+
+// Toggle application transport state.
+void Cus428State::TransportToggle ( unsigned char T )
+{
+	switch (T) {
+	case T_PLAY:
+		if (uTransport & T_PLAY) {
+			uTransport = T_STOP;
+			Midi.SendMmcCommand(MMC_CMD_STOP);
+		} else {
+		    uTransport &= T_RECORD;
+			uTransport |= T_PLAY;
+			Midi.SendMmcCommand(MMC_CMD_PLAY);
+		}
+		break;
+	case T_RECORD:
+		if (uTransport & T_RECORD) {
+			uTransport &= ~T_RECORD;
+			Midi.SendMmcCommand(MMC_CMD_RECORD_EXIT);
+		} else {
+		    uTransport &= T_PLAY;
+			uTransport |= T_RECORD;
+			Midi.SendMmcCommand(uTransport & T_PLAY ? MMC_CMD_RECORD_STROBE : MMC_CMD_RECORD_PAUSE);
+		}
+		break;
+	default:
+		if (uTransport & T) {
+			uTransport = T_STOP;
+		} else {
+			uTransport = T;
+		}
+		if (uTransport & T_STOP)
+			Midi.SendMmcCommand(MMC_CMD_STOP);
+		if (uTransport & T_REW)
+			Midi.SendMmcCommand(MMC_CMD_REWIND);
+		if (uTransport & T_F_FWD)
+			Midi.SendMmcCommand(MMC_CMD_FAST_FORWARD);
+		break;
+	}
+
+	TransportSend();
+}
+
+
+// Set application transport state.
+void Cus428State::TransportSet ( unsigned char T, bool V )
+{
+	if (V) {
+		if (T == T_RECORD) {
+			uTransport |= T_RECORD;
+		} else {
+			uTransport  = T;
+		}
+	} else {
+		if (T == T_RECORD) {
+			uTransport &= ~T_RECORD;
+		} else {
+			uTransport  = T_STOP;
+		}
+	}
+
+	TransportSend();
+}
+
+// Update transport lights.
+void Cus428State::TransportSend()
+{
+	LightSet(eL_Play,   (uTransport & T_PLAY));
+	LightSet(eL_Record, (uTransport & T_RECORD));
+	LightSet(eL_Rew,    (uTransport & T_REW));
+	LightSet(eL_FFwd,   (uTransport & T_F_FWD));
+	LightSend();
+}
+
+// Reset MMC state.
+void Cus428State::MmcReset()
+{
+	W0 = 0;
+	aWheel = aWheel_L = aWheel_R = 0;
+	bSetLocate = false;
+	uTransport = 0;
+
+	TransportSend();
+	LocateSend();
+}
+

@@ -89,7 +89,8 @@ int US428Control(const char* DevName)
 	int			err;
 	unsigned int		idx, dsps, loaded;
 	us428ctls_sharedmem_t	*us428ctls_sharedmem;
-	struct pollfd		pfds;
+	struct pollfd *pfds;
+	int npfd, pollrc;
 
 	if ((err = snd_hwdep_open(&hw, DevName, O_RDWR)) < 0) {
 		error("cannot open hwdep %s\n", DevName);
@@ -101,39 +102,51 @@ int US428Control(const char* DevName)
 		snd_hwdep_close(hw);
 		return -ENODEV;
 	}
-	snd_hwdep_poll_descriptors(hw, &pfds, 1);
-	us428ctls_sharedmem = (us428ctls_sharedmem_t*)mmap(NULL, sizeof(us428ctls_sharedmem_t), PROT_READ|PROT_WRITE, MAP_SHARED, pfds.fd, 0);
+
+	Midi.CreatePorts();
+
+	npfd = snd_seq_poll_descriptors_count(Midi.Seq, POLLIN) + 1;
+	pfds = (struct pollfd *) alloca(npfd * sizeof(struct pollfd));
+	snd_hwdep_poll_descriptors(hw, &pfds[0], 1);
+	snd_seq_poll_descriptors(Midi.Seq, &pfds[1], npfd - 1, POLLIN);
+
+	us428ctls_sharedmem = (us428ctls_sharedmem_t *) mmap(NULL, sizeof(us428ctls_sharedmem_t), PROT_READ|PROT_WRITE, MAP_SHARED, pfds[0].fd, 0);
 	if (us428ctls_sharedmem == MAP_FAILED) {
 		perror("mmap failed:");
+		snd_hwdep_close(hw);
 		return -ENOMEM;
 	}
-	Midi.CreatePorts();
 	us428ctls_sharedmem->CtlSnapShotRed = us428ctls_sharedmem->CtlSnapShotLast;
 	OneState = new Cus428State(us428ctls_sharedmem);
 	OneState->InitDevice();
-	while (1) {
-		int x = poll(&pfds,1,-1);
-		if (verbose > 1 || pfds.revents & (POLLERR|POLLHUP))
-			printf("poll returned 0x%X\n", pfds.revents);
-		if (pfds.revents & (POLLERR|POLLHUP))
-			return -ENXIO;
-		int Last = us428ctls_sharedmem->CtlSnapShotLast;
-		if (verbose > 1)
-			printf("Last is %i\n", Last);
-		while (us428ctls_sharedmem->CtlSnapShotRed != Last) {
-			static Cus428_ctls *Red = 0;
-			int Read = us428ctls_sharedmem->CtlSnapShotRed + 1;
-			if (Read >= N_us428_ctl_BUFS || Read < 0)
-				Read = 0;
-			Cus428_ctls* PCtlSnapShot = ((Cus428_ctls*)(us428ctls_sharedmem->CtlSnapShot)) + Read;
-			int DiffAt = us428ctls_sharedmem->CtlSnapShotDiffersAt[Read];
+
+	while ((pollrc = poll(pfds, npfd, 60000)) >= 0) {
+		if (pfds[0].revents) {
+			if (verbose > 1 || pfds[0].revents & (POLLERR|POLLHUP))
+				printf("poll returned 0x%X\n", pfds[0].revents);
+			if (pfds[0].revents & (POLLERR|POLLHUP))
+				return -ENXIO;
+			int Last = us428ctls_sharedmem->CtlSnapShotLast;
 			if (verbose > 1)
-				PCtlSnapShot->dump(DiffAt);
-			PCtlSnapShot->analyse(Red, DiffAt);
-			Red = PCtlSnapShot;
-			us428ctls_sharedmem->CtlSnapShotRed = Read;
+				printf("Last is %i\n", Last);
+			while (us428ctls_sharedmem->CtlSnapShotRed != Last) {
+				static Cus428_ctls *Red = 0;
+				int Read = us428ctls_sharedmem->CtlSnapShotRed + 1;
+				if (Read >= N_us428_ctl_BUFS || Read < 0)
+					Read = 0;
+				Cus428_ctls* PCtlSnapShot = ((Cus428_ctls*)(us428ctls_sharedmem->CtlSnapShot)) + Read;
+				int DiffAt = us428ctls_sharedmem->CtlSnapShotDiffersAt[Read];
+				if (verbose > 1)
+					PCtlSnapShot->dump(DiffAt);
+				PCtlSnapShot->analyse(Red, DiffAt);
+				Red = PCtlSnapShot;
+				us428ctls_sharedmem->CtlSnapShotRed = Read;
+			}
 		}
+		else if (pollrc > 0) Midi.ProcessMidiEvents();
 	}
+
+	return pollrc;
 }
 
 int main (int argc, char *argv[])
@@ -186,7 +199,7 @@ int main (int argc, char *argv[])
 
 	/* probe the all cards */
 	for (c = 0; c < SND_CARDS; c++) {
-		verbose--;
+	//	verbose--;
 		sprintf(name, "hw:%d", c);
 		if (! US428Control(name))
 			card = c;

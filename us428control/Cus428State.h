@@ -32,6 +32,12 @@ class Cus428State: public us428_lights{
 		,SelectInputMonitor(0)
 		,Select(0)
 		,us428_ctls(0)
+		,W0(0)
+		,aWheel(0)
+		,aWheel_L(0)
+		,aWheel_R(0)
+		,bSetLocate(false)
+		,uTransport(0)
 		{
 			init_us428_lights();
 			for (int v = 0; v < 5; ++v) {
@@ -79,25 +85,52 @@ class Cus428State: public us428_lights{
 	void InitDevice(void);
 	void KnobChangedTo(eKnobs K, bool V);
 	void SliderChangedTo(int S, unsigned char New);
+	void SliderSend(int S);
 	void WheelChangedTo(E_In84 W, char Diff);
 	Cus428_ctls *Set_us428_ctls(Cus428_ctls *New) {
 		Cus428_ctls *Old = us428_ctls;
 		us428_ctls = New;
 		return Old;
 	}
- private:
+	// Update the LED lights state.
 	int LightSend();
+	// Time-code (hh:mm:ss:ff:fr) to/from absolute wheel position converters.
+	void LocateWheel(unsigned char *tc);
+	void LocateSend();
+	// Set basic application transport state.
+	void TransportToggle(unsigned char T);
+	void TransportSet(unsigned char T, bool V);
+	void TransportSend();
+	// Reset internal MMC state.
+	void MmcReset();
+ private:
 	void SendVolume(usX2Y_volume &V);
 	struct us428ctls_sharedmem* us428ctls_sharedmem;
 	bool   StateInputMonitor() {
 		return  LightIs(eL_InputMonitor);
 	}
+	// Set the wheel differential.
+	void WheelDelta(int W);
+	// Get the curent wheel timecode.
+	void WheelTimecode(unsigned char *tc);
+
 	usX2Y_volume_t	Volume[5];
 	char		MuteInputMonitor,
 			Mute,
 			SelectInputMonitor,
 			Select;
 	Cus428_ctls	*us428_ctls;
+	// Differential wheel tracking.
+	int W0;
+	// Some way to convert wheel (absolute) position into hh:mm:ss:ff:fr
+	int aWheel;
+	// SET L/R points.
+	int aWheel_L;
+	int aWheel_R;
+	// SET knob state.
+	bool bSetLocate;
+	// Last/current transport state.
+	unsigned char uTransport;
 };
 
 extern Cus428State* OneState;
