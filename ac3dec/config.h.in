@@ -13,12 +13,18 @@
 /* Version number of package */
 #undef VERSION
 
-
-/* Architecture defines */
+/* Using i386 architecture */
 #undef __i386__
-#undef __alpha__
-#undef __ppc__
-#undef __sparc__ 
 
-/* Big-Endian */
-#undef WORDS_BIGENDIAN
+/* Using Alpha architecture */
+#undef __alpha__
+
+/* Using SPARC architecture */
+#undef __sparc__
+
+/* Using PowerPC architecture */
+#undef __ppc__
+
+/* Using IA-64 architecture */
+#undef __ia64__
+

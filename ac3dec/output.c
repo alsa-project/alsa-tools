@@ -20,6 +20,7 @@
 
 #include <stdio.h>
 #include <errno.h>
+#define ALSA_PCM_NEW_HW_PARAMS_API
 #include <alsa/asoundlib.h>
 
 typedef signed short sint_16;
@@ -38,8 +39,7 @@ int output_open(output_t *output)
 	const char *pcm_name = output->pcm_name;
 	char devstr[128];
 	snd_pcm_hw_params_t *params;
-	snd_pcm_sframes_t buffer_time;
-	snd_pcm_sframes_t period_time, tmp;
+	unsigned int rate, buffer_time, period_time, tmp;
 	int err, step;
 	snd_pcm_hw_params_alloca(&params);
 
@@ -126,14 +126,15 @@ int output_open(output_t *output)
 		fprintf(stderr, "Channels count non available");
 		goto __close;
 	}
-	err = snd_pcm_hw_params_set_rate_near(pcm, params, output->rate, 0);
+	rate = output->rate;
+	err = snd_pcm_hw_params_set_rate_near(pcm, params, &rate, 0);
 	if (err < 0) {
 		fprintf(stderr, "Rate not available");
 		goto __close;
 	}
-	buffer_time = snd_pcm_hw_params_set_buffer_time_near(pcm, params,
-							     500000, 0);
-	if (buffer_time < 0) {
+	buffer_time = 500000;
+	err = snd_pcm_hw_params_set_buffer_time_near(pcm, params, &buffer_time, 0);
+	if (err < 0) {
 		fprintf(stderr, "Buffer time not available");
 		goto __close;
 	}
@@ -141,18 +142,18 @@ int output_open(output_t *output)
 	period_time = 10000 * 2;
 	do {
 		period_time /= 2;
-		tmp = snd_pcm_hw_params_set_period_time_near(pcm, params,
-							     period_time, 0);
-		if (tmp == period_time) {
-			period_time /= 3;
-			tmp = snd_pcm_hw_params_set_period_time_near(pcm, params,
-								     period_time, 0);
-			if (tmp == period_time)
-				period_time = 10000 * 2;
-		}
-		if (period_time < 0) {
+		tmp = period_time;
+		err = snd_pcm_hw_params_set_period_time_near(pcm, params, &tmp, 0);
+		if (err < 0) {
 			fprintf(stderr, "Period time not available");
 			goto __close;
+		}
+		if (tmp == period_time) {
+			period_time /= 3;
+			tmp = period_time;
+			err = snd_pcm_hw_params_set_period_time_near(pcm, params, &tmp, 0);
+			if (tmp == period_time)
+				period_time = 10000 * 2;
 		}
 	} while (buffer_time == period_time && period_time > 10000);
 	if (buffer_time == period_time) {
