@@ -17,7 +17,6 @@
  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
  */
 
-#include <sound/asequencer.h>
 #include "Cus428State.h"
 
 class Cus428Midi {
@@ -30,11 +29,11 @@ class Cus428Midi {
 		if (0 <= (Err = snd_seq_open(&Seq, "default", SND_SEQ_OPEN_DUPLEX, SND_SEQ_NONBLOCK))) {
 			snd_seq_set_client_name(Seq, "US-428");
 			Err = snd_seq_create_simple_port(Seq, "Controls",
-							 SNDRV_SEQ_PORT_CAP_READ
-							 //|SNDRV_SEQ_PORT_CAP_WRITE	FIXME: Next Step is to make Lights switchable
-							 |SNDRV_SEQ_PORT_CAP_SUBS_READ
-							 /*|SNDRV_SEQ_PORT_CAP_SUBS_WRITE*/,
-							 SNDRV_SEQ_PORT_TYPE_MIDI_GENERIC);
+							 SND_SEQ_PORT_CAP_READ
+							 //|SND_SEQ_PORT_CAP_WRITE	FIXME: Next Step is to make Lights switchable
+							 |SND_SEQ_PORT_CAP_SUBS_READ
+							 /*|SND_SEQ_PORT_CAP_SUBS_WRITE*/,
+							 SND_SEQ_PORT_TYPE_MIDI_GENERIC);
 			if (Err >= 0) {
 				Port = Err;
 				snd_seq_ev_clear(&Ev);
