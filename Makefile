@@ -1,4 +1,4 @@
-VERSION = 0.9.0beta11
+VERSION = 0.9.0beta12
 TOP = .
 SUBDIRS = ac3dec as10k1 envy24control sb16_csp seq
 
