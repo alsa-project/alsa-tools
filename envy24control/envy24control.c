@@ -21,6 +21,7 @@
 ******************************************************************************/
 
 #include "envy24control.h"
+#include "midi.h"
 #define _GNU_SOURCE
 #include <getopt.h>
 
@@ -1926,7 +1927,7 @@ static void create_profiles(GtkWidget *main, GtkWidget *notebook, int page)
 
 static void usage(void)
 {
-	fprintf(stderr, "usage: envy24control [-c card#] [-D control-name] [-o num-outputs] [-i num-inputs] [-p num-pcm-outputs] [-s num-spdif-in/outs] [-v] [-f profiles-file] [profile name|profile id]\n");
+	fprintf(stderr, "usage: envy24control [-c card#] [-D control-name] [-o num-outputs] [-i num-inputs] [-p num-pcm-outputs] [-s num-spdif-in/outs] [-v] [-f profiles-file] [profile name|profile id] [-m channel-num]\n");
 	fprintf(stderr, "\t-c, --card\tAlsa card number to control\n");
 	fprintf(stderr, "\t-D, --device\tcontrol-name\n");
 	fprintf(stderr, "\t-o, --outputs\tLimit number of analog line outputs to display\n");
@@ -1935,6 +1936,7 @@ static void usage(void)
 	fprintf(stderr, "\t-s, --spdif\tLimit number of spdif inputs/outputs to display\n");
 	fprintf(stderr, "\t-v, --view_spdif_playback\tshows the spdif playback channels in the mixer\n");
 	fprintf(stderr, "\t-f, --profiles_file\tuse file as profiles file\n");
+	fprintf(stderr, "\t-m, --midichannel\tmidi channel number for controller control\n");
 }
 
 int main(int argc, char **argv)
@@ -1946,17 +1948,19 @@ int main(int argc, char **argv)
 	snd_ctl_elem_value_t *val;
 	int npfds;
 	struct pollfd *pfds;
+	int midi_fd, midi_channel = -1;
 	int page;
 	int input_channels_set = 0;
 	int output_channels_set = 0;
 	static struct option long_options[] = {
 		{"device", 1, 0, 'D'},
 		{"card", 1, 0, 'c'},
+		{"profiles_file", 1, 0, 'f'},
 		{"inputs", 1, 0, 'i'},
+		{"midichannel", 1, 0, 'm'},
 		{"outputs", 1, 0, 'o'},
 		{"pcm_outputs", 1, 0, 'p'},
 		{"spdif", 1, 0, 's'},
-		{"profiles_file", 1, 0, 'f'},
 		{"view_spdif_playback", 0, 0, 'v'},
 		{ NULL }
 	};
@@ -1977,8 +1981,16 @@ int main(int argc, char **argv)
 	view_spdif_playback = 0;
 	profiles_file_name = DEFAULT_PROFILERC;
 	default_profile = NULL;
-	while ((c = getopt_long(argc, argv, "D:c:i:o:p:s:f:v", long_options, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "D:c:f:i:m:o:p:s:v", long_options, NULL)) != -1) {
 		switch (c) {
+		case 'D':
+			name = optarg;
+			card_number = atoi(strchr(name, ':') + sizeof(char));
+			if (card_number < 0 || card_number >= MAX_CARD_NUMBERS) {
+				fprintf(stderr, "envy24control: invalid card number %d\n", card_number);
+				exit(1);
+			}
+			break;
 		case 'c':
 			i = atoi(optarg);
 			if (i < 0 || i >= MAX_CARD_NUMBERS) {
@@ -1989,13 +2001,8 @@ int main(int argc, char **argv)
 			sprintf(tmpname, "hw:%d", i);
 			name = tmpname;
 			break;
-		case 'D':
-			name = optarg;
-			card_number = atoi(strchr(name, ':') + sizeof(char));
-			if (card_number < 0 || card_number >= MAX_CARD_NUMBERS) {
-				fprintf(stderr, "envy24control: invalid card number %d\n", card_number);
-				exit(1);
-			}
+		case 'f':
+			profiles_file_name = optarg;
 			break;
 		case 'i':
 			input_channels = atoi(optarg);
@@ -2004,6 +2011,14 @@ int main(int argc, char **argv)
 				exit(1);
 			}
 			input_channels_set = 1;
+			break;
+		case 'm':
+			midi_channel = atoi(optarg);
+			if (midi_channel < 1 || midi_channel > 16) {
+				fprintf(stderr, "envy24control: invalid midi channel number %i\n", midi_channel);
+				exit(1);
+			}
+			--midi_channel;
 			break;
 		case 'o':
 			output_channels = atoi(optarg);
@@ -2026,9 +2041,6 @@ int main(int argc, char **argv)
 				fprintf(stderr, "envy24control: must have 0-%i spdifs\n", MAX_SPDIF_CHANNELS);
 				exit(1);
 			}
-			break;
-		case 'f':
-			profiles_file_name = optarg;
 			break;
 		case 'v':
 			view_spdif_playback = 1;
@@ -2083,6 +2095,8 @@ int main(int argc, char **argv)
 	patchbay_init();
 	hardware_init();
 	analog_volume_init();
+	if (midi_channel >= 0)
+		midi_fd = midi_init(argv[0], midi_channel);
 
 	fprintf(stderr, "using\t --- input_channels: %i\n\t --- output_channels: %i\n\t --- pcm_output_channels: %i\n\t --- spdif in/out channels: %i\n", \
 		input_channels, output_channels, pcm_output_channels, spdif_channels);
@@ -2123,6 +2137,9 @@ int main(int argc, char **argv)
 				      ctl);
 		snd_ctl_subscribe_events(ctl, 1);
 	}
+	if (midi_fd >= 0) {
+		gdk_input_add(midi_fd, GDK_INPUT_READ, midi_process, NULL);
+	}
 	gtk_timeout_add(40, level_meters_timeout_callback, NULL);
 	gtk_timeout_add(100, master_clock_status_timeout_callback, NULL);
 	gtk_timeout_add(100, internal_clock_status_timeout_callback, NULL);
@@ -2141,6 +2158,7 @@ int main(int argc, char **argv)
 	gtk_main();
 
 	snd_ctl_close(ctl);
+	midi_close();
 
 	return EXIT_SUCCESS;
 }

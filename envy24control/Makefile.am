@@ -1,7 +1,7 @@
 AM_CFLAGS = @ENVY24CONTROL_CFLAGS@
 bin_PROGRAMS = envy24control
 man_MANS = envy24control.1
-envy24control_SOURCES = envy24control.c envy24control.h levelmeters.c \
+envy24control_SOURCES = envy24control.c envy24control.h levelmeters.c midi.c \
                         mixer.c patchbay.c hardware.c driverevents.c volume.c \
 			profiles.c profiles.h
 envy24control_LDFLAGS = @ENVY24CONTROL_LIBS@

@@ -18,6 +18,7 @@
 ******************************************************************************/
 
 #include "envy24control.h"
+#include "midi.h"
 
 #define	MULTI_PLAYBACK_SWITCH		"Multi Playback Switch"
 #define MULTI_PLAYBACK_VOLUME		"Multi Playback Volume"
@@ -62,6 +63,8 @@ void mixer_update_stream(int stream, int vol_flag, int sw_flag)
 			toggle_set(mixer_stereo_toggle[stream-1], FALSE);
 		gtk_adjustment_set_value(GTK_ADJUSTMENT(mixer_adj[stream-1][0]), 96 - v[0]);
 		gtk_adjustment_set_value(GTK_ADJUSTMENT(mixer_adj[stream-1][1]), 96 - v[1]);
+		midi_controller(stream*2-1, v[0]);
+		midi_controller(stream*2,   v[1]);
 	}
 	if (sw_flag) {
 		snd_ctl_elem_value_t *sw;
@@ -139,10 +142,12 @@ static void set_volume1(int stream, int left, int right)
 	if (left >= 0) {
 		change |= (snd_ctl_elem_value_get_integer(vol, 0) != left);
 		snd_ctl_elem_value_set_integer(vol, 0, left);
+		midi_controller(stream*2-1, left);
 	}
 	if (right >= 0) {
 		change |= (snd_ctl_elem_value_get_integer(vol, 1) != right);
 		snd_ctl_elem_value_set_integer(vol, 1, right);
+		midi_controller(stream*2, right);
 	}
 	if (change) {
 		if ((err = snd_ctl_elem_write(ctl, vol)) < 0 && err != -EBUSY)
@@ -175,6 +180,8 @@ void mixer_init(void)
 	int i;
 	int nb_active_channels;
 	snd_ctl_elem_value_t *val;
+
+	midi_maxstreams(sizeof(stream_is_active)/sizeof(stream_is_active[0]));
 
 	snd_ctl_elem_value_alloca(&val);
 	snd_ctl_elem_value_set_interface(val, SND_CTL_ELEM_IFACE_MIXER);
