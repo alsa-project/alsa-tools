@@ -24,8 +24,6 @@
 #include <alloca.h>
 #include <string.h>
 #include <unistd.h>
-#define ALSA_PCM_NEW_HW_PARAMS_API
-#define ALSA_PCM_NEW_SW_PARAMS_API
 #include <alsa/asoundlib.h>
 
 typedef signed short sint_16;
