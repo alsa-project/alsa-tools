@@ -37,6 +37,7 @@ void control_input_callback(gpointer data, gint source, GdkInputCondition condit
 		return;
 
 	switch (snd_ctl_event_elem_get_interface(ev)) {
+	case SND_CTL_ELEM_IFACE_MIXER:
 		if (!strcmp(name, "Word Clock Sync"))
 			master_clock_update();
 		else if (!strcmp(name, "Multi Track Volume Rate"))
