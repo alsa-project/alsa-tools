@@ -1052,8 +1052,8 @@ int main(int argc, char **argv)
 		fprintf(stderr, "snd_ctl_card_info: %s\n", snd_strerror(err));
 		exit(EXIT_FAILURE);
 	}
-	if (snd_ctl_card_info_get_type(hw_info) != SND_CARD_TYPE_ICE1712) {
-		fprintf(stderr, "invalid card type %d\n", snd_ctl_card_info_get_type(hw_info));
+	if (!strcmp(snd_ctl_card_info_get_driver(hw_info), "ICE1712")) {
+		fprintf(stderr, "invalid card type (driver is %s)\n", snd_ctl_card_info_get_driver(hw_info));
 		exit(EXIT_FAILURE);
 	}
 
