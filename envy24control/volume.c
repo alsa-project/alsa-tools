@@ -162,13 +162,16 @@ void dac_volume_adjust(GtkAdjustment *adj, gpointer data)
 {
 	int idx = (int)data;
 	snd_ctl_elem_value_t *val;
-	int err;
+	int err, ival = -(int)adj->value;
+	char text[16];
 
 	snd_ctl_elem_value_alloca(&val);
 	snd_ctl_elem_value_set_interface(val, SND_CTL_ELEM_IFACE_MIXER);
 	snd_ctl_elem_value_set_name(val, DAC_VOLUME_NAME);
 	snd_ctl_elem_value_set_index(val, idx);
-	snd_ctl_elem_value_set_integer(val, 0, -(int)adj->value);
+	snd_ctl_elem_value_set_integer(val, 0, ival);
+	sprintf(text, "%03i %s", ival, ival == 127 ? "consum" : (ival == 111 ? "-10dB" : ""));
+	gtk_label_set_text(av_dac_volume_label[idx], text);
 	if ((err = snd_ctl_elem_write(ctl, val)) < 0)
 		g_print("Unable to write dac volume: %s\n", snd_strerror(err));
 }
@@ -177,13 +180,16 @@ void adc_volume_adjust(GtkAdjustment *adj, gpointer data)
 {
 	int idx = (int)data;
 	snd_ctl_elem_value_t *val;
-	int err;
+	int err, ival = -(int)adj->value;
+	char text[16];
 
 	snd_ctl_elem_value_alloca(&val);
 	snd_ctl_elem_value_set_interface(val, SND_CTL_ELEM_IFACE_MIXER);
 	snd_ctl_elem_value_set_name(val, ADC_VOLUME_NAME);
 	snd_ctl_elem_value_set_index(val, idx);
-	snd_ctl_elem_value_set_integer(val, 0, -(int)adj->value);
+	snd_ctl_elem_value_set_integer(val, 0, ival);
+	sprintf(text, "%03i %s", ival, ival == 127 ? "consum" : (ival == 111 ? "-10dB" : ""));
+	gtk_label_set_text(av_adc_volume_label[idx], text);
 	if ((err = snd_ctl_elem_write(ctl, val)) < 0)
 		g_print("Unable to write adc volume: %s\n", snd_strerror(err));
 }
@@ -292,10 +298,14 @@ void analog_volume_postinit(void)
 {
 	int i;
 
-	for (i = 0; i < dac_volumes; i++)
+	for (i = 0; i < dac_volumes; i++) {
 		dac_volume_update(i);
-	for (i = 0; i < adc_volumes; i++)
+		dac_volume_adjust((GtkAdjustment *)av_dac_volume_adj[i], (gpointer)i);
+	}
+	for (i = 0; i < adc_volumes; i++) {
 		adc_volume_update(i);
+		adc_volume_adjust((GtkAdjustment *)av_adc_volume_adj[i], (gpointer)i);
+	}
 	for (i = 0; i < dac_senses; i++)
 		dac_sense_update(i);
 	for (i = 0; i < adc_senses; i++)

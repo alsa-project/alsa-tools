@@ -87,6 +87,8 @@ extern GtkWidget *hw_spdif_input_optical_radio;
 
 extern GtkObject *av_dac_volume_adj[];
 extern GtkObject *av_adc_volume_adj[];
+extern GtkLabel *av_dac_volume_label[];
+extern GtkLabel *av_adc_volume_label[];
 extern GtkWidget *av_dac_sense_radio[][4];
 extern GtkWidget *av_adc_sense_radio[][4];
 

@@ -78,6 +78,8 @@ GtkWidget *hw_spdif_input_optical_radio;
 
 GtkObject *av_dac_volume_adj[10];
 GtkObject *av_adc_volume_adj[10];
+GtkLabel *av_dac_volume_label[10];
+GtkLabel *av_adc_volume_label[10];
 GtkWidget *av_dac_sense_radio[10][4];
 GtkWidget *av_adc_sense_radio[10][4];
 
@@ -1061,12 +1063,19 @@ static void create_analog_volume(GtkWidget *main, GtkWidget *notebook, int page)
 		gtk_scale_set_draw_value(GTK_SCALE(vscale), FALSE);
 		gtk_widget_show(vscale);
 		gtk_fixed_put(GTK_FIXED(fixed1), vscale, 2, 2);
-		gtk_widget_set_usize(vscale, 66, 200);
-
+		gtk_widget_set_usize(vscale, 66, 180);
 		gtk_scale_set_value_pos(GTK_SCALE(vscale), GTK_POS_BOTTOM);
 		gtk_scale_set_digits(GTK_SCALE(vscale), 0);
 		gtk_signal_connect(GTK_OBJECT(adj), "value_changed",
 				   GTK_SIGNAL_FUNC(dac_volume_adjust), (gpointer)(i));
+
+	        label = gtk_label_new("100 (-000dB)");
+	        av_dac_volume_label[i] = (GtkLabel *)label;
+	        gtk_widget_show(label);
+		gtk_fixed_put(GTK_FIXED(fixed1), label, 0, 182);
+		gtk_widget_set_uposition(label, 0, 182);
+		gtk_widget_set_usize(label, 66, 16);
+
 		if (i >= envy_dac_senses())
 			continue;
 		group = NULL;
@@ -1103,12 +1112,19 @@ static void create_analog_volume(GtkWidget *main, GtkWidget *notebook, int page)
 		gtk_scale_set_draw_value(GTK_SCALE(vscale), FALSE);
 		gtk_widget_show(vscale);
 		gtk_fixed_put(GTK_FIXED(fixed1), vscale, 2, 2);
-		gtk_widget_set_usize(vscale, 66, 200);
-
+		gtk_widget_set_usize(vscale, 66, 180);
 		gtk_scale_set_value_pos(GTK_SCALE(vscale), GTK_POS_BOTTOM);
 		gtk_scale_set_digits(GTK_SCALE(vscale), 0);
 		gtk_signal_connect(GTK_OBJECT(adj), "value_changed",
 				   GTK_SIGNAL_FUNC(adc_volume_adjust), (gpointer)(i));
+
+	        label = gtk_label_new("100 (-000dB)");
+	        av_adc_volume_label[i] = (GtkLabel *)label;
+	        gtk_widget_show(label);
+		gtk_fixed_put(GTK_FIXED(fixed1), label, 0, 182);
+		gtk_widget_set_uposition(label, 0, 182);
+		gtk_widget_set_usize(label, 66, 16);
+
 		if (i >= envy_adc_senses())
 			continue;
 		group = NULL;
