@@ -41,10 +41,11 @@ uint_32 current_word;
 
 ssize_t (*bitstream_fill_buffer)(uint_8**,uint_8**);
 
-uint_8 bitstream_get_byte(void)
+int bitstream_get_byte(void)
 {
 	if(chunk_start == chunk_end)
-		bitstream_fill_buffer(&chunk_start,&chunk_end);
+		if (bitstream_fill_buffer(&chunk_start,&chunk_end) <= 0)
+			return EOF;
 
 	return (*chunk_start++);
 }
@@ -54,7 +55,7 @@ uint_8 *bitstream_get_buffer_start(void)
 	return buffer_start;
 }
 
-void
+int
 bitstream_buffer_frame(uint_32 frame_size)
 {
   uint_32 bytes_read;
@@ -67,7 +68,8 @@ bitstream_buffer_frame(uint_32 frame_size)
     if(chunk_start > chunk_end)
 			printf("argh!\n");
     if(chunk_start == chunk_end)
-      bitstream_fill_buffer(&chunk_start,&chunk_end);
+      if (bitstream_fill_buffer(&chunk_start,&chunk_end) <= 0)
+      	return EOF;
 
     num_bytes = chunk_end - chunk_start;
 
@@ -84,7 +86,8 @@ bitstream_buffer_frame(uint_32 frame_size)
   buffer_start = buffer;
   buffer_end   = buffer + frame_size;
 
-	bits_left = 0;
+  bits_left = 0;
+  return 0;
 }
 
 

@@ -24,6 +24,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <errno.h>
 #include "ac3.h"
 #include "ac3_internal.h"
 
@@ -114,9 +115,10 @@ parse_syncinfo_data(syncinfo_t *syncinfo, uint_8 *data)
 }
 
 /* Parse a syncinfo structure, minus the sync word */
-void
+int
 parse_syncinfo(syncinfo_t *syncinfo)
 {
+	int byte, idx;
 	uint_8 data[3];
 	uint_16 sync_word = 0;
 	uint_32 time_out = 1<<16;
@@ -128,7 +130,10 @@ parse_syncinfo(syncinfo_t *syncinfo)
 	// 
 	while(time_out--)
 	{
-		sync_word = (sync_word << 8) + bitstream_get_byte();
+		byte = bitstream_get_byte();
+		if (byte < 0)
+			return -ENOENT;
+		sync_word = (sync_word << 8) + byte;
 
 		if(sync_word == 0x0b77)
 			break;
@@ -138,14 +143,18 @@ parse_syncinfo(syncinfo_t *syncinfo)
 	// We need to read in the entire syncinfo struct (0x0b77 + 24 bits)
 	// in order to determine how big the frame is
 	//
-	data[0] = bitstream_get_byte();
-	data[1] = bitstream_get_byte();
-	data[2] = bitstream_get_byte();
+	for (idx = 0; idx < 3; idx++) {
+		byte = bitstream_get_byte();
+		if (byte < 0)
+			return -ENOENT;
+		data[idx] = byte;
+	}
 
 	parse_syncinfo_data(syncinfo, data);
 
 	// Buffer the entire syncframe 
-	bitstream_buffer_frame(syncinfo->frame_size * 2 - 5);
+	if (bitstream_buffer_frame(syncinfo->frame_size * 2 - 5) < 0)
+		return -ENOENT;
 
 	// Check the crc over the entire frame 
 	crc_init();
@@ -159,11 +168,12 @@ parse_syncinfo(syncinfo_t *syncinfo)
 	{
 		error_flag = 1;
 		fprintf(stderr,"** CRC failed - skipping frame **\n");
-		return;
+		return 0;
 	}
 
 	if (!(ac3_config.flags & AC3_QUIET))
 		stats_print_syncinfo(syncinfo);
+	return 0;
 }
 
 /*

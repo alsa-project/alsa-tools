@@ -41,8 +41,8 @@ int output_open(output_t *output)
 	snd_pcm_hw_params_t *params;
 	snd_pcm_sw_params_t *swparams;
 	snd_pcm_sframes_t buffer_time;
-	snd_pcm_sframes_t period_time;
-	int err;
+	snd_pcm_sframes_t period_time, tmp;
+	int err, step;
 	snd_pcm_hw_params_alloca(&params);
 	snd_pcm_sw_params_alloca(&swparams);
 
@@ -112,11 +112,19 @@ int output_open(output_t *output)
 		fprintf(stderr, "Buffer time not available");
 		goto __close;
 	}
-	period_time = 100000 * 2;
+	step = 2;
+	period_time = 10000 * 2;
 	do {
 		period_time /= 2;
-		period_time = snd_pcm_hw_params_set_period_time_near(pcm, params,
+		tmp = snd_pcm_hw_params_set_period_time_near(pcm, params,
+							     period_time, 0);
+		if (tmp == period_time) {
+			period_time /= 3;
+			tmp = snd_pcm_hw_params_set_period_time_near(pcm, params,
 								     period_time, 0);
+			if (tmp == period_time)
+				period_time = 10000 * 2;
+		}
 		if (period_time < 0) {
 			fprintf(stderr, "Period time not available");
 			goto __close;
@@ -205,11 +213,13 @@ int output_play(sint_16* output_samples, uint_32 num_frames)
 		if (res == -EPIPE)
 			res = snd_pcm_prepare(pcm);
 		res = res < 0 ? res : snd_pcm_writei(pcm, (void *)output_samples, num_frames);
-	} while (res == -EPIPE);
+		if (res > 0) {
+			output_samples += out_config.channels * res;
+			num_frames -= res;
+		}
+	} while (res == -EPIPE || num_frames > 0);
 	if (res < 0)
 		fprintf(stderr, "writei returned error: %s\n", snd_strerror(res));
-	else if (res != num_frames)
-		fprintf(stderr, "writei retured %li (expected %li)\n", res, (long)(num_frames));
 	return res < 0 ? (int)res : 0;
 }
 

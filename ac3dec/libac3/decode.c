@@ -82,7 +82,8 @@ ac3_decode_frame(void)
 	uint_32 i;
 
 	//find a syncframe and parse
-	parse_syncinfo(&syncinfo);
+	if (parse_syncinfo(&syncinfo) < 0)
+		return NULL;
 	if(error_flag)
 		goto error;
 

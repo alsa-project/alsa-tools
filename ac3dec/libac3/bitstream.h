@@ -52,10 +52,10 @@ extern uint_32 current_word;
 
 void bitstream_init(ssize_t(*fill_function)(uint_8**,uint_8**));
 
-uint_8 bitstream_get_byte(void);
+int bitstream_get_byte(void);
 
 uint_8 *bitstream_get_buffer_start(void);
-void bitstream_buffer_frame(uint_32 frame_size);
+int bitstream_buffer_frame(uint_32 frame_size);
 
 uint_32 bitstream_get_bh(uint_32 num_bits);
 
