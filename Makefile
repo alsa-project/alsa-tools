@@ -11,7 +11,7 @@ alsa-dist:
 	@mkdir -p $(TOP)/distdir
 	@for i in $(SUBDIRS); do cd $(TOP)/$$i; ./cvscompile; cd ..; make -C $$i alsa-dist; done
 	@mv distdir alsa-tools-$(VERSION)
-	@tar cjf alsa-tools-$(VERSION).tar.bz2 alsa-tools-$(VERSION)
+	@tar --create --verbose --file=- alsa-tools-$(VERSION) | bzip2 -c -9 > alsa-tools-$(VERSION).tar.bz2
 	@mv alsa-tools-$(VERSION) distdir
 
 clean:
