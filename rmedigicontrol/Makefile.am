@@ -5,6 +5,7 @@ rmedigicontrol_SOURCES = rmedigicontrol.c rmedigicontrol.h level.c loopback.c
 rmedigicontrol_LDFLAGS = @GTK_LIBS@
 
 EXTRA_DIST = depcomp
+AUTOMAKE_OPTIONS = foreign
 
 alsa-dist: distdir
 	@rm -rf ../distdir/rmedigicontrol

@@ -2,6 +2,7 @@ bin_PROGRAMS = as10k1
 as10k1_SOURCES = as10k1.c parse.c assemble.c macro.c
 noinst_HEADERS = as10k1.h list.h parse.h proto.h types.h
 EXTRA_DIST = cvscompile output.doc examples/Makefile examples/*.asm depcomp
+AUTOMAKE_OPTIONS = foreign
 
 dsp:
 	$(MAKE) -C examples

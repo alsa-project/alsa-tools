@@ -5,6 +5,7 @@ envy24control_SOURCES = envy24control.c envy24control.h levelmeters.c \
                         mixer.c patchbay.c hardware.c driverevents.c volume.c
 envy24control_LDFLAGS = @ENVY24CONTROL_LIBS@
 EXTRA_DIST = cvscompile envy24control.1 depcomp
+AUTOMAKE_OPTIONS = foreign
 
 alsa-dist: distdir
 	@rm -rf ../distdir/envy24control
