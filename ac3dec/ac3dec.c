@@ -123,11 +123,11 @@ int main(int argc,char *argv[])
 			out_config.pcm_name = optarg;
 			break;
 		case '4':
-			if (out_config.spdif != SPDIF_NONE)
+			if (out_config.spdif == SPDIF_NONE)
 				ac3_config.num_output_ch = 4;
 			break;
 		case '6':
-			if (out_config.spdif != SPDIF_NONE)
+			if (out_config.spdif == SPDIF_NONE)
 				ac3_config.num_output_ch = 6;
 			break;
 		case 'C':
