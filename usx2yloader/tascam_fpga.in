@@ -6,7 +6,7 @@ prefix=@prefix@
 exec_prefix=@exec_prefix@
 
 LOADER=@bindir@/usx2yloader
-CONTROLLER=
+CONTROLLER=NOTUSED
 
 if [ -x $LOADER ]; then
 	if [ -x /usr/bin/logger ]; then
@@ -27,7 +27,7 @@ case $PRODUCT in
 	;;
 esac
 
-if [ -n $CONTROLLER ]; then
+if [ $CONTROLLER != NOTUSED ]; then
 	if [ -x $CONTROLLER ]; then
 		if [ -x /usr/bin/logger ]; then
 			/usr/bin/logger -t $0 "starting $CONTROLLER for $DEVICE"
