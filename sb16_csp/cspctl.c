@@ -65,6 +65,11 @@ static void help(char *command)
 		, command);
 }
 
+static void version(void)
+{
+	printf("Version: " VERSION "\n");
+}
+
 static int csp_command (int idx, int dev, int command, char *filename)
 {
 	int fd, err;
@@ -130,13 +135,20 @@ int main(int argc, char *argv[])
 		help(argv[0]);
 		return 0;
 	}
+	if (argc > 1 && !strcmp(argv[1], "--version")) {
+		version();
+		return 0;
+	}
 
 	strcpy (microcode.info.codec_name, "UNKNOWN");
 	microcode.info.func_req = 1;
-	while ((c = getopt(argc, argv, "hc:f:d:")) != EOF) {
+	while ((c = getopt(argc, argv, "hvc:f:d:")) != EOF) {
 		switch (c) {
 		case 'h':
 			help(argv[0]);
+			return 0;
+		case 'v':
+			version();
 			return 0;
 		case 'c':
 			{
@@ -186,13 +198,13 @@ int main(int argc, char *argv[])
 
 	// Get control handle for selected card
 	sprintf(card_id, "hw:%i", card);
-	if (err = snd_ctl_open(&ctl_handle, card_id, 0) < 0) {
+	if ((err = snd_ctl_open(&ctl_handle, card_id, 0)) < 0) {
 		error("control open (%s): %s", card_id, snd_strerror(err));
 		return 1;
 	}
 
 	// Read control hardware info from card
-	if (err = snd_ctl_card_info(ctl_handle, card_info) < 0) {
+	if ((err = snd_ctl_card_info(ctl_handle, card_info)) < 0) {
 		error("control hardware info (%s): %s", card_id, snd_strerror(err));
 		exit(1);
 	}
