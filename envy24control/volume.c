@@ -170,7 +170,7 @@ void dac_volume_adjust(GtkAdjustment *adj, gpointer data)
 	snd_ctl_elem_value_set_name(val, DAC_VOLUME_NAME);
 	snd_ctl_elem_value_set_index(val, idx);
 	snd_ctl_elem_value_set_integer(val, 0, ival);
-	sprintf(text, "%03i %s", ival, ival == 127 ? "consum" : (ival == 111 ? "-10dB" : ""));
+	sprintf(text, "%03i %s", ival, ival == 127 ? "consumer" : (ival == 111 ? "-10dB" : ""));
 	gtk_label_set_text(av_dac_volume_label[idx], text);
 	if ((err = snd_ctl_elem_write(ctl, val)) < 0)
 		g_print("Unable to write dac volume: %s\n", snd_strerror(err));
@@ -188,7 +188,7 @@ void adc_volume_adjust(GtkAdjustment *adj, gpointer data)
 	snd_ctl_elem_value_set_name(val, ADC_VOLUME_NAME);
 	snd_ctl_elem_value_set_index(val, idx);
 	snd_ctl_elem_value_set_integer(val, 0, ival);
-	sprintf(text, "%03i %s", ival, ival == 127 ? "consum" : (ival == 111 ? "-10dB" : ""));
+	sprintf(text, "%03i %s", ival, ival == 127 ? "consumer" : (ival == 111 ? "-10dB" : ""));
 	gtk_label_set_text(av_adc_volume_label[idx], text);
 	if ((err = snd_ctl_elem_write(ctl, val)) < 0)
 		g_print("Unable to write adc volume: %s\n", snd_strerror(err));
