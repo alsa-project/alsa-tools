@@ -58,10 +58,19 @@ extern GtkWidget *mixer_stereo_toggle[20];
 
 extern GtkWidget *router_radio[10][12];
 
-extern GtkWidget *hw_master_clock_xtal_radio;
+//extern GtkWidget *hw_master_clock_xtal_radio;
+extern GtkWidget *hw_master_clock_xtal_22050;
+extern GtkWidget *hw_master_clock_xtal_32000;
+extern GtkWidget *hw_master_clock_xtal_44100;
+extern GtkWidget *hw_master_clock_xtal_48000;
+extern GtkWidget *hw_master_clock_xtal_88200;
+extern GtkWidget *hw_master_clock_xtal_96000;
 extern GtkWidget *hw_master_clock_spdif_radio;
 extern GtkWidget *hw_master_clock_word_radio;
 extern GtkWidget *hw_master_clock_status_label;
+
+extern GtkWidget *hw_rate_locking_check;
+extern GtkWidget *hw_rate_reset_check;
 
 extern GtkObject *hw_volume_change_adj;
 extern GtkWidget *hw_volume_change_spin;
@@ -100,8 +109,10 @@ extern GtkWidget *hw_spdif_input_optical_radio;
 
 extern GtkObject *av_dac_volume_adj[];
 extern GtkObject *av_adc_volume_adj[];
+extern GtkObject *av_ipga_volume_adj[];
 extern GtkLabel *av_dac_volume_label[];
 extern GtkLabel *av_adc_volume_label[];
+extern GtkLabel *av_ipga_volume_label[];
 extern GtkWidget *av_dac_sense_radio[][4];
 extern GtkWidget *av_adc_sense_radio[][4];
 
@@ -125,8 +136,12 @@ void patchbay_init(void);
 void patchbay_postinit(void);
 
 void master_clock_update(void);
-void master_clock_toggled(GtkWidget *togglebutton, gpointer data);
 gint master_clock_status_timeout_callback(gpointer data);
+void internal_clock_toggled(GtkWidget *togglebutton, gpointer data);
+void rate_locking_update(void);
+void rate_locking_toggled(GtkWidget *togglebutton, gpointer data);
+void rate_reset_update(void);
+void rate_reset_toggled(GtkWidget *togglebutton, gpointer data);
 void volume_change_rate_update(void);
 void volume_change_rate_adj(GtkAdjustment *adj, gpointer data);
 void profi_data_toggled(GtkWidget *togglebutton, gpointer data);
@@ -146,6 +161,7 @@ void analog_volume_init(void);
 void analog_volume_postinit(void);
 int envy_dac_volumes(void);
 int envy_adc_volumes(void);
+int envy_ipga_volumes(void);
 int envy_dac_senses(void);
 int envy_adc_senses(void);
 int envy_dac_sense_items(void);
@@ -156,10 +172,12 @@ int envy_analog_volume_available(void);
 
 void dac_volume_update(int idx);
 void adc_volume_update(int idx);
+void ipga_volume_update(int idx);
 void dac_sense_update(int idx);
 void adc_sense_update(int idx);
 void dac_volume_adjust(GtkAdjustment *adj, gpointer data);
 void adc_volume_adjust(GtkAdjustment *adj, gpointer data);
+void ipga_volume_adjust(GtkAdjustment *adj, gpointer data);
 void dac_sense_toggled(GtkWidget *togglebutton, gpointer data);
 void adc_sense_toggled(GtkWidget *togglebutton, gpointer data);
 

@@ -46,8 +46,12 @@ void control_input_callback(gpointer data, gint source, GdkInputCondition condit
 			spdif_input_update();
 		else if (!strcmp(name, "Delta IEC958 Output Defaults"))
 			spdif_output_update();
-		else if (!strcmp(name, "Multi Track IEC958 Master"))
+		else if (!strcmp(name, "Multi Track Internal Clock"))
 			master_clock_update();
+		else if (!strcmp(name, "Multi Track Rate Locking"))
+			rate_locking_update();
+		else if (!strcmp(name, "Multi Track Rate Reset"))
+			rate_reset_update();
 		else if (!strcmp(name, "Multi Playback Volume"))
 			mixer_update_stream(index + 1, 1, 0);
 		else if (!strcmp(name, "Multi Capture Volume"))
@@ -64,6 +68,8 @@ void control_input_callback(gpointer data, gint source, GdkInputCondition condit
 			dac_volume_update(index);
 		else if (!strcmp(name, "ADC Volume"))
 			adc_volume_update(index);
+		else if (!strcmp(name, "IPGA Analog Capture Volume"))
+			ipga_volume_update(index);
 		else if (!strcmp(name, "Output Sensitivity Switch"))
 			dac_sense_update(index);
 		else if (!strcmp(name, "Input Sensitivity Switch"))

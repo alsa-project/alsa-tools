@@ -19,8 +19,10 @@
 
 #include "envy24control.h"
 
-static snd_ctl_elem_value_t *spdif_master;
+static snd_ctl_elem_value_t *internal_clock;
 static snd_ctl_elem_value_t *word_clock_sync;
+static snd_ctl_elem_value_t *rate_locking;
+static snd_ctl_elem_value_t *rate_reset;
 static snd_ctl_elem_value_t *volume_rate;
 static snd_ctl_elem_value_t *spdif_input;
 static snd_ctl_elem_value_t *spdif_output;
@@ -35,33 +37,36 @@ static int is_active(GtkWidget *widget)
 
 void master_clock_update(void)
 {
-	int err;
+	int err, rate;
 	
-	if ((err = snd_ctl_elem_read(ctl, spdif_master)) < 0)
-		g_print("Unable to read S/PDIF master state: %s\n", snd_strerror(err));
+	if ((err = snd_ctl_elem_read(ctl, internal_clock)) < 0)
+		g_print("Unable to read Internal Clock state: %s\n", snd_strerror(err));
 	if (card_eeprom.subvendor == ICE1712_SUBDEVICE_DELTA1010) {
 		if ((err = snd_ctl_elem_read(ctl, word_clock_sync)) < 0)
 			g_print("Unable to read word clock sync selection: %s\n", snd_strerror(err));
 	}
-	if (snd_ctl_elem_value_get_boolean(spdif_master, 0)) {
+	if (snd_ctl_elem_value_get_enumerated(internal_clock, 0) == 13) {
 		if (snd_ctl_elem_value_get_boolean(word_clock_sync, 0)) {
 			toggle_set(hw_master_clock_word_radio, TRUE);
 		} else {
 			toggle_set(hw_master_clock_spdif_radio, TRUE);
 		}
 	} else {
-		toggle_set(hw_master_clock_xtal_radio, TRUE);
+//		toggle_set(hw_master_clock_xtal_radio, TRUE);
+		rate = snd_ctl_elem_value_get_enumerated(internal_clock, 0);
+		switch (rate) {
+		case 5: toggle_set(hw_master_clock_xtal_22050, TRUE); break;
+		case 7: toggle_set(hw_master_clock_xtal_32000, TRUE); break;
+		case 8: toggle_set(hw_master_clock_xtal_44100, TRUE); break;
+		case 9: toggle_set(hw_master_clock_xtal_48000, TRUE); break;
+		case 11: toggle_set(hw_master_clock_xtal_88200, TRUE); break;
+		case 12: toggle_set(hw_master_clock_xtal_96000, TRUE); break;
+		default:
+			    g_print("Error in rate: %d\n", rate);
+			    break;
+		}
 	}
 	master_clock_status_timeout_callback(NULL);
-}
-
-static void master_clock_spdif_master(int on)
-{
-	int err;
-
-	snd_ctl_elem_value_set_boolean(spdif_master, 0, on ? 1 : 0);
-	if ((err = snd_ctl_elem_write(ctl, spdif_master)) < 0)
-		g_print("Unable to write S/PDIF master state: %s\n", snd_strerror(err));
 }
 
 static void master_clock_word_select(int on)
@@ -75,22 +80,40 @@ static void master_clock_word_select(int on)
 		g_print("Unable to write word clock sync selection: %s\n", snd_strerror(err));
 }
 
-void master_clock_toggled(GtkWidget *togglebutton, gpointer data)
+static void internal_clock_set(int xrate)
+{
+	int err;
+
+	master_clock_word_select(0);
+	snd_ctl_elem_value_set_enumerated(internal_clock, 0, xrate);
+	if ((err = snd_ctl_elem_write(ctl, internal_clock)) < 0)
+		g_print("Unable to write internal clock rate: %s\n", snd_strerror(err));
+}
+
+void internal_clock_toggled(GtkWidget *togglebutton, gpointer data)
 {
 	char *what = (char *) data;
 
 	if (!is_active(togglebutton))
 		return;
-	if (!strcmp(what, "Xtal")) {
-		master_clock_spdif_master(0);
+	if (!strcmp(what, "22050")) {
+		internal_clock_set(5);
+	} else if (!strcmp(what, "32000")) {
+		internal_clock_set(7);
+	} else if (!strcmp(what, "44100")) {
+		internal_clock_set(8);
+	} else if (!strcmp(what, "48000")) {
+		internal_clock_set(9);
+	} else if (!strcmp(what, "88200")) {
+		internal_clock_set(11);
+	} else if (!strcmp(what, "96000")) {
+		internal_clock_set(12);
 	} else if (!strcmp(what, "SPDIF")) {
-		master_clock_spdif_master(1);
-		master_clock_word_select(0);
+		internal_clock_set(13);
 	} else if (!strcmp(what, "WordClock")) {
-		master_clock_spdif_master(1);
 		master_clock_word_select(1);
 	} else {
-		g_print("master_clock_toggled: %s ???\n", what);
+		g_print("internal_clock_toggled: %s ???\n", what);
 	}
 }
 
@@ -109,6 +132,74 @@ gint master_clock_status_timeout_callback(gpointer data)
 	gtk_label_set_text(GTK_LABEL(hw_master_clock_status_label),
 			   snd_ctl_elem_value_get_boolean(sw, 0) ? "Locked" : "No signal");
 	return TRUE;
+}
+
+void rate_locking_update(void)
+{
+	int err;
+	
+	if ((err = snd_ctl_elem_read(ctl, rate_locking)) < 0)
+		g_print("Unable to read rate locking state: %s\n", snd_strerror(err));
+	if (snd_ctl_elem_value_get_boolean(rate_locking, 0))
+			toggle_set(hw_rate_locking_check, TRUE);
+}
+
+void rate_reset_update(void)
+{
+	int err;
+	
+	if ((err = snd_ctl_elem_read(ctl, rate_reset)) < 0)
+		g_print("Unable to read rate reset state: %s\n", snd_strerror(err));
+	if (snd_ctl_elem_value_get_boolean(rate_reset, 0))
+			toggle_set(hw_rate_reset_check, TRUE);
+}
+
+static void rate_locking_set(int on)
+{
+	int err;
+
+	snd_ctl_elem_value_set_boolean(rate_locking, 0, on ? 1 : 0);
+	if ((err = snd_ctl_elem_write(ctl, rate_locking)) < 0)
+		g_print("Unable to write rate locking state: %s\n", snd_strerror(err));
+}
+
+static void rate_reset_set(int on)
+{
+	int err;
+
+	snd_ctl_elem_value_set_boolean(rate_reset, 0, on ? 1 : 0);
+	if ((err = snd_ctl_elem_write(ctl, rate_reset)) < 0)
+		g_print("Unable to write rate reset state: %s\n", snd_strerror(err));
+}
+
+void rate_locking_toggled(GtkWidget *togglebutton, gpointer data)
+{
+	char *what = (char *) data;
+
+	if (!is_active(togglebutton)) {
+		rate_locking_set(0);
+		return;
+	}
+	if (!strcmp(what, "locked")) {
+		rate_locking_set(1);
+	} else {
+		g_print("rate_locking_toggled: %s ???\n", what);
+	}
+}
+
+void rate_reset_toggled(GtkWidget *togglebutton, gpointer data)
+{
+	char *what = (char *) data;
+
+	if (!is_active(togglebutton)) {
+		rate_reset_set(0);
+		return;
+	}
+	if (!strcmp(what, "reset")) {
+		rate_reset_set(1);
+	} else {
+		g_print("rate_reset_toggled: %s ???\n", what);
+	}
 }
 
 void volume_change_rate_update(void)
@@ -406,8 +497,10 @@ void spdif_input_toggled(GtkWidget *togglebutton, gpointer data)
 
 void hardware_init(void)
 {
-	if (snd_ctl_elem_value_malloc(&spdif_master) < 0 ||
+	if (snd_ctl_elem_value_malloc(&internal_clock) < 0 ||
 	    snd_ctl_elem_value_malloc(&word_clock_sync) < 0 ||
+	    snd_ctl_elem_value_malloc(&rate_locking) < 0 ||
+	    snd_ctl_elem_value_malloc(&rate_reset) < 0 ||
 	    snd_ctl_elem_value_malloc(&volume_rate) < 0 ||
 	    snd_ctl_elem_value_malloc(&spdif_input) < 0 ||
 	    snd_ctl_elem_value_malloc(&spdif_output) < 0) {
@@ -415,11 +508,17 @@ void hardware_init(void)
 		exit(1);
 	}
 
-	snd_ctl_elem_value_set_interface(spdif_master, SND_CTL_ELEM_IFACE_MIXER);
-	snd_ctl_elem_value_set_name(spdif_master, "Multi Track IEC958 Master");
+	snd_ctl_elem_value_set_interface(internal_clock, SND_CTL_ELEM_IFACE_MIXER);
+	snd_ctl_elem_value_set_name(internal_clock, "Multi Track Internal Clock");
 
 	snd_ctl_elem_value_set_interface(word_clock_sync, SND_CTL_ELEM_IFACE_PCM);
 	snd_ctl_elem_value_set_name(word_clock_sync, "Word Clock Sync");
+
+	snd_ctl_elem_value_set_interface(rate_locking, SND_CTL_ELEM_IFACE_MIXER);
+	snd_ctl_elem_value_set_name(rate_locking, "Multi Track Rate Locking");
+
+	snd_ctl_elem_value_set_interface(rate_reset, SND_CTL_ELEM_IFACE_MIXER);
+	snd_ctl_elem_value_set_name(rate_reset, "Multi Track Rate Reset");
 
 	snd_ctl_elem_value_set_interface(volume_rate, SND_CTL_ELEM_IFACE_MIXER);
 	snd_ctl_elem_value_set_name(volume_rate, "Multi Track Volume Rate");
@@ -434,6 +533,8 @@ void hardware_init(void)
 void hardware_postinit(void)
 {
 	master_clock_update();
+	rate_locking_update();
+	rate_reset_update();
 	volume_change_rate_update();
 	spdif_input_update();
 	spdif_output_update();

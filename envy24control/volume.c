@@ -27,11 +27,13 @@
 
 #define DAC_VOLUME_NAME	"DAC Volume"
 #define ADC_VOLUME_NAME	"ADC Volume"
+#define IPGA_VOLUME_NAME "IPGA Analog Capture Volume"
 #define DAC_SENSE_NAME	"Output Sensitivity Switch"
 #define ADC_SENSE_NAME	"Input Sensitivity Switch"
 
 static int dac_volumes;
 static int adc_volumes;
+static int ipga_volumes;
 static int dac_senses;
 static int adc_senses;
 static int dac_sense_items;
@@ -47,6 +49,11 @@ int envy_dac_volumes(void)
 int envy_adc_volumes(void)
 {
 	return adc_volumes;
+}
+
+int envy_ipga_volumes(void)
+{
+	return ipga_volumes;
 }
 
 int envy_dac_senses(void)
@@ -81,7 +88,7 @@ const char *envy_adc_sense_enum_name(int i)
 
 int envy_analog_volume_available(void)
 {
-	return dac_volumes > 0 || adc_volumes > 0;
+	return dac_volumes > 0 || adc_volumes > 0 || ipga_volumes > 0;
 }
 
 
@@ -118,6 +125,38 @@ void adc_volume_update(int idx)
 	}
 	gtk_adjustment_set_value(GTK_ADJUSTMENT(av_adc_volume_adj[idx]),
 				 -snd_ctl_elem_value_get_integer(val, 0));
+	snd_ctl_elem_value_set_name(val, IPGA_VOLUME_NAME);
+	snd_ctl_elem_value_set_index(val, idx);
+	if ((err = snd_ctl_elem_read(ctl, val)) < 0) {
+		g_print("Unable to read ipga volume: %s\n", snd_strerror(err));
+		return;
+	}
+	gtk_adjustment_set_value(GTK_ADJUSTMENT(av_ipga_volume_adj[idx]),
+				 -0);
+}
+
+void ipga_volume_update(int idx)
+{
+	snd_ctl_elem_value_t *val;
+	int err;
+	snd_ctl_elem_value_alloca(&val);
+	snd_ctl_elem_value_set_interface(val, SND_CTL_ELEM_IFACE_MIXER);
+	snd_ctl_elem_value_set_name(val, IPGA_VOLUME_NAME);
+	snd_ctl_elem_value_set_index(val, idx);
+	if ((err = snd_ctl_elem_read(ctl, val)) < 0) {
+		g_print("Unable to read ipga volume: %s\n", snd_strerror(err));
+		return;
+	}
+	gtk_adjustment_set_value(GTK_ADJUSTMENT(av_ipga_volume_adj[idx]),
+				 -snd_ctl_elem_value_get_integer(val, 0));
+	snd_ctl_elem_value_set_name(val, ADC_VOLUME_NAME);
+	snd_ctl_elem_value_set_index(val, idx);
+	if ((err = snd_ctl_elem_read(ctl, val)) < 0) {
+		g_print("Unable to read adc volume: %s\n", snd_strerror(err));
+		return;
+	}
+	gtk_adjustment_set_value(GTK_ADJUSTMENT(av_adc_volume_adj[idx]),
+				 -127);
 }
 
 void dac_sense_update(int idx)
@@ -192,6 +231,24 @@ void adc_volume_adjust(GtkAdjustment *adj, gpointer data)
 	gtk_label_set_text(av_adc_volume_label[idx], text);
 	if ((err = snd_ctl_elem_write(ctl, val)) < 0)
 		g_print("Unable to write adc volume: %s\n", snd_strerror(err));
+}
+
+void ipga_volume_adjust(GtkAdjustment *adj, gpointer data)
+{
+	int idx = (int)data;
+	snd_ctl_elem_value_t *val;
+	int err, ival = -(int)adj->value;
+	char text[16];
+
+	snd_ctl_elem_value_alloca(&val);
+	snd_ctl_elem_value_set_interface(val, SND_CTL_ELEM_IFACE_MIXER);
+	snd_ctl_elem_value_set_name(val, IPGA_VOLUME_NAME);
+	snd_ctl_elem_value_set_index(val, idx);
+	snd_ctl_elem_value_set_integer(val, 0, ival);
+	sprintf(text, "%03i %s", ival, ival == 0 ? "0dB" : (ival == 36 ? "+18dB" : ""));
+	gtk_label_set_text(av_ipga_volume_label[idx], text);
+	if ((err = snd_ctl_elem_write(ctl, val)) < 0)
+		g_print("Unable to write ipga volume: %s\n", snd_strerror(err));
 }
 
 void dac_sense_toggled(GtkWidget *togglebutton, gpointer data)
@@ -292,6 +349,15 @@ void analog_volume_init(void)
 			adc_sense_name[i] = strdup(snd_ctl_elem_info_get_item_name(info));
 		}
 	}
+
+	for (i = 0; i < 10; i++) {
+		snd_ctl_elem_info_set_name(info, IPGA_VOLUME_NAME);
+		snd_ctl_elem_info_set_numid(info, 0);
+		snd_ctl_elem_info_set_index(info, i);
+		if (snd_ctl_elem_info(ctl, info) < 0)
+			break;
+	}
+	ipga_volumes = i;
 }
 
 void analog_volume_postinit(void)
@@ -305,6 +371,10 @@ void analog_volume_postinit(void)
 	for (i = 0; i < adc_volumes; i++) {
 		adc_volume_update(i);
 		adc_volume_adjust((GtkAdjustment *)av_adc_volume_adj[i], (gpointer)i);
+	}
+	for (i = 0; i < ipga_volumes; i++) {
+		ipga_volume_update(i);
+		ipga_volume_adjust((GtkAdjustment *)av_ipga_volume_adj[i], (gpointer)i);
 	}
 	for (i = 0; i < dac_senses; i++)
 		dac_sense_update(i);

@@ -36,10 +36,23 @@ GtkWidget *mixer_stereo_toggle[20];
 
 GtkWidget *router_radio[10][12];
 
-GtkWidget *hw_master_clock_xtal_radio;
+//GtkWidget *hw_master_clock_xtal_radio;
+GtkWidget *hw_master_clock_xtal_22050;
+GtkWidget *hw_master_clock_xtal_32000;
+GtkWidget *hw_master_clock_xtal_44100;
+GtkWidget *hw_master_clock_xtal_48000;
+GtkWidget *hw_master_clock_xtal_88200;
+GtkWidget *hw_master_clock_xtal_96000;
 GtkWidget *hw_master_clock_spdif_radio;
 GtkWidget *hw_master_clock_word_radio;
 GtkWidget *hw_master_clock_status_label;
+
+GtkWidget *hw_clock_state_label;
+GtkWidget *hw_clock_state_locked;
+GtkWidget *hw_clock_state_reset;
+
+GtkWidget *hw_rate_locking_check;
+GtkWidget *hw_rate_reset_check;
 
 GtkObject *hw_volume_change_adj;
 GtkWidget *hw_volume_change_spin;
@@ -78,8 +91,10 @@ GtkWidget *hw_spdif_input_optical_radio;
 
 GtkObject *av_dac_volume_adj[10];
 GtkObject *av_adc_volume_adj[10];
+GtkObject *av_ipga_volume_adj[10];
 GtkLabel *av_dac_volume_label[10];
 GtkLabel *av_adc_volume_label[10];
+GtkLabel *av_ipga_volume_label[10];
 GtkWidget *av_dac_sense_radio[10][4];
 GtkWidget *av_adc_sense_radio[10][4];
 
@@ -430,31 +445,81 @@ static void create_master_clock(GtkWidget *fixed)
 	gtk_widget_show(frame);
 	gtk_fixed_put(GTK_FIXED(fixed), frame, 8, 8);
 	gtk_widget_set_uposition(frame, 8, 8);
-	gtk_widget_set_usize(frame, 135, 140);
+	gtk_widget_set_usize(frame, 135, 197);
 
 	fixed1 = gtk_fixed_new();
 	gtk_widget_show(fixed1);
 	gtk_container_add(GTK_CONTAINER(frame), fixed1);	
 
-	radio = gtk_radio_button_new_with_label(group, "Internal Xtal");
-	hw_master_clock_xtal_radio = radio;
+	radio = gtk_radio_button_new_with_label(group, "Int 22050");
+	hw_master_clock_xtal_22050 = radio;
 	group = gtk_radio_button_group(GTK_RADIO_BUTTON(radio));
 	gtk_widget_show(radio);
-	gtk_fixed_put(GTK_FIXED(fixed1), radio, 8, 8);
-	gtk_widget_set_uposition(radio, 8, 8);
-	gtk_widget_set_usize(radio, 115, 24);
+	gtk_fixed_put(GTK_FIXED(fixed1), radio, 24, 0);
+	gtk_widget_set_uposition(radio, 24, 0);
+	gtk_widget_set_usize(radio, 115, 16);
 	gtk_signal_connect(GTK_OBJECT(radio), "toggled",
-			   (GtkSignalFunc)master_clock_toggled, (gpointer)"Xtal");
+			   (GtkSignalFunc)internal_clock_toggled, (gpointer)"22050");
+
+	radio = gtk_radio_button_new_with_label(group, "Int 32000");
+	hw_master_clock_xtal_32000 = radio;
+	group = gtk_radio_button_group(GTK_RADIO_BUTTON(radio));
+	gtk_widget_show(radio);
+	gtk_fixed_put(GTK_FIXED(fixed1), radio, 12, 16);
+	gtk_widget_set_uposition(radio, 12, 16);
+	gtk_widget_set_usize(radio, 115, 16);
+	gtk_signal_connect(GTK_OBJECT(radio), "toggled",
+			   (GtkSignalFunc)internal_clock_toggled, (gpointer)"32000");
+
+	radio = gtk_radio_button_new_with_label(group, "Int 44100");
+	hw_master_clock_xtal_44100 = radio;
+	group = gtk_radio_button_group(GTK_RADIO_BUTTON(radio));
+	gtk_widget_show(radio);
+	gtk_fixed_put(GTK_FIXED(fixed1), radio, 12, 32);
+	gtk_widget_set_uposition(radio, 12, 32);
+	gtk_widget_set_usize(radio, 115, 16);
+	gtk_signal_connect(GTK_OBJECT(radio), "toggled",
+			   (GtkSignalFunc)internal_clock_toggled, (gpointer)"44100");
+
+	radio = gtk_radio_button_new_with_label(group, "Int 48000");
+	hw_master_clock_xtal_48000 = radio;
+	group = gtk_radio_button_group(GTK_RADIO_BUTTON(radio));
+	gtk_widget_show(radio);
+	gtk_fixed_put(GTK_FIXED(fixed1), radio, 12, 48);
+	gtk_widget_set_uposition(radio, 12, 48);
+	gtk_widget_set_usize(radio, 115, 16);
+	gtk_signal_connect(GTK_OBJECT(radio), "toggled",
+			   (GtkSignalFunc)internal_clock_toggled, (gpointer)"48000");
+
+	radio = gtk_radio_button_new_with_label(group, "Int 88200");
+	hw_master_clock_xtal_88200 = radio;
+	group = gtk_radio_button_group(GTK_RADIO_BUTTON(radio));
+	gtk_widget_show(radio);
+	gtk_fixed_put(GTK_FIXED(fixed1), radio, 12, 64);
+	gtk_widget_set_uposition(radio, 12, 64);
+	gtk_widget_set_usize(radio, 115, 16);
+	gtk_signal_connect(GTK_OBJECT(radio), "toggled",
+			   (GtkSignalFunc)internal_clock_toggled, (gpointer)"88200");
+
+	radio = gtk_radio_button_new_with_label(group, "Int 96000");
+	hw_master_clock_xtal_96000 = radio;
+	group = gtk_radio_button_group(GTK_RADIO_BUTTON(radio));
+	gtk_widget_show(radio);
+	gtk_fixed_put(GTK_FIXED(fixed1), radio, 12, 80);
+	gtk_widget_set_uposition(radio, 12, 80);
+	gtk_widget_set_usize(radio, 115, 16);
+	gtk_signal_connect(GTK_OBJECT(radio), "toggled",
+			   (GtkSignalFunc)internal_clock_toggled, (gpointer)"96000");
 
 	radio = gtk_radio_button_new_with_label(group, "S/PDIF In");
 	hw_master_clock_spdif_radio = radio;
 	group = gtk_radio_button_group(GTK_RADIO_BUTTON(radio));
 	gtk_widget_show(radio);
-	gtk_fixed_put(GTK_FIXED(fixed1), radio, 8, 32);
-	gtk_widget_set_uposition(radio, 8, 32);
+	gtk_fixed_put(GTK_FIXED(fixed1), radio, 8, 104);
+	gtk_widget_set_uposition(radio, 8, 104);
 	gtk_widget_set_usize(radio, 115, 24);
 	gtk_signal_connect(GTK_OBJECT(radio), "toggled",
-			   (GtkSignalFunc)master_clock_toggled, (gpointer)"SPDIF");
+			   (GtkSignalFunc)internal_clock_toggled, (gpointer)"SPDIF");
 
 	if (card_eeprom.subvendor != ICE1712_SUBDEVICE_DELTA1010)
 		return;
@@ -463,16 +528,16 @@ static void create_master_clock(GtkWidget *fixed)
 	hw_master_clock_word_radio = radio;
 	group = gtk_radio_button_group(GTK_RADIO_BUTTON(radio));
 	gtk_widget_show(radio);
-	gtk_fixed_put(GTK_FIXED(fixed1), radio, 8, 56);
-	gtk_widget_set_uposition(radio, 8, 56);
+	gtk_fixed_put(GTK_FIXED(fixed1), radio, 8, 128);
+	gtk_widget_set_uposition(radio, 8, 128);
 	gtk_widget_set_usize(radio, 115, 24);
 	gtk_signal_connect(GTK_OBJECT(radio), "toggled",
-			   (GtkSignalFunc)master_clock_toggled, (gpointer)"WordClock");
+			   (GtkSignalFunc)internal_clock_toggled, (gpointer)"WordClock");
 
 	viewport = gtk_viewport_new(NULL, NULL);
 	gtk_widget_show(viewport);
-	gtk_fixed_put(GTK_FIXED(fixed1), viewport, 9, 80);
-	gtk_widget_set_uposition(viewport, 9, 80);
+	gtk_fixed_put(GTK_FIXED(fixed1), viewport, 9, 147);
+	gtk_widget_set_uposition(viewport, 9, 147);
 	gtk_widget_set_usize(viewport, 90, 26);
 
 	fixed2 = gtk_fixed_new();
@@ -487,6 +552,42 @@ static void create_master_clock(GtkWidget *fixed)
 	gtk_widget_set_usize(label, 86, 16);
 }
 
+static void create_rate_state(GtkWidget *fixed)
+{
+	GtkWidget *frame;
+	GtkWidget *fixed1;
+	GtkWidget *check;
+
+	frame = gtk_frame_new("Rate State");
+	gtk_widget_show(frame);
+	gtk_fixed_put(GTK_FIXED(fixed), frame, 8, 208);
+	gtk_widget_set_uposition(frame, 8, 208);
+	gtk_widget_set_usize(frame, 135, 39);
+
+	fixed1 = gtk_fixed_new();
+	gtk_widget_show(fixed1);
+	gtk_container_add(GTK_CONTAINER(frame), fixed1);	
+
+	check = gtk_check_button_new_with_label("locked");
+	hw_rate_locking_check = check;
+	gtk_widget_show(check);
+	gtk_fixed_put(GTK_FIXED(fixed1), check, 8, 0);
+	gtk_widget_set_uposition(check, 8, 0);
+	gtk_widget_set_usize(check, 115, 16);
+	gtk_signal_connect(GTK_OBJECT(check), "toggled",
+			   (GtkSignalFunc)rate_locking_toggled, (gpointer)"locked");
+
+	check = gtk_check_button_new_with_label("reset");
+	hw_rate_reset_check = check;
+	gtk_widget_show(check);
+	gtk_fixed_put(GTK_FIXED(fixed1), check, 76, 0);
+	gtk_widget_set_uposition(check, 76, 0);
+	gtk_widget_set_usize(check, 115, 16);
+	gtk_signal_connect(GTK_OBJECT(check), "toggled",
+			   (GtkSignalFunc)rate_reset_toggled, (gpointer)"reset");
+
+}
+
 static void create_volume_change(GtkWidget *fixed)
 {
 	GtkWidget *frame;
@@ -497,9 +598,9 @@ static void create_volume_change(GtkWidget *fixed)
 
 	frame = gtk_frame_new("Volume Change");
 	gtk_widget_show(frame);
-	gtk_fixed_put(GTK_FIXED(fixed), frame, 8, 167);
-	gtk_widget_set_uposition(frame, 8, 167);
-	gtk_widget_set_usize(frame, 135, 140);
+	gtk_fixed_put(GTK_FIXED(fixed), frame, 8, 250);
+	gtk_widget_set_uposition(frame, 8, 250);
+	gtk_widget_set_usize(frame, 135, 58);
 
 	fixed1 = gtk_fixed_new();
 	gtk_widget_show(fixed1);
@@ -972,6 +1073,7 @@ static void create_hardware(GtkWidget *main, GtkWidget *notebook, int page)
 	gtk_notebook_set_tab_label(GTK_NOTEBOOK(notebook), gtk_notebook_get_nth_page(GTK_NOTEBOOK(notebook), page), label);
 
 	create_master_clock(fixed);
+	create_rate_state(fixed);
 	create_volume_change(fixed);
 	create_spdif_output_settings(fixed);
 	create_spdif_input_select(fixed);
@@ -1138,6 +1240,41 @@ static void create_analog_volume(GtkWidget *main, GtkWidget *notebook, int page)
 			gtk_widget_set_usize(radio, 66, 24);
 			group = gtk_radio_button_group(GTK_RADIO_BUTTON(radio));
 		}
+	}
+
+	/* create IPGA */
+	for (i = 0; i < envy_ipga_volumes(); i++) {
+		char name[32];
+		sprintf(name, "IPGA %d", i);
+		frame = gtk_frame_new(name);
+		gtk_widget_show(frame);
+		gtk_frame_set_shadow_type(GTK_FRAME(frame), GTK_SHADOW_IN);
+		gtk_fixed_put(GTK_FIXED(fixed), frame, 2 + (i + envy_dac_volumes() + envy_adc_volumes()) * 120, 2);
+		gtk_widget_set_uposition(frame, 2 + (i + envy_dac_volumes() + envy_adc_volumes()) * 120, 2);
+		gtk_widget_set_usize(frame, 115, 288);
+
+		fixed1 = gtk_fixed_new();
+		gtk_widget_show(fixed1);
+		gtk_container_add(GTK_CONTAINER(frame), fixed1);	
+
+		adj = gtk_adjustment_new(0, -36, 0, 1, 16, 0);
+		av_ipga_volume_adj[i] = adj;
+		vscale = gtk_vscale_new(GTK_ADJUSTMENT(adj));
+		gtk_scale_set_draw_value(GTK_SCALE(vscale), FALSE);
+		gtk_widget_show(vscale);
+		gtk_fixed_put(GTK_FIXED(fixed1), vscale, 26, 2);
+		gtk_widget_set_usize(vscale, 66, 180);
+		gtk_scale_set_value_pos(GTK_SCALE(vscale), GTK_POS_BOTTOM);
+		gtk_scale_set_digits(GTK_SCALE(vscale), 0);
+		gtk_signal_connect(GTK_OBJECT(adj), "value_changed",
+				   GTK_SIGNAL_FUNC(ipga_volume_adjust), (gpointer)(i));
+
+	        label = gtk_label_new("100 (-000dB)");
+	        av_ipga_volume_label[i] = (GtkLabel *)label;
+	        gtk_widget_show(label);
+		gtk_fixed_put(GTK_FIXED(fixed1), label, 4, 182);
+		gtk_widget_set_uposition(label, 4, 182);
+		gtk_widget_set_usize(label, 105, 16);
 	}
 }
 
