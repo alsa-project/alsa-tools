@@ -174,8 +174,14 @@ int output_play(sint_16* output_samples, uint_32 num_frames)
 	snd_pcm_sframes_t res = 0;
 
 	do {
-		if (res == -EPIPE)
+		if (res == -EPIPE)		/* underrun */
 			res = snd_pcm_prepare(pcm);
+		else if (res == -ESTRPIPE) {	/* suspend */
+			while ((res = snd_pcm_resume(pcm)) == -EBUSY)
+				sleep(1);
+			if (res < 0)
+				res = snd_pcm_prepare(pcm);
+		}
 		res = res < 0 ? res : snd_pcm_writei(pcm, (void *)output_samples, num_frames);
 		if (res > 0) {
 			output_samples += out_config.channels * res;
