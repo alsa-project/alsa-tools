@@ -159,7 +159,7 @@ void parse_cli_args(int argc, char *argv[])
 
 		}
 next_cli_arg:
-
+	;
 	}
 }
 
