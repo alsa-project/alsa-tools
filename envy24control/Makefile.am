@@ -2,9 +2,11 @@ AM_CFLAGS = @ENVY24CONTROL_CFLAGS@
 bin_PROGRAMS = envy24control
 man_MANS = envy24control.1
 envy24control_SOURCES = envy24control.c envy24control.h levelmeters.c \
-                        mixer.c patchbay.c hardware.c driverevents.c volume.c profiles.c
+                        mixer.c patchbay.c hardware.c driverevents.c volume.c \
+			profiles.c profiles.h
 envy24control_LDFLAGS = @ENVY24CONTROL_LIBS@
-EXTRA_DIST = envy24control.1 depcomp configure.in-gtk2
+EXTRA_DIST = envy24control.1 depcomp configure.in-gtk2 \
+	     strstr_icase_blank.c new_process.c
 AUTOMAKE_OPTIONS = foreign
 
 alsa-dist: distdir
