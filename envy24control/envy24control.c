@@ -1972,7 +1972,7 @@ int main(int argc, char **argv)
 	/* Go through gtk initialization */
         gtk_init(&argc, &argv);
 
-	name = "hw:0";
+	name = NULL; /* probe */
 	card_number = 0;
 	input_channels = MAX_INPUT_CHANNELS;
 	output_channels = MAX_OUTPUT_CHANNELS;
@@ -2055,17 +2055,40 @@ int main(int argc, char **argv)
 		default_profile = argv[optind];
 	}
 
-	if ((err = snd_ctl_open(&ctl, name, 0)) < 0) {
-		fprintf(stderr, "snd_ctl_open: %s\n", snd_strerror(err));
-		exit(EXIT_FAILURE);
-	}
-	if ((err = snd_ctl_card_info(ctl, hw_info)) < 0) {
-		fprintf(stderr, "snd_ctl_card_info: %s\n", snd_strerror(err));
-		exit(EXIT_FAILURE);
-	}
-	if (strcmp(snd_ctl_card_info_get_driver(hw_info), "ICE1712")) {
-		fprintf(stderr, "invalid card type (driver is %s)\n", snd_ctl_card_info_get_driver(hw_info));
-		exit(EXIT_FAILURE);
+	if (! name) {
+		/* probe cards */
+		static char cardname[8];
+		/* FIXME: hardcoded max number of cards */
+		for (card_number = 0; card_number < 8; card_number++) {
+			sprintf(cardname, "hw:%d", card_number);
+			if (snd_ctl_open(&ctl, cardname, 0) < 0)
+				continue;
+			if (snd_ctl_card_info(ctl, hw_info) < 0 ||
+			    strcmp(snd_ctl_card_info_get_driver(hw_info), "ICE1712")) {
+				snd_ctl_close(ctl);
+				continue;
+			}
+			/* found */
+			name = cardname;
+			break;
+		}
+		if (! name) {
+			fprintf(stderr, "No ICE1712 cards found\n");
+			exit(EXIT_FAILURE);
+		}
+	} else {
+		if ((err = snd_ctl_open(&ctl, name, 0)) < 0) {
+			fprintf(stderr, "snd_ctl_open: %s\n", snd_strerror(err));
+			exit(EXIT_FAILURE);
+		}
+		if ((err = snd_ctl_card_info(ctl, hw_info)) < 0) {
+			fprintf(stderr, "snd_ctl_card_info: %s\n", snd_strerror(err));
+			exit(EXIT_FAILURE);
+		}
+		if (strcmp(snd_ctl_card_info_get_driver(hw_info), "ICE1712")) {
+			fprintf(stderr, "invalid card type (driver is %s)\n", snd_ctl_card_info_get_driver(hw_info));
+			exit(EXIT_FAILURE);
+		}
 	}
 
 	snd_ctl_elem_value_set_interface(val, SND_CTL_ELEM_IFACE_CARD);
