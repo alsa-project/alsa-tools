@@ -79,7 +79,7 @@ void upload_firmware(int card)
 	return;
     }
 
-    firmware.firmware_data = (unsigned long *)code;
+    firmware.firmware_data = code;
     switch (version.io_type) {
     case Multiface:
 	if (version.firmware_rev == 0xa) {
