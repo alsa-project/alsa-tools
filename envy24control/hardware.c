@@ -714,7 +714,7 @@ void phono_input_toggled(GtkWidget *togglebutton, gpointer data)
 
         if (!is_active(togglebutton))
                 return;
-        if (!strcmp(str, "On"))
+        if (!strcmp(str, "Phono"))
                 snd_ctl_elem_value_set_boolean(phono_input, 0, 1);
         else
                 snd_ctl_elem_value_set_boolean(phono_input, 0, 0);

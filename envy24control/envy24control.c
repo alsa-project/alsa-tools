@@ -387,6 +387,16 @@ static void create_router_frame(GtkWidget *box, int stream, int pos)
 		"H/W In 8"
 	};
 
+	if (card_eeprom.subvendor == ICE1712_SUBDEVICE_DMX6FIRE)
+	{
+		table[2] = "CD In L";
+                table[3] = "CD In R";
+                table[4] = "Line In L";
+                table[5] = "Line In R";
+                table[6] = "Phono/Mic In L";
+                table[7] = "Phono/Mic In R";
+	}
+
 	if (stream <= 8) {
 		sprintf(str, "H/W Out %i (%s)", stream, stream & 1 ? "L" : "R");
 	} else if (stream == 9) {
@@ -1438,6 +1448,23 @@ static void create_analog_volume(GtkWidget *main, GtkWidget *notebook, int page)
 	GtkWidget *scrolledwindow;
 	GtkWidget *viewport;
 	int i, j;
+	static char* dmx6fire_inputs[6] = {
+		"CD In (L)",
+		"CD In (R)",
+		"Line In (L)",
+		"Line In (R)",
+		"Phono In (L)",
+		"Phono In (R)"
+	};
+	static char* dmx6fire_outputs[6] = {
+		"Front (L)",
+		"Front (R)",
+		"Rear (L)",
+		"Rear (R)",
+		"Centre",
+		"LFE"
+	};
+
 
 	scrolledwindow = gtk_scrolled_window_new(NULL, NULL);
 	gtk_widget_show(scrolledwindow);
@@ -1473,6 +1500,13 @@ static void create_analog_volume(GtkWidget *main, GtkWidget *notebook, int page)
 		gtk_widget_show(vbox);
 		gtk_container_add(GTK_CONTAINER(frame), vbox);
 		gtk_container_set_border_width(GTK_CONTAINER(vbox), 6);
+
+		/* Add friendly labels for DMX 6Fires */
+		if((card_eeprom.subvendor == ICE1712_SUBDEVICE_DMX6FIRE) && (i < 6)){
+			label = gtk_label_new(dmx6fire_outputs[i]);
+			gtk_widget_show(label);
+			gtk_box_pack_start(GTK_BOX(vbox), label, FALSE, TRUE, 6);
+		}
 
 		adj = gtk_adjustment_new(0, -(envy_dac_max()), 0, 1, 16, 0);
 		av_dac_volume_adj[i] = adj;
@@ -1523,6 +1557,13 @@ static void create_analog_volume(GtkWidget *main, GtkWidget *notebook, int page)
 		gtk_container_add(GTK_CONTAINER(frame), vbox);
 		gtk_container_set_border_width(GTK_CONTAINER(vbox), 6);
 
+		/* Add friendly labels for DMX 6Fires */
+		if((card_eeprom.subvendor == ICE1712_SUBDEVICE_DMX6FIRE) && (i < 6)){
+			label = gtk_label_new(dmx6fire_inputs[i]);
+			gtk_widget_show(label);
+			gtk_box_pack_start(GTK_BOX(vbox), label, FALSE, TRUE, 6);
+		}
+
 		adj = gtk_adjustment_new(0, -127, 0, 1, 16, 0);
 		av_adc_volume_adj[i] = adj;
 		vscale = gtk_vscale_new(GTK_ADJUSTMENT(adj));
@@ -1572,6 +1613,13 @@ static void create_analog_volume(GtkWidget *main, GtkWidget *notebook, int page)
 		gtk_container_add(GTK_CONTAINER(frame), vbox);
 		gtk_container_set_border_width(GTK_CONTAINER(vbox), 6);
 
+		/* Add friendly labels for DMX 6Fires */
+		if((card_eeprom.subvendor == ICE1712_SUBDEVICE_DMX6FIRE) && (i < 6)){
+			label = gtk_label_new(dmx6fire_inputs[i]);
+			gtk_widget_show(label);
+			gtk_box_pack_start(GTK_BOX(vbox), label, FALSE, TRUE, 6);
+		}
+
 		adj = gtk_adjustment_new(0, -36, 0, 1, 16, 0);
 		av_ipga_volume_adj[i] = adj;
 		vscale = gtk_vscale_new(GTK_ADJUSTMENT(adj));
@@ -1612,6 +1660,8 @@ int main(int argc, char **argv)
 	int npfds;
 	struct pollfd *pfds;
 	int page;
+	int output_channels_set = 0;
+	int input_channels_set = 0;
 	static struct option long_options[] = {
 		{"device", 1, 0, 'D'},
 		{"card", 1, 0, 'c'},
@@ -1652,12 +1702,14 @@ int main(int argc, char **argv)
 				fprintf(stderr, "envy24control: must have 0-8 inputs\n");
 				exit(1);
 			}
+			input_channels_set = 1;
 			break;
 		case 'o':
 			output_channels = atoi(optarg);
 			if (output_channels < 0 || output_channels > 10) {
 				fprintf(stderr, "envy24control: must have 0-10 outputs\n");
 				exit(1);
+			output_channels_set = 1;
 			}
 			break;
 		case 's':
@@ -1694,6 +1746,19 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 	memcpy(&card_eeprom, snd_ctl_elem_value_get_bytes(val), 32);
+
+	/* Set a better default for input_channels and output_channels */
+	if(!input_channels_set) {
+		if(card_eeprom.subvendor == ICE1712_SUBDEVICE_DMX6FIRE) {
+			input_channels = 6;
+		}
+	}
+
+	if(!output_channels_set) {
+		if(card_eeprom.subvendor == ICE1712_SUBDEVICE_DMX6FIRE) {
+			output_channels = 6;
+		}
+	}
 
 	/* Initialize code */
 	level_meters_init();
