@@ -1948,7 +1948,7 @@ int main(int argc, char **argv)
 	snd_ctl_elem_value_t *val;
 	int npfds;
 	struct pollfd *pfds;
-	int midi_fd, midi_channel = -1;
+	int midi_fd = -1, midi_channel = -1;
 	int page;
 	int input_channels_set = 0;
 	int output_channels_set = 0;
