@@ -37,10 +37,7 @@ void control_input_callback(gpointer data, gint source, GdkInputCondition condit
 		return;
 
 	switch (snd_ctl_event_elem_get_interface(ev)) {
-	case SND_CTL_ELEM_IFACE_PCM:
-		if (!strcmp(name, "Multi Track IEC958 Master"))
-			master_clock_update();
-		else if (!strcmp(name, "Word Clock Sync"))
+		if (!strcmp(name, "Word Clock Sync"))
 			master_clock_update();
 		else if (!strcmp(name, "Multi Track Volume Rate"))
 			volume_change_rate_update();
@@ -48,9 +45,9 @@ void control_input_callback(gpointer data, gint source, GdkInputCondition condit
 			spdif_input_update();
 		else if (!strcmp(name, "Delta IEC958 Output Defaults"))
 			spdif_output_update();
-		break;
-	case SND_CTL_ELEM_IFACE_MIXER:
-		if (!strcmp(name, "Multi Playback Volume"))
+		else if (!strcmp(name, "Multi Track IEC958 Master"))
+			master_clock_update();
+		else if (!strcmp(name, "Multi Playback Volume"))
 			mixer_update_stream(index + 1, 1, 0);
 		else if (!strcmp(name, "Multi Capture Volume"))
 			mixer_update_stream(index + 11, 1, 0);

@@ -395,7 +395,7 @@ void hardware_init(void)
 		exit(1);
 	}
 
-	snd_ctl_elem_value_set_interface(spdif_master, SND_CTL_ELEM_IFACE_PCM);
+	snd_ctl_elem_value_set_interface(spdif_master, SND_CTL_ELEM_IFACE_MIXER);
 	snd_ctl_elem_value_set_name(spdif_master, "Multi Track IEC958 Master");
 
 	snd_ctl_elem_value_set_interface(word_clock_sync, SND_CTL_ELEM_IFACE_PCM);
