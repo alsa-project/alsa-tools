@@ -23,9 +23,12 @@
 #include <string.h>
 #include <ctype.h>
 #include <getopt.h>
+#include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <assert.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <sys/ioctl.h>
 #include <stdarg.h>
 #include <alsa/asoundlib.h>
