@@ -1,10 +1,10 @@
-.TH "envy24control" 1 "6 Mar 2004"
+.TH "envy24control" 1 "16 May 2004"
 .SH NAME
 envy24control \- GUI control tool for Envy24 (ice1712) based
 soundcards, under ALSA.
 
 .SH SYNOPSIS
-\fBenvy24control\fP [\fI-c\fP card-number] [\fI-D\fP control-name] [\fI-o\fP 0-num DACs max 8] [\fI-i\fP 0-num ADCs max 8] [\fI-p\fP 0-8] [\fI-s\fP 0-2] [\fI-v\fP 0 or 1]
+\fBenvy24control\fP [\fI-c\fP card-number] [\fI-D\fP control-name] [\fI-o\fP 0-num DACs max 8] [\fI-i\fP 0-num ADCs max 8] [\fI-p\fP 0-8] [\fI-s\fP 0-2] [\fI-f\fP <profiles file name>] [\fI-v\fP] [<profile number>|<profile name>]
 
 .SH DESCRIPTION
 \fBenvy24control\fP allows control of the digital mixer, channel gains
@@ -14,7 +14,7 @@ displays a level meter for each input and output channel.
 
 .SH INVOKING
 
-\fBenvy24control\fP [\fI-c\fP card-number] [\fI-D\fP control-name] [\fI-o\fP 0-num DACs max 8] [\fI-i\fP 0-num ADCs max 8] [\fI-p\fP 0-8] [\fI-s\fP 0-2] [\fI-v\fP 0 or 1]
+\fBenvy24control\fP [\fI-c\fP card-number] [\fI-D\fP control-name] [\fI-o\fP 0-num DACs max 8] [\fI-i\fP 0-num ADCs max 8] [\fI-p\fP 0-8] [\fI-s\fP 0-2] [\fI-f\fP <profiles file name>] [\fI-v\fP] [<profile number>|<profile name>]
 .TP
 If no control-name is given, then the first sound card is used.
 
@@ -49,10 +49,15 @@ Limit number of PCM outputs to display.  Default is 8.
 \fI-s\fP spdif inputs/outputs
 Limit number of SPDIF inputs/outputs to display.  Default is 2.
 .TP
+\fI-f\fP name and path of the profiles file name.
+From/to this file will envy24control read/write the alsactl settings.
+If is not given DEFAULT_PROFILERC or for restore if DEFAULT_PROFILERC
+doesn't exists SYS_PROFILERC will be used.
+.TP
 \fI-v\fP view spdif playback channels in the mixer.
 It is not possible to manage something (muting, volume levels).
 It is only to view the levelmeters.
-Default is '0' - no view. Set to other than '0' to view.
+Default is no view of spdif playback channels in the mixer.
 
 .SH SEE ALSO
 \fB

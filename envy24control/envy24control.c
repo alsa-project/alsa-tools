@@ -24,7 +24,9 @@
 #define _GNU_SOURCE
 #include <getopt.h>
 
-int input_channels, output_channels, pcm_output_channels, spdif_channels, view_spdif_playback;
+int input_channels, output_channels, pcm_output_channels, spdif_channels, view_spdif_playback, card_number;
+char *profiles_file_name, *default_profile;
+
 ice1712_eeprom_t card_eeprom;
 snd_ctl_t *ctl;
 
@@ -116,6 +118,14 @@ GtkLabel *av_adc_volume_label[10];
 GtkLabel *av_ipga_volume_label[10];
 GtkWidget *av_dac_sense_radio[10][4];
 GtkWidget *av_adc_sense_radio[10][4];
+
+struct profile_button {
+	GtkWidget *toggle_button;
+	GtkWidget *entry;
+} profiles_toggle_buttons[MAX_PROFILES];
+
+GtkWidget *active_button = NULL;
+GtkObject *card_number_adj;
 
 
 static void create_mixer_frame(GtkWidget *box, int stream)
@@ -1656,10 +1666,267 @@ static void create_analog_volume(GtkWidget *main, GtkWidget *notebook, int page)
 	}
 }
 
+int index_active_profile()
+{
+	gint index;
+	gboolean found;
+
+	found = FALSE;
+	for (index = 0; index < MAX_PROFILES; index++)
+	{
+		if (active_button == profiles_toggle_buttons[index].toggle_button) {
+			found = TRUE;
+			break;
+		}
+	}
+
+	if (found)
+		return index;
+
+	return NOTFOUND;
+}
+
+int delete_card_number(GtkWidget *delete_button)
+{
+	gint res;
+	gint card_nr;
+	gint index;
+
+	if (!(GTK_TOGGLE_BUTTON (delete_button)->active))
+		return EXIT_SUCCESS;
+
+	card_nr = GTK_ADJUSTMENT (card_number_adj)->value;
+	if ((card_nr < 0) || (card_nr > MAX_CARD_NUMBERS)) {
+		fprintf(stderr, "card number not in [0 ... %d]\n", MAX_CARD_NUMBERS);
+		gtk_toggle_button_set_state(GTK_TOGGLE_BUTTON (delete_button), FALSE);
+		return -EINVAL;
+	}
+
+	res = delete_card(card_number, profiles_file_name);
+	if (res < 0) {
+		gtk_toggle_button_set_state(GTK_TOGGLE_BUTTON (delete_button), FALSE);
+		return res;
+	}
+	if (card_nr == card_number) {
+		for (index = 0; index < MAX_PROFILES; index++)
+		{
+			gtk_entry_set_text(GTK_ENTRY (profiles_toggle_buttons[index].entry), get_profile_name(index + 1, card_number, profiles_file_name));
+		}
+	}
+
+	gtk_toggle_button_set_state(GTK_TOGGLE_BUTTON (delete_button), FALSE);
+
+	return EXIT_SUCCESS;
+}
+
+int restore_active_profile(const gint profile_number)
+{
+	gint res;
+
+	res = save_restore(ALSACTL_OP_RESTORE, profile_number, card_number, profiles_file_name, NULL);
+
+	return res;
+}
+
+int save_active_profile(GtkWidget *save_button)
+{
+	gint res;
+	gint index;
+
+	if (!(GTK_TOGGLE_BUTTON (save_button)->active))
+		return EXIT_SUCCESS;
+	if ((index = index_active_profile()) >= 0) {
+		res = save_restore(ALSACTL_OP_STORE, index + 1, card_number, profiles_file_name, \
+			gtk_entry_get_text(GTK_ENTRY (profiles_toggle_buttons[index].entry)));
+	} else {
+		fprintf(stderr, "No active profile found.\n");
+		gtk_toggle_button_set_state(GTK_TOGGLE_BUTTON (save_button), FALSE);
+		return -EXIT_FAILURE;
+	}
+
+	gtk_toggle_button_set_state(GTK_TOGGLE_BUTTON (save_button), FALSE);
+
+	return res;
+}
+
+void entry_toggle_editable(GtkWidget *toggle_button, GtkWidget *entry)
+{
+	gint index;
+	gint profile_number;
+
+	if (active_button == toggle_button) {
+		gtk_toggle_button_set_state(GTK_TOGGLE_BUTTON (toggle_button), TRUE);
+		gtk_editable_set_editable(GTK_EDITABLE (entry), TRUE);
+		gtk_widget_grab_focus(entry);
+		return;
+	} else if (GTK_TOGGLE_BUTTON (toggle_button)->active) {
+		active_button = toggle_button;
+	}
+	gtk_editable_set_editable(GTK_EDITABLE (entry), GTK_TOGGLE_BUTTON (toggle_button)->active);
+	if (GTK_TOGGLE_BUTTON (toggle_button)->active) {
+		gtk_widget_grab_focus(entry);
+		profile_number = NOTFOUND;
+		for (index = 0; index < MAX_PROFILES; index++)
+		{
+			if (profiles_toggle_buttons[index].toggle_button != toggle_button) {
+				gtk_toggle_button_set_state(GTK_TOGGLE_BUTTON (profiles_toggle_buttons[index].toggle_button), FALSE);
+			} else {
+				profile_number = index + 1;
+			}
+		}
+		if (profile_number >= 0)
+			restore_active_profile(profile_number);
+	}
+}
+
+void enter_callback( const GtkWidget *widget, const GtkWidget *entry )
+{
+	const gchar *entry_text;
+	entry_text = gtk_entry_get_text (GTK_ENTRY (entry));
+	printf("Inhalt : %s\n", entry_text);
+}
+
+static GtkWidget *toggle_button_entry(const GtkWidget *parent, const gchar *profile_name, const gint index)
+{
+	GtkWidget *box;
+	GtkWidget *entry_label;
+	GtkWidget *toggle_button;
+
+	box = gtk_hbox_new(FALSE, 0);
+
+	toggle_button = gtk_toggle_button_new();
+	gtk_container_border_width(GTK_CONTAINER(toggle_button), 3);
+
+	profiles_toggle_buttons[index].entry = entry_label = gtk_entry_new();
+	gtk_entry_set_max_length(GTK_ENTRY (entry_label), MAX_PROFILE_NAME_LENGTH);
+	gtk_entry_set_text(GTK_ENTRY (entry_label), profile_name);
+	/* only the active profile can be modified */
+	gtk_editable_set_editable(GTK_EDITABLE (entry_label), FALSE);
+	gtk_signal_connect(GTK_OBJECT (entry_label), "activate",
+			 GTK_SIGNAL_FUNC (enter_callback),
+			 (gpointer) entry_label);
+	gtk_signal_connect(GTK_OBJECT (toggle_button), "toggled",
+			 GTK_SIGNAL_FUNC (entry_toggle_editable),
+			 (gpointer) entry_label);
+
+	gtk_box_pack_start(GTK_BOX (box), entry_label, FALSE, FALSE, 20);
+	gtk_widget_show(entry_label);
+	gtk_widget_show(box);
+	gtk_container_add(GTK_CONTAINER (toggle_button), box);
+	gtk_widget_show(toggle_button);
+	return (toggle_button);
+}
+
+static void create_profiles(GtkWidget *main, GtkWidget *notebook, int page)
+{
+	GtkWidget *label;
+	GtkWidget *label_card_nr;
+	GtkWidget *vbox;
+	GtkWidget *vbox1;
+	GtkWidget *hbox1;
+	GtkWidget *hbox2;
+	GtkWidget *save_button;
+	GtkWidget *delete_button;
+	GtkObject *card_button_adj;
+	GtkWidget *card_button;
+	gint index;
+	gint profile_number;
+	gchar *profile_name;
+	gint max_profiles;
+	gint max_digits;
+
+	vbox = gtk_vbox_new(FALSE, 0);
+	gtk_widget_show(vbox);
+	gtk_container_add(GTK_CONTAINER(notebook), vbox);
+	gtk_container_set_border_width(GTK_CONTAINER(vbox), 6);
+
+        label = gtk_label_new("Profiles");
+        gtk_widget_show(label);
+	gtk_notebook_set_tab_label(GTK_NOTEBOOK(notebook), 
+				   gtk_notebook_get_nth_page(GTK_NOTEBOOK(notebook), page), 
+				   label);
+
+	vbox1 = gtk_vbutton_box_new();
+
+	for (index = 0; index < MAX_PROFILES; index++)
+	{
+		profile_name = get_profile_name(index + 1, card_number, profiles_file_name);
+		profiles_toggle_buttons[index].toggle_button = toggle_button_entry(window, profile_name, index);
+		gtk_box_pack_start(GTK_BOX (vbox1), profiles_toggle_buttons[index].toggle_button, FALSE, FALSE, 20);
+	}
+
+	gtk_widget_show(vbox1);
+	gtk_container_border_width(GTK_CONTAINER(vbox1), 20);
+
+	hbox1 = gtk_hbutton_box_new();
+	gtk_widget_show(hbox1);
+	gtk_container_border_width(GTK_CONTAINER(hbox1), 20);
+
+	hbox2 = gtk_hbox_new(FALSE, 0);
+	gtk_widget_show(hbox2);
+	gtk_box_pack_start(GTK_BOX (hbox1), hbox2, FALSE, FALSE, 20);
+
+        label_card_nr = gtk_label_new("Card Number:");
+        gtk_widget_show(label_card_nr);
+	gtk_box_pack_start(GTK_BOX (hbox2), label_card_nr, FALSE, FALSE, 20);
+	gtk_label_set_justify(GTK_LABEL (label_card_nr), GTK_JUSTIFY_LEFT);
+
+	card_button_adj = gtk_adjustment_new(16, 0, MAX_CARD_NUMBERS, 1, 10, 10);
+	card_number_adj = card_button_adj;
+	card_button = gtk_spin_button_new(GTK_ADJUSTMENT (card_button_adj), 1, 0);
+	gtk_widget_show(card_button);
+	gtk_box_pack_start(GTK_BOX (hbox2), card_button, TRUE, FALSE, 0);
+	gtk_spin_button_set_numeric(GTK_SPIN_BUTTON (card_button), TRUE);
+	gtk_adjustment_set_value(GTK_ADJUSTMENT (card_button_adj), card_number);
+
+	delete_button = gtk_toggle_button_new_with_label("Delete card from profiles");
+	gtk_widget_show(delete_button);
+	gtk_box_pack_start(GTK_BOX (hbox1), delete_button, FALSE, FALSE, 20);
+	gtk_signal_connect(GTK_OBJECT (delete_button), "toggled",
+			 GTK_SIGNAL_FUNC (delete_card_number),
+			 NULL);
+
+	save_button = gtk_toggle_button_new_with_label("Save active profile");
+	gtk_widget_show(save_button);
+	gtk_box_pack_end(GTK_BOX (hbox1), save_button, FALSE, FALSE, 20);
+	gtk_signal_connect(GTK_OBJECT (save_button), "toggled",
+			 GTK_SIGNAL_FUNC (save_active_profile),
+			 NULL);
+
+	gtk_container_add(GTK_CONTAINER (vbox), vbox1);
+	gtk_container_add(GTK_CONTAINER (vbox), hbox1);
+	gtk_widget_show(vbox);
+	if (default_profile != NULL)
+	{
+		/*
+		 * only if default_profile is numerical and lower or equal than MAX_PROFILES it will be a profile_number
+		 * otherwise it will be a profile name
+		 */
+		if (strcspn(default_profile, "0123456789") == 0) {
+			for (max_profiles = MAX_PROFILES, max_digits = 0; max_profiles > 9; max_digits++, max_profiles /= 10)
+				;
+			max_digits++;
+			if (strlen(default_profile) <= max_digits) {
+				profile_number = atoi(default_profile);
+				if (profile_number > MAX_PROFILES)
+					profile_number = get_profile_number(default_profile, card_number, profiles_file_name);
+			} else {
+				profile_number = get_profile_number(default_profile, card_number, profiles_file_name);
+			}
+		} else {
+			profile_number = get_profile_number(default_profile, card_number, profiles_file_name);
+		}
+		if ((profile_number > 0) && (profile_number <= MAX_PROFILES)) {
+			gtk_toggle_button_set_state(GTK_TOGGLE_BUTTON (profiles_toggle_buttons[profile_number - 1].toggle_button), TRUE);
+		} else {
+			fprintf(stderr, "Cannot find profile '%s' for card '%d'.\n", default_profile, card_number);
+		}
+	}
+}
 
 static void usage(void)
 {
-	fprintf(stderr, "usage: envy24control [-c card#] [-D control-name] [-o num-outputs] [-i num-inputs] [-p num-pcm-outputs] [-s num-spdif-in/outs] [-v]\n");
+	fprintf(stderr, "usage: envy24control [-c card#] [-D control-name] [-o num-outputs] [-i num-inputs] [-p num-pcm-outputs] [-s num-spdif-in/outs] [-v] [-f profiles-file] [profile name|profile id]\n");
 	fprintf(stderr, "\t-c, --card\tAlsa card number to control\n");
 	fprintf(stderr, "\t-D, --device\tcontrol-name\n");
 	fprintf(stderr, "\t-o, --outputs\tLimit number of analog line outputs to display\n");
@@ -1667,6 +1934,7 @@ static void usage(void)
 	fprintf(stderr, "\t-p, --pcm_output\tLimit number of PCM outputs to display\n");
 	fprintf(stderr, "\t-s, --spdif\tLimit number of spdif inputs/outputs to display\n");
 	fprintf(stderr, "\t-v, --view_spdif_playback\tshows the spdif playback channels in the mixer\n");
+	fprintf(stderr, "\t-f, --profiles_file\tuse file as profiles file\n");
 }
 
 int main(int argc, char **argv)
@@ -1688,7 +1956,8 @@ int main(int argc, char **argv)
 		{"outputs", 1, 0, 'o'},
 		{"pcm_outputs", 1, 0, 'p'},
 		{"spdif", 1, 0, 's'},
-		{"view_spdif_playback", 1, 0, 'v'}
+		{"profiles_file", 1, 0, 'f'},
+		{"view_spdif_playback", 0, 0, 'v'},
 	};
 
 
@@ -1699,12 +1968,15 @@ int main(int argc, char **argv)
         gtk_init(&argc, &argv);
 
 	name = "hw:0";
+	card_number = 0;
 	input_channels = MAX_INPUT_CHANNELS;
 	output_channels = MAX_OUTPUT_CHANNELS;
 	pcm_output_channels = MAX_PCM_OUTPUT_CHANNELS;
 	spdif_channels = MAX_SPDIF_CHANNELS;
 	view_spdif_playback = 0;
-	while ((c = getopt_long(argc, argv, "D:c:i:o:p:s:v:", long_options, NULL)) != -1) {
+	profiles_file_name = DEFAULT_PROFILERC;
+	default_profile = NULL;
+	while ((c = getopt_long(argc, argv, "D:c:i:o:p:s:f:v", long_options, NULL)) != -1) {
 		switch (c) {
 		case 'c':
 			i = atoi(optarg);
@@ -1712,6 +1984,7 @@ int main(int argc, char **argv)
 				fprintf(stderr, "envy24control: invalid card number %d\n", i);
 				exit(1);
 			}
+			card_number = i;
 			sprintf(tmpname, "hw:%d", i);
 			name = tmpname;
 			break;
@@ -1748,14 +2021,20 @@ int main(int argc, char **argv)
 				exit(1);
 			}
 			break;
+		case 'f':
+			profiles_file_name = optarg;
+			break;
 		case 'v':
-			view_spdif_playback = atoi(optarg);
+			view_spdif_playback = 1;
 			break;
 		default:
 			usage();
 			exit(1);
 			break;
 		}
+	}
+	if (optind < argc) {
+		default_profile = argv[optind];
 	}
 
 	if ((err = snd_ctl_open(&ctl, name, 0)) < 0) {
@@ -1824,6 +2103,7 @@ int main(int argc, char **argv)
 	create_hardware(window, notebook, page++);
 	if (envy_analog_volume_available())
 		create_analog_volume(window, notebook, page++);
+	create_profiles(window, notebook, page++);
 	create_about(window, notebook, page++);
 
 	npfds = snd_ctl_poll_descriptors_count(ctl);

@@ -7,6 +7,25 @@
 #include <gtk/gtk.h>
 #include <alsa/asoundlib.h>
 
+/* Profiles */
+#ifdef PACKAGE
+#define PROGRAM_NAME PACKAGE
+#else
+#define PROGRAM_NAME "envy24control"
+#endif
+#define MAX_PROFILES 8
+#define MAX_PROFILE_NAME_LENGTH 20
+#define DEFAULT_PROFILERC "~/envy24control/profiles.conf"
+#define SYS_PROFILERC "/etc/envy24control/profiles.conf"
+#ifndef MKDIR
+#define MKDIR "/bin/mkdir"
+#endif
+#ifndef ALSACTL
+#define ALSACTL "/usr/sbin/alsactl"
+#endif
+
+#include "profiles.h"
+
 /* MidiMan */
 #define ICE1712_SUBDEVICE_DELTA1010	0x121430d6
 #define ICE1712_SUBDEVICE_DELTADIO2496	0x121431d6
