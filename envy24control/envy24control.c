@@ -1990,6 +1990,7 @@ int main(int argc, char **argv)
 			break;
 		case 'D':
 			name = optarg;
+			card_number = atoi(strchr(name, ':') + sizeof(char));
 			break;
 		case 'i':
 			input_channels = atoi(optarg);
