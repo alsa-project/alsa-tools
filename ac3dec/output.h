@@ -26,11 +26,12 @@
 
 typedef struct {
 	const char *pcm_name;
+	char *card;
 	int bits;
 	int rate;
 	int channels;
 	int quiet: 1;
-	enum {SPDIF_NONE = 0, SPDIF_CON, SPDIF_PRO} spdif;
+	enum {SPDIF_NONE = 0, SPDIF_CON, SPDIF_PRO, SPDIF_PCM} spdif;
 } output_t;
 
 int output_open(output_t *output);

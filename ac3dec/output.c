@@ -65,21 +65,28 @@ int output_open(output_t *output)
 					s[2] = IEC958_AES2_PRO_WORDLEN_NOTID;
 					s[3] = 0;
 				} else {
-					s[0] = (IEC958_AES0_NONAUDIO |
-						IEC958_AES0_CON_EMPHASIS_NONE);
+					s[0] = IEC958_AES0_CON_EMPHASIS_NONE;
+					if (output->spdif == SPDIF_CON)
+						s[0] |= IEC958_AES0_NONAUDIO;
 					s[1] = (IEC958_AES1_CON_ORIGINAL |
 						IEC958_AES1_CON_PCM_CODER);
 					s[2] = 0;
 					s[3] = IEC958_AES3_CON_FS_48000;
 				}
 				sprintf(devstr, "iec958:AES0=0x%x,AES1=0x%x,AES2=0x%x,AES3=0x%x", s[0], s[1], s[2], s[3]);
+				if (out_config.card)
+					sprintf(devstr + strlen(devstr), ",CARD=%s", out_config.card);
 			}
 			break;
 		case 4:
 			strcpy(devstr, "surround40");
+			if (out_config.card)
+				sprintf(devstr + strlen(devstr), ",CARD=%s", out_config.card);
 			break;
 		case 6:
 			strcpy(devstr, "surround51");
+			if (out_config.card)
+				sprintf(devstr + strlen(devstr), ",CARD=%s", out_config.card);
 			break;
 		default:
 			fprintf(stderr, "%d channels are not supported\n", output->channels);
