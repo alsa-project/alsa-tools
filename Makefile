@@ -1,6 +1,6 @@
 VERSION = 0.9.0rc1
 TOP = .
-SUBDIRS = ac3dec as10k1 envy24control sb16_csp seq
+SUBDIRS = ac3dec as10k1 envy24control sb16_csp seq sscape_ctl
 
 all:
 	@for i in $(SUBDIRS); do cd $(TOP)/$$i; ./cvscompile; cd ..; make -C $$i; done
