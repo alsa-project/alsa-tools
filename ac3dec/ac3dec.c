@@ -40,6 +40,7 @@ init_spdif(void);
 int
 output_spdif(uint_8 *data_start, uint_8 *data_end, int quiet);
 
+static int end_flag = 0;
 static int quiet = 0;
 
 static void help(void)
@@ -68,12 +69,10 @@ ssize_t fill_buffer(uint_8 **start,uint_8 **end)
 
 	bytes_read = fread(*start,1,CHUNK_SIZE,in_file);
 
-	if (feof(in_file))
+	if (feof(in_file) || ferror(in_file) || bytes_read < CHUNK_SIZE) {
+		end_flag = 1;
 		return EOF;
-	if (ferror(in_file))
-		return EOF;
-	if(bytes_read < CHUNK_SIZE)
-		return EOF;
+	}
 
 	*end = *start + bytes_read;
 	return bytes_read;
@@ -170,7 +169,7 @@ int main(int argc,char *argv[])
 
 	while (1) {
 		if (argc - optind <= 0) {
-			if (loop)
+			if (loop || end_flag)
 				break;
 			in_file = stdin;
 		} else {
