@@ -1,0 +1,9 @@
+AC_INIT(rmedigicontrol.c)
+AM_INIT_AUTOMAKE(rmedigicontrol, 0.3.5a)
+AC_PROG_CC
+AC_PROG_INSTALL
+AC_HEADER_STDC
+AM_PATH_GTK(1.0.1)
+AM_PATH_ALSA(0.9.0)
+
+AC_OUTPUT(Makefile)

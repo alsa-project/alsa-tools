@@ -1,0 +1,8 @@
+Version 0.3.5:
+	- various editing on text files
+	- compiler warning fixed
+	- automake cleanup
+	- support for the non-standard names of the rme96 driver.
+
+Version 0.3.5a:
+	- undo that "support for the non-standard names" of v0.3.5
