@@ -38,6 +38,7 @@ R		equ Rt			; Front  Right Out
 Ls		io
 Rs		io
 C		io			; Center
+LFE		io			; LFE
 
 ;----------------------------------------
 tmp		dyn
@@ -110,6 +111,9 @@ abs	macro ret, xx
 
 	sub	R, Rt, read		; R = R - rear
 	sub	L, Lt, read  		; L = L - rear
+
+	add	LFE, Lt, Rt		; tmp = Lt + Rt
+	lpf	LFE, mhp, tmp		; LFE = LowPass((n)Hz, tmp)
 
 	end
 ;========================================
