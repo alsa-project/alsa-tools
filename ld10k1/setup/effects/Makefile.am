@@ -10,9 +10,11 @@ dist_effects_DATA = simple.emu10k1 vol_master.emu10k1 tone.emu10k1 \
 	sto51.emu10k1 switch_6.emu10k1 copy_2.emu10k1 \
 	prologic.emu10k1 fxbus.emu10k1
 
-CLEANFILES = $(dist_effects_DATA)
+MAINTAINERCLEANFILES = $(dist_effects_DATA)
 
-SUFFIXEC = .asm .emu10k1
+SUFFIXES = .asm .emu10k1
 
+if HAVE_AS10K1
 .asm.emu10k1:
 	$(AS10K1) -o $@ $<
+endif HAVE_AS10K1
