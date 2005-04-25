@@ -40,16 +40,7 @@ int read_bin_file(u_int32_t *array, const char *filename)
 		return -1;
 	}
 	fclose(out);
-#if __BYTE_ORDER == __BIG_ENDIAN
-	{
-		unsigned int idx;
-		for (idx = 0; idx < 24413; idx++)
-			array[idx] = ((array[idx] & 0x000000ff) << 16) |
-				     ((array[idx] & 0x0000ff00) << 8)  |
-				     ((array[idx] & 0x00ff0000) >> 8)  |
-				     ((array[idx] & 0xff000000) >> 16);
-	}
-#endif
+
 	return 0;
 }
 
