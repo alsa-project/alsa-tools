@@ -13,6 +13,8 @@ ld10k1_LDADD = $(ALSA_LIBS)
 lib_LTLIBRARIES = liblo10k1.la
 liblo10k1_la_SOURCES = comm.c liblo10k1.c liblo10k1ef.c liblo10k1lf.c
 #liblo10k1_la_HEADERS = comm.h liblo10k1.h liblo10k1ef.h ld10k1_error.h ld10k1_fnc.h liblo10k1lf.h
+liblo10k1_la_CFLAGS = $(ALSA_CFLAGS)
+liblo10k1_la_LIBADD = $(ALSA_LIBS)
 
 lo10k1_SOURCES = lo10k1.c
 lo10k1_CFLAGS = $(ALSA_CFLAGS) -DEFFECTSDIR='"$(effectsdir)"'
