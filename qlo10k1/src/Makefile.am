@@ -4,6 +4,10 @@
 # of the other Makefile.am variables
 bin_PROGRAMS = qlo10k1
 
+AM_CPPFLAGS = $(LD10K1_CFLAGS)
+AM_CXXFLAGS= $(QT_CXXFLAGS)
+AM_LDFLAGS = $(LD10K1_LDFLAGS)
+
 # the libraries to link against.
 qlo10k1_LDADD = $(LDADD) $(QT_LDADD)
 
