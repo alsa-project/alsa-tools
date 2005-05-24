@@ -554,12 +554,11 @@ int ld10k1_fnc_patch_add(int data_conn, int op, int size)
 	int where;
 
 	ld10k1_dsp_patch_t new_patch_info;
+	/* allocate new patch */
+	ld10k1_patch_t *new_patch = NULL;
 
 	if ((err = ld10k1_fnc_receive_patch_info(data_conn, &new_patch_info, &where)) < 0)
 		goto error;
-
-	/* alocate new patch */
-	ld10k1_patch_t *new_patch = NULL;
 
 	if (!(new_patch = ld10k1_dsp_mgr_patch_new())) {
 		err = LD10K1_ERR_NO_MEM;
