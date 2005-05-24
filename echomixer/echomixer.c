@@ -584,7 +584,7 @@ gint CheckInputs(gpointer unused) {
 
   if (source>=0 && source!=clocksrcVal) {
     // Set the clock source, but do not change the value of AutoClock
-    Clock_source_activate(clocksrc_menuitem[source], (gpointer)(source|DONT_CHANGE));
+    Clock_source_activate(clocksrc_menuitem[source], (gpointer)(long)(source|DONT_CHANGE));
     gtk_option_menu_set_history(GTK_OPTION_MENU(clocksrcOpt), clocksrcVal);
   }
   return(TRUE);
@@ -902,10 +902,10 @@ void Mixer_Input_selector_clicked(GtkWidget *widget, gpointer ich) {
   snd_ctl_elem_id_t *id;
   snd_ctl_elem_value_t *control;
 
-  if (mixerControl.input==(int)ich)
+  if (mixerControl.input==(int)(long)ich)
     return;
 
-  mixerControl.input=(int)ich;
+  mixerControl.input=(int)(long)ich;
   snd_ctl_elem_id_alloca(&id);
   snd_ctl_elem_value_alloca(&control);
 
@@ -1061,7 +1061,7 @@ void Monitor_volume_changed(GtkWidget *widget, gpointer cnl) {
   UI_DEBUG(("Monitor_volume_changed()  %d %d\n",mixerControl.input,mixerControl.output));
   val=rval=INVERT((int)GTK_ADJUSTMENT(widget)->value);
 
-  ch=(int)cnl;
+  ch=(int)(long)cnl;
 
 #ifdef REVERSE
   i=ch;
@@ -1093,9 +1093,9 @@ void Monitor_volume_changed(GtkWidget *widget, gpointer cnl) {
 void Monitor_volume_clicked(GtkWidget *widget, gpointer ch) {
 
 #ifdef REVERSE
-  mixerControl.input=(int)ch;
+  mixerControl.input=(int)(long)ch;
 #else
-  mixerControl.output=(int)ch;
+  mixerControl.output=(int)(long)ch;
 #endif
 }
 
@@ -1118,15 +1118,15 @@ void PCM_volume_changed(GtkWidget *widget, gpointer ch) {
   snd_ctl_elem_id_alloca(&id);
   snd_ctl_elem_value_alloca(&control);
 
-  if ((int)ch<ECHO_MAXAUDIOINPUTS) {
+  if ((int)(long)ch<ECHO_MAXAUDIOINPUTS) {
     // Input
-    channel=(int)ch;
+    channel=(int)(long)ch;
     vol=&lineinControl;
     rval=val=IN_INVERT((int)GTK_ADJUSTMENT(widget)->value);
     sprintf(str, "%+4.1f", 0.5*val);
   } else {
     // Output
-    channel=(int)ch-ECHO_MAXAUDIOINPUTS;
+    channel=(int)(long)ch-ECHO_MAXAUDIOINPUTS;
     vol=&pcmoutControl;
     val=rval=INVERT((int)GTK_ADJUSTMENT(widget)->value);
     pcmoutControl.Gain[channel]=val;
@@ -1213,7 +1213,7 @@ void LineOut_volume_changed(GtkWidget *widget, gpointer ch) {
   char str[16];
   int err, channel, val;
 
-  channel=(int)ch;
+  channel=(int)(long)ch;
 
   val=INVERT((int)GTK_ADJUSTMENT(widget)->value);
   lineoutControl.Gain[channel]=val;
@@ -1251,7 +1251,7 @@ void Vmixer_volume_changed(GtkWidget *widget, gpointer ch) {
   int val, channel;
   int o, v;
 
-  channel=(int)ch;
+  channel=(int)(long)ch;
 
 #ifdef REVERSE
   v=channel;
@@ -1279,10 +1279,10 @@ void Vmixer_volume_changed(GtkWidget *widget, gpointer ch) {
 void Vmixer_volume_clicked(GtkWidget *widget, gpointer ch) {
 
 #ifdef REVERSE
-  vmixerControl.vchannel=(int)ch;
+  vmixerControl.vchannel=(int)(long)ch;
   UI_DEBUG(("Vmixer_volume_clicked vch=%d\n",vmixerControl.vchannel));
 #else
-  vmixerControl.output=(int)ch;
+  vmixerControl.output=(int)(long)ch;
   UI_DEBUG(("Vmixer_volume_clicked out=%d\n",vmixerControl.output));
 #endif
 }
@@ -1317,9 +1317,9 @@ void Vmixer_vchannel_selector_clicked(GtkWidget *widget, gpointer ch) {
   snd_ctl_elem_id_t *id;
   snd_ctl_elem_value_t *control;
 
-  if (vmixerControl.vchannel==(int)ch)
+  if (vmixerControl.vchannel==(int)(long)ch)
     return;
-  vmixerControl.vchannel=(int)ch;
+  vmixerControl.vchannel=(int)(long)ch;
 
   UI_DEBUG(("Vmixer_selector_clicked vch=%d\n",vmixerControl.vchannel));
   snd_ctl_elem_id_alloca(&id);
@@ -1346,11 +1346,11 @@ void Nominal_level_toggled(GtkWidget *widget, gpointer ch) {
   snd_ctl_elem_id_set_interface(id, SND_CTL_ELEM_IFACE_MIXER);
 
   val=gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
-  if ((int)ch<ECHO_MAXAUDIOINPUTS) {
-    channel=(int)ch;
+  if ((int)(long)ch<ECHO_MAXAUDIOINPUTS) {
+    channel=(int)(long)ch;
     NominalLevel=&NominalIn;
   } else {
-    channel=(int)ch-ECHO_MAXAUDIOINPUTS;
+    channel=(int)(long)ch-ECHO_MAXAUDIOINPUTS;
     NominalLevel=&NominalOut;
   }
   NominalLevel->Level[channel]=!val;
@@ -1408,13 +1408,13 @@ void AutoClock_toggled(GtkWidget *widget, gpointer unused) {
 void Digital_mode_activate(GtkWidget *widget, gpointer mode) {
   int adat;
 
-  if (SetEnum(dmodeId, (int)mode)<0) {
+  if (SetEnum(dmodeId, (int)(long)mode)<0) {
     // Restore old value if it failed
     gtk_option_menu_set_history(GTK_OPTION_MENU(dmodeOpt), dmodeVal);
     return;
   }
 
-  dmodeVal=(int)mode;
+  dmodeVal=(int)(long)mode;
   // When I change the digital mode, the clock source can change too
   clocksrcVal=GetEnum(clocksrcId);
   gtk_option_menu_set_history(GTK_OPTION_MENU(clocksrcOpt), clocksrcVal);
@@ -1435,13 +1435,13 @@ void Digital_mode_activate(GtkWidget *widget, gpointer mode) {
 void Clock_source_activate(GtkWidget *widget, gpointer clk) {
   unsigned int source;
 
-  source=(unsigned int)clk & 0xff;
+  source=(unsigned int)(long)clk & 0xff;
   if (SetEnum(clocksrcId, source)<0) {
     gtk_option_menu_set_history(GTK_OPTION_MENU(clocksrcOpt), clocksrcVal);
   } else {
-    clocksrcVal=(int)clk & 0xff;
+    clocksrcVal=(int)(long)clk & 0xff;
     // Change only when the user triggers it
-    if (((int)clk & DONT_CHANGE)==0 && AutoClock>=0) {
+    if (((int)(long)clk & DONT_CHANGE)==0 && AutoClock>=0) {
       AutoClock=clocksrcVal;
       AutoClock_toggled(autoclockChkbutton, NULL);
     }
@@ -1452,8 +1452,8 @@ void Clock_source_activate(GtkWidget *widget, gpointer clk) {
 
 void SPDIF_mode_activate(GtkWidget *widget, gpointer mode) {
 
-  SetEnum(spdifmodeId, (int)mode);	// This one should never fail
-  spdifmodeVal=(int)mode;
+  SetEnum(spdifmodeId, (int)(long)mode);	// This one should never fail
+  spdifmodeVal=(int)(long)mode;
 }
 
 
@@ -2050,7 +2050,7 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
       gtk_box_pack_start(GTK_BOX(hbox), button, TRUE, FALSE, 1);
       gtk_widget_show(button);
       gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), NominalIn.Level[i]);	// Forces handler call
-      gtk_signal_connect(GTK_OBJECT(button), "toggled", GTK_SIGNAL_FUNC(Nominal_level_toggled), (gpointer)i);
+      gtk_signal_connect(GTK_OBJECT(button), "toggled", GTK_SIGNAL_FUNC(Nominal_level_toggled), (gpointer)(long)i);
       gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), !NominalIn.Level[i]);
     }
   }
@@ -2071,7 +2071,7 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
       gtk_box_pack_start(GTK_BOX(hbox), button, TRUE, FALSE, 1);
       gtk_widget_show(button);
       gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), NominalOut.Level[i]);
-      gtk_signal_connect(GTK_OBJECT(button), "toggled", GTK_SIGNAL_FUNC(Nominal_level_toggled), (gpointer)(i+ECHO_MAXAUDIOINPUTS));
+      gtk_signal_connect(GTK_OBJECT(button), "toggled", GTK_SIGNAL_FUNC(Nominal_level_toggled), (gpointer)(long)(i+ECHO_MAXAUDIOINPUTS));
       gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), !NominalOut.Level[i]);
     }
   }
@@ -2093,7 +2093,7 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
     for (i=0; i<ndmodes; i++) {
       menuitem=gtk_menu_item_new_with_label(dmodeName[i]);
       gtk_widget_show(menuitem);
-      gtk_signal_connect(GTK_OBJECT(menuitem), "activate", Digital_mode_activate, (gpointer)i);
+      gtk_signal_connect(GTK_OBJECT(menuitem), "activate", Digital_mode_activate, (gpointer)(long)i);
       gtk_menu_append(GTK_MENU(menu), menuitem);
     }
     gtk_option_menu_set_menu(GTK_OPTION_MENU(dmodeOpt), menu);
@@ -2119,7 +2119,7 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
       clocksrc_menuitem[i]=gtk_menu_item_new_with_label(clocksrcName[i]);
       gtk_widget_show(clocksrc_menuitem[i]);
       gtk_widget_set_sensitive(clocksrc_menuitem[i], FALSE);
-      gtk_signal_connect(GTK_OBJECT(clocksrc_menuitem[i]), "activate", Clock_source_activate, (gpointer)i);
+      gtk_signal_connect(GTK_OBJECT(clocksrc_menuitem[i]), "activate", Clock_source_activate, (gpointer)(long)i);
       gtk_menu_append(GTK_MENU(menu), clocksrc_menuitem[i]);
     }
     gtk_option_menu_set_menu(GTK_OPTION_MENU(clocksrcOpt), menu);
@@ -2145,7 +2145,7 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
     for (i=0; i<nspdifmodes; i++) {
       menuitem=gtk_menu_item_new_with_label(spdifmodeName[i]);
       gtk_widget_show(menuitem);
-      gtk_signal_connect(GTK_OBJECT(menuitem), "activate", SPDIF_mode_activate, (gpointer)i);
+      gtk_signal_connect(GTK_OBJECT(menuitem), "activate", SPDIF_mode_activate, (gpointer)(long)i);
       gtk_menu_append(GTK_MENU(menu), menuitem);
     }
     gtk_option_menu_set_menu(GTK_OPTION_MENU(spdifmodeOpt), menu);
@@ -2242,7 +2242,7 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
       gtk_widget_show(pcmoutControl.volume[i]);
       gtk_box_pack_start(GTK_BOX(vbox), pcmoutControl.volume[i], TRUE, TRUE, 0);
       gtk_scale_set_draw_value(GTK_SCALE(pcmoutControl.volume[i]), 0);
-      gtk_signal_connect(GTK_OBJECT(pcmoutControl.adj[i]), "value_changed", GTK_SIGNAL_FUNC(PCM_volume_changed), (gpointer)(i+ECHO_MAXAUDIOINPUTS));
+      gtk_signal_connect(GTK_OBJECT(pcmoutControl.adj[i]), "value_changed", GTK_SIGNAL_FUNC(PCM_volume_changed), (gpointer)(long)(i+ECHO_MAXAUDIOINPUTS));
       // Value label
       pcmoutControl.label[i]=gtk_label_new("xxx");
       gtk_widget_show(pcmoutControl.label[i]);
@@ -2295,7 +2295,7 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
       gtk_widget_show(lineinControl.volume[i]);
       gtk_box_pack_start(GTK_BOX(vbox), lineinControl.volume[i], TRUE, TRUE, 0);
       gtk_scale_set_draw_value(GTK_SCALE(lineinControl.volume[i]), 0);
-      gtk_signal_connect(GTK_OBJECT(lineinControl.adj[i]), "value_changed", GTK_SIGNAL_FUNC(PCM_volume_changed), (gpointer)i);
+      gtk_signal_connect(GTK_OBJECT(lineinControl.adj[i]), "value_changed", GTK_SIGNAL_FUNC(PCM_volume_changed), (gpointer)(long)i);
       // Value label
       lineinControl.label[i]=gtk_label_new("xxx");
       gtk_widget_show(lineinControl.label[i]);
@@ -2334,7 +2334,7 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
       gtk_widget_show(lineoutControl.volume[i]);
       gtk_box_pack_start(GTK_BOX(vbox), lineoutControl.volume[i], TRUE, TRUE, 0);
       gtk_scale_set_draw_value(GTK_SCALE(lineoutControl.volume[i]), 0);
-      gtk_signal_connect(GTK_OBJECT(lineoutControl.adj[i]), "value_changed", GTK_SIGNAL_FUNC(LineOut_volume_changed), (gpointer)i);
+      gtk_signal_connect(GTK_OBJECT(lineoutControl.adj[i]), "value_changed", GTK_SIGNAL_FUNC(LineOut_volume_changed), (gpointer)(long)i);
       // Value label
       lineoutControl.label[i]=gtk_label_new("xxx");
       gtk_widget_show(lineoutControl.label[i]);
@@ -2449,7 +2449,7 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
       mixerControl.inpsel[i]=gtk_radio_button_new_with_label(bgroup, str);
       gtk_widget_show(mixerControl.inpsel[i]);
       gtk_box_pack_start(GTK_BOX(vbsel), mixerControl.inpsel[i], FALSE, FALSE, 0);
-      gtk_signal_connect(GTK_OBJECT(mixerControl.inpsel[i]), "toggled", GTK_SIGNAL_FUNC(Mixer_Input_selector_clicked), (gpointer)i);
+      gtk_signal_connect(GTK_OBJECT(mixerControl.inpsel[i]), "toggled", GTK_SIGNAL_FUNC(Mixer_Input_selector_clicked), (gpointer)(long)i);
     }
 
     // Mixer volume widgets
@@ -2478,8 +2478,8 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
       gtk_widget_show(mixerControl.volume[i]);
       gtk_box_pack_start(GTK_BOX(vbox), mixerControl.volume[i], TRUE, TRUE, 0);
       gtk_scale_set_draw_value(GTK_SCALE(mixerControl.volume[i]), 0);
-      gtk_signal_connect(GTK_OBJECT(mixerControl.volume[i]), "grab_focus", GTK_SIGNAL_FUNC(Monitor_volume_clicked), (gpointer)i);
-      gtk_signal_connect(GTK_OBJECT(mixerControl.adj[i]), "value_changed", GTK_SIGNAL_FUNC(Monitor_volume_changed), (gpointer)i);
+      gtk_signal_connect(GTK_OBJECT(mixerControl.volume[i]), "grab_focus", GTK_SIGNAL_FUNC(Monitor_volume_clicked), (gpointer)(long)i);
+      gtk_signal_connect(GTK_OBJECT(mixerControl.adj[i]), "value_changed", GTK_SIGNAL_FUNC(Monitor_volume_changed), (gpointer)(long)i);
       // Value label
       mixerControl.label[i]=gtk_label_new("xxx");
       gtk_widget_show(mixerControl.label[i]);
@@ -2587,7 +2587,7 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
       vmixerControl.vchsel[i]=gtk_radio_button_new_with_label(bgroup, str);
       gtk_widget_show(vmixerControl.vchsel[i]);
       gtk_box_pack_start(GTK_BOX(vbsel), vmixerControl.vchsel[i], FALSE, FALSE, 0);
-      gtk_signal_connect(GTK_OBJECT(vmixerControl.vchsel[i]), "toggled", GTK_SIGNAL_FUNC(Vmixer_vchannel_selector_clicked), (gpointer)i);
+      gtk_signal_connect(GTK_OBJECT(vmixerControl.vchsel[i]), "toggled", GTK_SIGNAL_FUNC(Vmixer_vchannel_selector_clicked), (gpointer)(long)i);
     }
 
     // Vmixer volume widgets
@@ -2616,8 +2616,8 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
       gtk_widget_show(vmixerControl.volume[i]);
       gtk_box_pack_start(GTK_BOX(vbox), vmixerControl.volume[i], TRUE, TRUE, 0);
       gtk_scale_set_draw_value(GTK_SCALE(vmixerControl.volume[i]), 0);
-      gtk_signal_connect(GTK_OBJECT(vmixerControl.volume[i]), "grab_focus", GTK_SIGNAL_FUNC(Vmixer_volume_clicked), (gpointer)i);
-      gtk_signal_connect(GTK_OBJECT(vmixerControl.adj[i]), "value_changed", GTK_SIGNAL_FUNC(Vmixer_volume_changed), (gpointer)i);
+      gtk_signal_connect(GTK_OBJECT(vmixerControl.volume[i]), "grab_focus", GTK_SIGNAL_FUNC(Vmixer_volume_clicked), (gpointer)(long)i);
+      gtk_signal_connect(GTK_OBJECT(vmixerControl.adj[i]), "value_changed", GTK_SIGNAL_FUNC(Vmixer_volume_changed), (gpointer)(long)i);
       // Value label
       vmixerControl.label[i]=gtk_label_new("xxx");
       gtk_widget_show(vmixerControl.label[i]);
@@ -2748,7 +2748,7 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
 
   Gang=1;
   if (dmodeId)
-    Digital_mode_activate(dmodeOpt, (gpointer)dmodeVal);	// Also calls SetSensitivity()
+    Digital_mode_activate(dmodeOpt, (gpointer)(long)dmodeVal);	// Also calls SetSensitivity()
   gtk_widget_show(Mainwindow);
   gtk_main();
 

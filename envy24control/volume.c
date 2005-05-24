@@ -208,7 +208,7 @@ void adc_sense_update(int idx)
 
 void dac_volume_adjust(GtkAdjustment *adj, gpointer data)
 {
-	int idx = (int)data;
+	int idx = (int)(long)data;
 	snd_ctl_elem_value_t *val;
 	int err, ival = -(int)adj->value;
 	char text[16];
@@ -226,7 +226,7 @@ void dac_volume_adjust(GtkAdjustment *adj, gpointer data)
 
 void adc_volume_adjust(GtkAdjustment *adj, gpointer data)
 {
-	int idx = (int)data;
+	int idx = (int)(long)data;
 	snd_ctl_elem_value_t *val;
 	int err, ival = -(int)adj->value;
 	char text[16];
@@ -244,7 +244,7 @@ void adc_volume_adjust(GtkAdjustment *adj, gpointer data)
 
 void ipga_volume_adjust(GtkAdjustment *adj, gpointer data)
 {
-	int idx = (int)data;
+	int idx = (int)(long)data;
 	snd_ctl_elem_value_t *val;
 	int err, ival = -(int)adj->value;
 	char text[16];
@@ -386,15 +386,15 @@ void analog_volume_postinit(void)
 
 	for (i = 0; i < dac_volumes; i++) {
 		dac_volume_update(i);
-		dac_volume_adjust((GtkAdjustment *)av_dac_volume_adj[i], (gpointer)i);
+		dac_volume_adjust((GtkAdjustment *)av_dac_volume_adj[i], (gpointer)(long)i);
 	}
 	for (i = 0; i < adc_volumes; i++) {
 		adc_volume_update(i);
-		adc_volume_adjust((GtkAdjustment *)av_adc_volume_adj[i], (gpointer)i);
+		adc_volume_adjust((GtkAdjustment *)av_adc_volume_adj[i], (gpointer)(long)i);
 	}
 	for (i = 0; i < ipga_volumes; i++) {
 		ipga_volume_update(i);
-		ipga_volume_adjust((GtkAdjustment *)av_ipga_volume_adj[i], (gpointer)i);
+		ipga_volume_adjust((GtkAdjustment *)av_ipga_volume_adj[i], (gpointer)(long)i);
 	}
 	for (i = 0; i < dac_senses; i++)
 		dac_sense_update(i);

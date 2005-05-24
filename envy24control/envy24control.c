@@ -190,7 +190,7 @@ static void create_mixer_frame(GtkWidget *box, int stream)
 	gtk_scale_set_digits(GTK_SCALE(vscale), 0);
 	gtk_signal_connect(GTK_OBJECT(adj), "value_changed",
 			   GTK_SIGNAL_FUNC(mixer_adjust),
-			  (gpointer)((stream << 16) + 0));
+			   (gpointer)(long)((stream << 16) + 0));
 
 	vbox1 = gtk_vbox_new(FALSE, 0);
 	gtk_widget_show(vbox1);
@@ -223,7 +223,7 @@ static void create_mixer_frame(GtkWidget *box, int stream)
 	gtk_scale_set_digits(GTK_SCALE(vscale), 0);
 	gtk_signal_connect(GTK_OBJECT(adj), "value_changed",
 			   GTK_SIGNAL_FUNC(mixer_adjust),
-			  (gpointer)((stream << 16) + 1));
+			   (gpointer)(long)((stream << 16) + 1));
 	
 	hbox = gtk_hbox_new(TRUE, 0);
 	gtk_widget_show(hbox);
@@ -256,7 +256,7 @@ static void create_mixer_frame(GtkWidget *box, int stream)
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(toggle), TRUE);
 	gtk_signal_connect(GTK_OBJECT(toggle), "toggled",
 			   GTK_SIGNAL_FUNC(mixer_toggled_mute),
-			  (gpointer)((stream << 16) + 0));
+			   (gpointer)(long)((stream << 16) + 0));
 
 	toggle = gtk_toggle_button_new_with_label("Mute");
 	mixer_mute_toggle[stream-1][1] = toggle;
@@ -265,7 +265,7 @@ static void create_mixer_frame(GtkWidget *box, int stream)
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(toggle), TRUE);
 	gtk_signal_connect(GTK_OBJECT(toggle), "toggled",
 			   GTK_SIGNAL_FUNC(mixer_toggled_mute),
-			  (gpointer)((stream << 16) + 1));
+			   (gpointer)(long)((stream << 16) + 1));
 }
 
 static void create_mixer(GtkWidget *main, GtkWidget *notebook, int page)
@@ -454,7 +454,7 @@ static void create_router_frame(GtkWidget *box, int stream, int pos)
 	gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
 	gtk_signal_connect(GTK_OBJECT(radiobutton), "toggled",
 			  (GtkSignalFunc)patchbay_toggled, 
-			  (gpointer)((stream << 16) + 0));
+			   (gpointer)(long)((stream << 16) + 0));
 
 
 	hseparator = gtk_hseparator_new();
@@ -476,7 +476,7 @@ static void create_router_frame(GtkWidget *box, int stream, int pos)
 				    radiobutton, FALSE, FALSE, 0);
 		gtk_signal_connect(GTK_OBJECT(radiobutton), "toggled",
 				  (GtkSignalFunc)patchbay_toggled, 
-				  (gpointer)((stream << 16) + 1));
+				   (gpointer)(long)((stream << 16) + 1));
 	}
 	else {
 	  label = gtk_label_new("");
@@ -499,7 +499,7 @@ static void create_router_frame(GtkWidget *box, int stream, int pos)
 				    radiobutton, FALSE, FALSE, 0);
 		gtk_signal_connect(GTK_OBJECT(radiobutton), "toggled",
 				  (GtkSignalFunc)patchbay_toggled, 
-				  (gpointer)((stream << 16) + 2 + idx));
+				   (gpointer)(long)((stream << 16) + 2 + idx));
 	}
 }
 
@@ -1548,7 +1548,7 @@ static void create_analog_volume(GtkWidget *main, GtkWidget *notebook, int page)
 		gtk_scale_set_digits(GTK_SCALE(vscale), 0);
 		gtk_signal_connect(GTK_OBJECT(adj), "value_changed",
 				   GTK_SIGNAL_FUNC(dac_volume_adjust), 
-				  (gpointer)(i));
+				   (gpointer)(long)(i));
 
 	        label = gtk_label_new("000");
 	        av_dac_volume_label[i] =(GtkLabel *)label;
@@ -1566,7 +1566,7 @@ static void create_analog_volume(GtkWidget *main, GtkWidget *notebook, int page)
 			gtk_widget_show(radiobutton);
 			gtk_signal_connect(GTK_OBJECT(radiobutton), "toggled",
 					  (GtkSignalFunc)dac_sense_toggled, 
-					  (gpointer)((i << 8) + j));
+					   (gpointer)(long)((i << 8) + j));
 			gtk_box_pack_start(GTK_BOX(vbox), 
 					    radiobutton, FALSE, TRUE, 0);
 			group = gtk_radio_button_group(GTK_RADIO_BUTTON(radiobutton));
@@ -1605,7 +1605,7 @@ static void create_analog_volume(GtkWidget *main, GtkWidget *notebook, int page)
 		gtk_scale_set_digits(GTK_SCALE(vscale), 0);
 		gtk_signal_connect(GTK_OBJECT(adj), "value_changed",
 				   GTK_SIGNAL_FUNC(adc_volume_adjust), 
-				  (gpointer)(i));
+				   (gpointer)(long)(i));
 
 	        label = gtk_label_new("000");
 	        av_adc_volume_label[i] =(GtkLabel *)label;
@@ -1622,7 +1622,7 @@ static void create_analog_volume(GtkWidget *main, GtkWidget *notebook, int page)
 			gtk_widget_show(radiobutton);
 			gtk_signal_connect(GTK_OBJECT(radiobutton), "toggled",
 					  (GtkSignalFunc)adc_sense_toggled, 
-					  (gpointer)((i << 8) + j));
+					   (gpointer)(long)((i << 8) + j));
 			gtk_box_pack_start(GTK_BOX(vbox), 
 					    radiobutton, FALSE, TRUE, 0);
 			group = gtk_radio_button_group(GTK_RADIO_BUTTON(radiobutton));
@@ -1661,7 +1661,7 @@ static void create_analog_volume(GtkWidget *main, GtkWidget *notebook, int page)
 		gtk_scale_set_digits(GTK_SCALE(vscale), 0);
 		gtk_signal_connect(GTK_OBJECT(adj), "value_changed",
 				   GTK_SIGNAL_FUNC(ipga_volume_adjust), 
-				  (gpointer)(i));
+				   (gpointer)(long)(i));
 
 	        label = gtk_label_new("000");
 	        av_ipga_volume_label[i] = (GtkLabel *)label;
