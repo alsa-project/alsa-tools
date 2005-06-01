@@ -8,7 +8,16 @@ AC_PROG_LIBTOOL
 
 AC_C_BIGENDIAN
 gw_CHECK_QT
-AM_PATH_LD10K1(0.1.8)
+
+dnl AM_PATH_LD10K1(0.1.8)
+
+dnl Build with the local ld10k1
+rm -f include/lo10k1
+ln -s ../../ld10k1/include include/lo10k1
+LD10K1_CFLAGS="-I../include"
+LD10K1_LIBS="-L../../ld10k1/src -llo10k1"
+AC_SUBST(LD10K1_CFLAGS)
+AC_SUBST(LD10K1_LIBS)
 
 AC_OUTPUT(Makefile
-	src/Makefile)
+	src/Makefile include/Makefile)

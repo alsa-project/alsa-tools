@@ -4,12 +4,10 @@
 # of the other Makefile.am variables
 bin_PROGRAMS = qlo10k1
 
-AM_CPPFLAGS = $(LD10K1_CFLAGS)
-AM_CXXFLAGS= $(QT_CXXFLAGS)
-AM_LDFLAGS = $(LD10K1_LDFLAGS)
+AM_CXXFLAGS= @QT_CXXFLAGS@ @LD10K1_CFLAGS@
 
 # the libraries to link against.
-qlo10k1_LDADD = $(LDADD) $(QT_LDADD)
+qlo10k1_LDADD = $(LDADD) @QT_LDADD@ @LD10K1_LIBS@
 
 EXTRA_DIST = dlgs/connectionwizardbase.ui dlgs/filecontroldialogbase.ui dlgs/filecontrolsdialogbase.ui \
 	dlgs/loadpatchdialogbase.ui dlgs/mainwndbase.ui dlgs/patchdialogbase.ui dlgs/preferencesbase.ui \
