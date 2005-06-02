@@ -1,4 +1,4 @@
-SUBDIRS = src include
+SUBDIRS = src
 
 EXTRA_DIST = COPYING configure.in README NEWS AUTHORS TODO INSTALL ChangeLog
 
