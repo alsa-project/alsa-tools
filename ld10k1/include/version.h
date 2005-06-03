@@ -10,5 +10,5 @@
 					 (LD10K1_LIB_MINOR<<8)|\
 				  	 LD10K1_LIB_SUBMINOR)
 /** library version (string) */
-#define LD10K1_LIB_VERSION_STR	"0.1.8"
+#define LD10K1_LIB_VERSION_STR	"0.1.8p1"
 

@@ -1,3 +1,8 @@
+0.1.8p1
+	By Tim...
+	Now loads as10k1 bin patch files from ALSA alsa-tools AND from EMU10K1 project emu-utils.
+	Fixed init_live bug. 
+	Fixed bug in liblo10k1.c liblo10k1_patch_get().
 0.1.8
 	Sync with ALSA 1.0.8rc1
 0.1.7test4

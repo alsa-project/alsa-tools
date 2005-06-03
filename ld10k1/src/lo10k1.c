@@ -495,7 +495,10 @@ static int transfer_patch(int udin, char *ctrl_opt, liblo10k1_emu_patch_t *ep, l
 	}
 	
 	if (liblo10k1_emu_transform_patch(ep,  tctl, ctrl_to_concate_count, &np) < 0)
+	{
+		error("error on liblo10k1_emu_transform_patch");
 		return 1;
+	}
 	
 	free(tctl);
 	

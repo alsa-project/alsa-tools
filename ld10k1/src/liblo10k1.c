@@ -856,19 +856,6 @@ int liblo10k1_patch_get(liblo10k1_connection_t *conn, int patch_num, liblo10k1_d
 			goto err_nomem;
 	}
 
-	/* ctls */
-	if (patch->ctl_count) {
-		if ((err = receive_response(*conn, &opr, &sizer)) < 0)
-			return err;
-
-		if (opr != FNC_CONTINUE || (unsigned int)sizer != patch->ctl_count * sizeof(liblo10k1_dsp_ctl_t))
-			goto err_protocol;
-
-		patch->ctl = (liblo10k1_dsp_ctl_t *)receive_msg_data_malloc(*conn, sizer);
-		if (!patch->ctl)
-			goto err_nomem;
-	}
-
 	/* tram grp */
 	if (patch->tram_count) {
 		if ((err = receive_response(*conn, &opr, &sizer)) < 0)
@@ -892,6 +879,19 @@ int liblo10k1_patch_get(liblo10k1_connection_t *conn, int patch_num, liblo10k1_d
 
 		patch->tram_acc = (liblo10k1_dsp_tram_acc_t *)receive_msg_data_malloc(*conn, sizer);
 		if (!patch->tram_acc)
+			goto err_nomem;
+	}
+
+	/* ctls */
+	if (patch->ctl_count) {
+		if ((err = receive_response(*conn, &opr, &sizer)) < 0)
+			return err;
+
+		if (opr != FNC_CONTINUE || (unsigned int)sizer != patch->ctl_count * sizeof(liblo10k1_dsp_ctl_t))
+			goto err_protocol;
+
+		patch->ctl = (liblo10k1_dsp_ctl_t *)receive_msg_data_malloc(*conn, sizer);
+		if (!patch->ctl)
 			goto err_nomem;
 	}
 

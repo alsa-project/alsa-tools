@@ -30,6 +30,10 @@
 #include "liblo10k1.h"
 #include "liblo10k1ef.h"
 
+#define AS10K1_FILE_SIGNATURE_ALSA "EMU10K1 FX8010 1"
+#define AS10K1_FILE_SIGNATURE_EMU "emu10k1-dsp-file"
+#define AS10K1_FILE_FORMAT_VERSION_EMU 1
+
 liblo10k1_emu_patch_t *liblo10k1_emu_new_patch()
 {
 	liblo10k1_emu_patch_t *tmp = (liblo10k1_emu_patch_t *)malloc(sizeof(liblo10k1_emu_patch_t));
@@ -340,10 +344,18 @@ int liblo10k1_emu_load_patch(char *file_name, liblo10k1_emu_patch_t **p)
 	} else
 		fclose(patch_file);
 
-	/* signature check */
-	if (strncmp(patch_data, "EMU10K1 FX8010 1", 16) != 0) {
-		en = LD10K1_EF_ERR_SIGNATURE;
-		goto err;
+	int file_sig = 0;
+		
+	/* signature checks - two kinds of as10k1 files, one from alsa-tools, other from emu-tools. */
+	if(strncmp(patch_data, AS10K1_FILE_SIGNATURE_ALSA, 16) != 0)
+	{
+	  if((strncmp(patch_data, AS10K1_FILE_SIGNATURE_EMU, 16) == 0) && (*((unsigned short *)&patch_data[17]) == AS10K1_FILE_FORMAT_VERSION_EMU))
+	    file_sig = 3;
+		else	
+		{
+	    en = LD10K1_EF_ERR_SIGNATURE;
+	    goto err;
+		}
 	}
 	
 	new_patch = liblo10k1_emu_new_patch();
@@ -353,15 +365,14 @@ int liblo10k1_emu_load_patch(char *file_name, liblo10k1_emu_patch_t **p)
 	}
 	
 	/* next patch name */
-	strncpy(new_patch->patch_name, &(patch_data[16]), 31);
+	strncpy(new_patch->patch_name, &(patch_data[16 + file_sig]), 31);
 	new_patch->patch_name[31] = '\0';
-
 	/* registers */
-	file_pos = 32+16;
+	file_pos = 32+16 + file_sig; 
 	
 	/* in count */
 	if ((en = read_byte(patch_data, file_size, &file_pos, &byte_tmp)) < 0)
-		goto err;
+		  goto err;
 	
 	if (byte_tmp >= 32) {
 		en = LD10K1_EF_ERR_FORMAT;
@@ -500,6 +511,9 @@ int liblo10k1_emu_load_patch(char *file_name, liblo10k1_emu_patch_t **p)
 	/* instruction lines */
 	if ((en = read_ushort(patch_data, file_size, &file_pos, &ushort_tmp)) < 0)
 		goto err;
+		
+	if(file_sig)
+	  ushort_tmp >>= 1;
 		
 	if ((en = liblo10k1_emu_patch_set_instr_count(new_patch, ushort_tmp)) < 0)
 		goto err;

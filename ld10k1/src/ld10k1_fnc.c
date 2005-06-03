@@ -209,7 +209,7 @@ int ld10k1_dsp_mgr_init(ld10k1_dsp_mgr_t *dsp_mgr)
 		ld10k1_dsp_mgr_name_new(&(dsp_mgr->outs[0x0f].name), "OUT_Rear_Right");
 		ld10k1_dsp_mgr_name_new(&(dsp_mgr->outs[0x10].name), "OUT_AC97_Front_Left");
 		ld10k1_dsp_mgr_name_new(&(dsp_mgr->outs[0x11].name), "OUT_AC97_Front_Right");
-		ld10k1_dsp_mgr_name_new(&(dsp_mgr->outs[0x16].name), "OUT_ADC_Caputre_Left");
+		ld10k1_dsp_mgr_name_new(&(dsp_mgr->outs[0x16].name), "OUT_ADC_Capture_Left");
 		ld10k1_dsp_mgr_name_new(&(dsp_mgr->outs[0x17].name), "OUT_ADC_Capture_Right");
 		ld10k1_dsp_mgr_name_new(&(dsp_mgr->outs[0x18].name), "OUT_Mic_Capture");
 	} else {
