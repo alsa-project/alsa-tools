@@ -888,7 +888,7 @@ void RoutingWidget::putNewObjectAt(int xp, int yp)
 		
 		drawing->updateContents();
 	
-		modeNormalClicked();
+		//modeNormalClicked();
 	}
 }
 

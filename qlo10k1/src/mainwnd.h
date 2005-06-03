@@ -52,6 +52,10 @@ public:
 	void loadSettings();
 	
 	void patchesUpdateText();
+
+protected:
+	void closeEvent(QCloseEvent*);
+
 public slots:
 	// menu
 	void menuLoadDSPConfigActivated(int id);

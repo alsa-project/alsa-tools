@@ -31,6 +31,7 @@
 #include "loadpatchdialog.h"
 #include "transformpatchdialog.h"
 
+extern QString gLastFileDir;
 
 RSItemBaseWithType *RoutingWidget::createNewIO(EditMode em)
 {
@@ -54,6 +55,14 @@ RSItemBaseWithType *RoutingWidget::createNewIO(EditMode em)
 	
 	NewIODlg d(structure, t);
 
+	int err;
+	err = d.init();
+	if(err < 0)
+	{
+		QMessageBox::critical(0, APP_NAME, QString("Error creating new IO dialog\n(ld10k1 error:%1)").arg(structure->errorStr(err)));
+		return NULL;
+	}
+	
 	if (d.exec() ==  QDialog::Accepted)
 		return d.getNewIO();
 	else
@@ -64,19 +73,28 @@ RSItemBaseWithType *RoutingWidget::createNewPatch()
 {
 	QFileDialog *fd = new QFileDialog(this, "file dialog", TRUE);
 	fd->setMode(QFileDialog::ExistingFile);
-	fd->setFilter("Patches (*.emu10k1 *.ld10k1)");
+	QStringList filterlist;
+	filterlist << QString( "as10k1 Patch files (*.bin *.as10k1 *.emu10k1)" );
+	filterlist << QString( "ld10k1 Native effect files (*.ld10k1)" );
+	filterlist << QString( "All Files (*)" );
+	QString filters = filterlist.join( ";;" );
+	fd->setFilters( filters );
+	fd->setDir(gLastFileDir);
+	
 	fd->setCaption("Load patch");
 
 	StrPatch *loaded = NULL;
 	int err;
 					
 	QString fileName;
-    	if ( fd->exec() == QDialog::Accepted )
+	if ( fd->exec() == QDialog::Accepted )
 	{
         	fileName = fd->selectedFile();
+		gLastFileDir = fd->dirPath();
 		delete fd;
+		
 		LD10k1File *ldfile = NULL;
-		if (fileName.endsWith(".emu10k1"))
+		if ((err = LD10k1File::LoadFromFile(fileName, &ldfile)) < 0) 
 		{
 			EMU10k1File *emufile = NULL;
 			if ((err = EMU10k1File::LoadFromFile(fileName, &emufile)) < 0) 
@@ -102,13 +120,6 @@ RSItemBaseWithType *RoutingWidget::createNewPatch()
 					delete emufile;
 					return NULL;
 				}
-			}
-		}
-		else
-		{
-			if ((err = LD10k1File::LoadFromFile(fileName, &ldfile)) < 0) {
-				QMessageBox::critical(0, APP_NAME, QString("Couldn't load patch\n(ld10k1 error:%1)").arg(structure->errorStr(err)));
-				return NULL;
 			}
 		}
 		
@@ -262,7 +273,7 @@ void RoutingDrawWidget::connectLinkDrag(int xp, int yp, int mxp, int myp)
 						}
 						
 						stopLinkDrag();
-						parent->modeNormalClicked();
+						//parent->modeNormalClicked();
 					}
 					
 					delete contextMenu;

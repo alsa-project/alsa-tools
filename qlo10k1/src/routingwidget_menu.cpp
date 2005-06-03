@@ -32,11 +32,15 @@
 #include "strglobal.h"
 #include "ld10k1file.h"
 
+extern QString gLastFileDir;
+
 void RoutingWidget::openObjectMenuAt(RSItemBaseWithType *item, MenuMode mm, int xp, int yp, int mxp, int myp)
 {
 	QPopupMenu *contextMenu = new QPopupMenu();
 	
 	enum Action {Refresh, ClearDSP, Delete, Rename, Disconnect, DelPoint, AddPoint, Connect, Save};
+	
+	int rn = -1;
 	
 	if (mm == MenuNone)
 	{
@@ -73,7 +77,24 @@ void RoutingWidget::openObjectMenuAt(RSItemBaseWithType *item, MenuMode mm, int 
 		else if (pn < 0)
 			contextMenu->insertItem(tr("A&dd point"), AddPoint);
 		
-		contextMenu->insertItem(tr("D&isconnect"), Disconnect);
+		if (item->type() == RSItemBaseWithType::Link)
+		{
+			StrLink *lnk = (StrLink *)item;
+			
+			rn = lnk->getRouteNumFromPoint(xp, yp);
+			if(rn >= 0)
+			{
+				RSItemIO *io = NULL;
+				RSItemBaseWithType *own = NULL;
+				io = lnk->getRoutePoint(rn); 
+				if(io)
+				{
+					own = (RSItemBaseWithType*)io->getOwner();
+					if(own && (own->type() == RSItemBaseWithType::Patch))
+					  contextMenu->insertItem(tr("D&isconnect"), Disconnect);
+				}
+			}
+		}
 			
 		contextMenu->insertSeparator();
 		contextMenu->insertItem(tr("&Delete"), Delete);
@@ -128,6 +149,7 @@ void RoutingWidget::openObjectMenuAt(RSItemBaseWithType *item, MenuMode mm, int 
 	else if (id == Delete)
 	{
 		drawing->deleteAllSelected();
+		structure->loadFromLD();
 	}
 	else if (id == Connect)
 	{
@@ -138,7 +160,7 @@ void RoutingWidget::openObjectMenuAt(RSItemBaseWithType *item, MenuMode mm, int 
 	}
 	else if (id == Disconnect)
 	{
-		RSItemIO *io = NULL;		
+		RSItemIO *io = NULL;
 		if (item->type() == RSItemBaseWithType::Patch)
 		{
 			int err;
@@ -150,7 +172,7 @@ void RoutingWidget::openObjectMenuAt(RSItemBaseWithType *item, MenuMode mm, int 
 			l->updateContents(drawing, getZoomLevel());
 			
 			if ((err = structure->disconnectFromLink(io)) < 0)
-				QMessageBox::critical(0, APP_NAME, QString("Couldn't disconnect !\n(ld10k1 error:%1)").arg(structure->errorStr(err)));
+			  QMessageBox::critical(0, APP_NAME, QString("Couldn't disconnect !\n(ld10k1 error:%1)").arg(structure->errorStr(err)));
 		}
 		else
 		{
@@ -164,15 +186,41 @@ void RoutingWidget::openObjectMenuAt(RSItemBaseWithType *item, MenuMode mm, int 
 				StrOutput *out = (StrOutput *)item;
 				io = out->getIO(false, 0);
 			}
-			if (item->type() == RSItemBaseWithType::FX)
+			else if (item->type() == RSItemBaseWithType::FX)
 			{
 				StrFX *fx = (StrFX *)item;
 				io = fx->getIO(true, 0);
 			}
 			
-			StrLink *l = io->getConnectedTo();
-			structure->deleteOneLink(l);
-			drawing->updateContents();
+			if(io)
+			{  
+				StrLink *l = io->getConnectedTo();
+				structure->deleteOneLink(l);
+				structure->loadFromLD();
+				drawing->updateContents();
+			}  
+			else if (item->type() == RSItemBaseWithType::Link)
+			{
+				StrLink *lnk = (StrLink *)item;
+				
+				if(rn >= 0)
+				{  
+					io = lnk->getRoutePoint(rn);
+					if(io)
+					{
+						RSItemBaseWithType *own = NULL;
+						own = (RSItemBaseWithType*)io->getOwner();
+						if(own && (own->type() == RSItemBaseWithType::Patch))
+						{
+							int err;
+							if ((err = structure->disconnectFromLink(io)) < 0)
+								QMessageBox::critical(0, APP_NAME, QString("Couldn't disconnect !\n(ld10k1 error:%1)").arg(structure->errorStr(err)));
+			
+							drawing->updateContents();
+						}
+					}
+				}
+			}
 		}
 	}
 	else if (id == ClearDSP)
@@ -192,20 +240,22 @@ void RoutingWidget::openObjectMenuAt(RSItemBaseWithType *item, MenuMode mm, int 
 		
 		QFileDialog *fd = new QFileDialog(this, "file dialog", TRUE);
 		fd->setMode(QFileDialog::AnyFile);
-		fd->setFilter("Patch (*.ld10k1)");
+		fd->setFilter("ld10k1 Native effect files (*.ld10k1)");
 		fd->setCaption("Save patch");
+		fd->setDir(gLastFileDir);
 		
 		QString fileName;
 		if (fd->exec() == QDialog::Accepted)
 		{
 			fileName = fd->selectedFile();
+			gLastFileDir = fd->dirPath();
 			delete fd;
 			
 			if (!fileName.endsWith(".ld10k1"))
 				fileName += ".ld10k1";
 			if (QFile::exists(fileName))
 			{
-				if (QMessageBox::question(0, APP_NAME, QString("File with name %1 exist. Overwite ?").arg(fileName), QMessageBox::Yes, QMessageBox::Cancel) != QMessageBox::Yes)
+				if (QMessageBox::question(0, APP_NAME, QString("File with name %1 exists. Overwrite ?").arg(fileName), QMessageBox::Yes, QMessageBox::Cancel) != QMessageBox::Yes)
 					return;
 			}
 		

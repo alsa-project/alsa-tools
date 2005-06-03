@@ -129,6 +129,8 @@ int StrGlobal::loadFromLD(void)
 				fx->setName(ioname);
 				fx->setFlagChanged(true);
 			}
+			// Don't make unconnected IO/FX disappear.
+			fx->setFlagUsed(true);
 		}
 		else
 		{
@@ -154,6 +156,7 @@ int StrGlobal::loadFromLD(void)
 				in->setName(ioname);
 				in->setFlagChanged(true);
 			}
+			in->setFlagUsed(true);
 		}
 		else
 		{
@@ -179,6 +182,7 @@ int StrGlobal::loadFromLD(void)
 				out->setName(ioname);
 				out->setFlagChanged(true);
 			}
+			out->setFlagUsed(true);
 		}
 		else
 		{

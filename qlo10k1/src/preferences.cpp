@@ -79,6 +79,8 @@ void PreferencesDlg::okClicked()
 	for (i = 0; i < cards.count(); i++)
 		global->Cards.append(new CardParam(cards.at(i)));
 		
+	repDirSystem = leRepSystem->text();
+	repDirUser = leRepUser->text();
 	global->RepDirSystem = repDirSystem;
 	global->RepDirUser = repDirUser;
 	

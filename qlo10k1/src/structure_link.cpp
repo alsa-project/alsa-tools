@@ -391,6 +391,7 @@ void StrLink::updateOneSegment(QScrollView *sv, int r, float zoom)
 	}
 }
 
+// Determines whether a point is close enough to a another point, within LINK_SELECT_WH.
 bool StrLink::containsPointPoint(QPoint &p, int xp, int yp)
 {
 	QRect r(p.x() - LINK_SELECT_WH / 2, p.y() - LINK_SELECT_WH / 2,
@@ -399,6 +400,7 @@ bool StrLink::containsPointPoint(QPoint &p, int xp, int yp)
 	return r.contains(xp, yp);
 }
 
+// Determines whether a point is on a line segment.
 bool StrLink::containsPointSegment(QPoint &p1, QPoint &p2, int xp, int yp)
 {
 	QRect r(p1, p2);
@@ -638,3 +640,55 @@ bool StrLink::delSegmentPoint(int num)
 	
 	return false;
 }
+
+// Returns route number which segment containing point leads to, else -1
+int StrLink::getRouteNumFromPoint(int xp, int yp)
+{
+	int i;
+	unsigned j;
+	
+	if (xp < x() || xp > x() + width() ||
+		yp < y() || yp > y() + height())
+		return -1;
+		
+	if (useMixPoint)
+	{
+		if (containsPointPoint(mixPoint, xp, yp))
+			return -1;
+	}
+		
+	for (i = 0; i < POINTINFO_MAX_CONN_PER_POINT + 1; i++)
+	{
+		if (routes[i])
+		{
+			QPoint fp = routesEndPoints[i];
+			if (containsPointPoint(fp, xp, yp))
+				return i;
+				
+			for (j = 0; j < routesPoints[i].count(); j++)
+			{
+				QPoint tmpp = routesPoints[i][j];
+				
+				if (containsPointPoint(tmpp, xp, yp))
+					return i;
+			
+				if (containsPointSegment(fp, tmpp, xp, yp))
+					return i;
+				fp = tmpp;
+			}
+			
+			if (useMixPoint)
+			{
+				if (containsPointSegment(fp, mixPoint, xp, yp))
+					return i;
+			}
+			else
+			{
+				if (containsPointSegment(fp, routesEndPoints[0], xp, yp))
+					return i;
+			}
+		}
+	}
+	return -1;
+}
+

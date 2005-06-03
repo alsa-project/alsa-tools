@@ -62,10 +62,26 @@ NewIODlg::NewIODlg(StrGlobal *glob, DlgType t)
 	
 	connect(pbOK, SIGNAL(clicked()), this, SLOT(okClicked()));
 	connect(pbCancel, SIGNAL(clicked()), this, SLOT(cancelClicked()));
+}
+
+int NewIODlg::init()
+{
+	int err;
 	
 	QString title;
 	QString columnTitle;
 	
+	int cnt;
+	if (dt == In)
+		err = global->Card->getInputCount(&cnt);
+	else if (dt == Out)
+		err = global->Card->getOutputCount(&cnt);
+	else
+		err = global->Card->getFXCount(&cnt);
+	
+	if(err < 0)
+	  return err;
+		
 	switch (dt)
 	{
 		case In:
@@ -83,16 +99,8 @@ NewIODlg::NewIODlg(StrGlobal *glob, DlgType t)
 	}
 	
 	IOListViewItem *after = NULL;
-	int cnt;
 	
 	lvIOs->clear();
-	
-	if (dt == In)
-		global->Card->getInputCount(&cnt);
-	else if (dt == Out)
-		global->Card->getOutputCount(&cnt);
-	else
-		global->Card->getFXCount(&cnt);
 	
 	for (int i = 0; i < cnt; i++)
 	{
@@ -109,12 +117,14 @@ NewIODlg::NewIODlg(StrGlobal *glob, DlgType t)
 		if (!used)
 		{
 			if (dt == In)
-				global->Card->getInput(i, ioname);
+				err = global->Card->getInput(i, ioname);
 			else if (dt == Out)
-				global->Card->getOutput(i, ioname);
+				err = global->Card->getOutput(i, ioname);
 			else
-				global->Card->getFX(i, ioname);
+				err = global->Card->getFX(i, ioname);
 			
+			if(err < 0)
+			  goto Error;	
 			
 			if (after)
 				after = new IOListViewItem(i, ioname, lvIOs, after);
@@ -127,8 +137,13 @@ NewIODlg::NewIODlg(StrGlobal *glob, DlgType t)
 	lvIOs->setColumnText(1, columnTitle);
 	
 	connect(lvIOs, SIGNAL(selectionChanged(QListViewItem *)), this, SLOT(ioSelectionChanged(QListViewItem *)));
+	
+	return 0;
+	
+	Error:
+	
+	return err;
 }
-
 
 void NewIODlg::okClicked()
 {

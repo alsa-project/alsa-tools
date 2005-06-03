@@ -42,6 +42,8 @@
 #include "structure_patch.h"
 #include "strparam.h"
 
+QString gLastFileDir;
+
 class PatchesListViewItem : public QListViewItem
 {
 public:
@@ -121,6 +123,12 @@ MainWnd::~MainWnd()
 	delete cardGlobal;
 }
 
+void MainWnd::closeEvent(QCloseEvent* ce)
+{
+	saveSettings();
+	ce->accept();
+}
+
 void MainWnd::tabMainCurrentChanged(QWidget *tab)
 {
 	if (!CurrentCard)
@@ -163,6 +171,7 @@ void MainWnd::patchesUpdateText()
 
 void MainWnd::menuQuitActivated(int /*id*/)
 {
+	saveSettings();
 	qApp->quit();
 }
 
@@ -171,15 +180,17 @@ void MainWnd::menuLoadDSPConfigActivated(int id)
 	if (!CurrentCard)
 		return;
 	QFileDialog *fd = new QFileDialog(this, "file dialog", TRUE);
+	fd->setDir(gLastFileDir);
 	fd->setMode(QFileDialog::ExistingFile);
 	fd->setFilter("DSP config (*.ld10k1)");
 	fd->setCaption("Save DSP config");
 	int err = 0;
 
 	QString fileName;
-    	if (fd->exec() == QDialog::Accepted)
+	if (fd->exec() == QDialog::Accepted)
 	{
-        	fileName = fd->selectedFile();
+		fileName = fd->selectedFile();
+		gLastFileDir = fd->dirPath();
 		delete fd;
 		
 		LD10k1DspFile *dc = NULL;
@@ -205,15 +216,17 @@ void MainWnd::menuSaveDSPConfigActivated(int id)
 	if (!CurrentCard)
 		return;
 	QFileDialog *fd = new QFileDialog(this, "file dialog", TRUE);
+	fd->setDir(gLastFileDir);
 	fd->setMode(QFileDialog::AnyFile);
 	fd->setFilter("DSP config (*.ld10k1)");
 	fd->setCaption("Save DSP config");
 	int err = 0;
 
 	QString fileName;
-    	if (fd->exec() == QDialog::Accepted)
+	if (fd->exec() == QDialog::Accepted)
 	{
         	fileName = fd->selectedFile();
+		gLastFileDir = fd->dirPath();
 		delete fd;
 		
 		if (!fileName.endsWith(".ld10k1"))
@@ -379,17 +392,26 @@ void MainWnd::loadClicked()
 {
 	QFileDialog *fd = new QFileDialog(this, "file dialog", TRUE);
 	fd->setMode(QFileDialog::ExistingFile);
-	fd->setFilter("Patches (*.emu10k1 *.ld10k1)");
+	QStringList filterlist;
+	filterlist << QString( "as10k1 Patch files (*.bin *.as10k1 *.emu10k1)" );
+	filterlist << QString( "ld10k1 Native effect files (*.ld10k1)" );
+	filterlist << QString( "All Files (*)" );
+	QString filters = filterlist.join( ";;" );
+	fd->setFilters( filters );
+	
+	fd->setDir(gLastFileDir);
 	fd->setCaption("Load patch");
 	int err = 0;
 
 	QString fileName;
-    	if ( fd->exec() == QDialog::Accepted )
+	if ( fd->exec() == QDialog::Accepted )
 	{
         	fileName = fd->selectedFile();
+		gLastFileDir = fd->dirPath();
 		delete fd;
 		LD10k1File *ldfile = NULL;
-		if (fileName.endsWith(".emu10k1"))
+		/* Try loading as an ld10k1 file first. */
+		if ((err = LD10k1File::LoadFromFile(fileName, &ldfile)) < 0) 
 		{
 			EMU10k1File *emufile = NULL;
 			if ((err = EMU10k1File::LoadFromFile(fileName, &emufile)) < 0) 
@@ -415,13 +437,6 @@ void MainWnd::loadClicked()
 					delete emufile;
 					return;
 				}
-			}
-		}
-		else
-		{
-			if ((err = LD10k1File::LoadFromFile(fileName, &ldfile)) < 0) {
-				QMessageBox::critical(0, APP_NAME, QString("Couldn't load patch\n(ld10k1 error:%1)").arg(CurrentCard->errorStr(err)));
-				return;
 			}
 		}
 		
@@ -480,6 +495,7 @@ void MainWnd::saveSettings()
 	settings.writeEntry("/Version", "0.0.1");
 	settings.writeEntry("/RepDirSystem", cardGlobal->RepDirSystem);
 	settings.writeEntry("/RepDirUser", cardGlobal->RepDirUser);
+	settings.writeEntry("/LastDir", gLastFileDir);
 	
 	// first save cards
 	settings.beginGroup("/Cards");
@@ -510,6 +526,7 @@ void MainWnd::loadSettings()
 		// settings doesn't exists
 		cardGlobal->RepDirSystem = "";
 		cardGlobal->RepDirUser = "";
+		gLastFileDir = "./";
 		
 		CardParam *card = new CardParam();
 		card->CardName = "Default card";
@@ -524,6 +541,7 @@ void MainWnd::loadSettings()
 	{
 		cardGlobal->RepDirSystem = settings.readEntry("/RepDirSystem", "");
 		cardGlobal->RepDirUser = settings.readEntry("/RepDirUser", "");
+		gLastFileDir = settings.readEntry("/LastDir", "./");
 	
 		settings.beginGroup("/Cards");
 		

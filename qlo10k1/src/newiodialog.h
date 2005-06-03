@@ -40,6 +40,8 @@ private:
 	QString name;
 public:	
 	NewIODlg(StrGlobal *glob, DlgType t);
+
+	int init();
 	
 	StrIOBase *getNewIO();
 public slots:

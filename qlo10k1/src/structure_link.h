@@ -39,11 +39,13 @@ private:
 	RSItemIO *routes[POINTINFO_MAX_CONN_PER_POINT + 1];
 	
 	QValueList <QPoint> routesPoints[POINTINFO_MAX_CONN_PER_POINT + 1];
- 	QPoint routesEndPoints[POINTINFO_MAX_CONN_PER_POINT + 1];
+	QPoint routesEndPoints[POINTINFO_MAX_CONN_PER_POINT + 1];
 	
 	bool useMixPoint;
 	QPoint mixPoint;
+	// Determines whether a point is close enough to a another point, within LINK_SELECT_WH.
 	bool containsPointPoint(QPoint &p, int xp, int yp);
+	// Determines whether a point is on a line segment.
 	bool containsPointSegment(QPoint &p1, QPoint &p2, int xp, int yp);
 public:
 	StrLink(int id, LinkType t);
@@ -72,6 +74,9 @@ public:
 	RSItemIO *getRoutePoint(int r);
 	void setRoutePoint(int r, RSItemIO *ri);
 	void clearRoutesPoints(int r);
+	
+	// Returns route number which segment containing point leads to, else -1
+	int getRouteNumFromPoint(int xp, int yp);
 	
 	virtual void calcSize();
 	virtual void draw(DrawingParams *dp);
