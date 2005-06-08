@@ -739,8 +739,10 @@ gint DrawMixer(gpointer unused) {
   // Draw vmixer elements (Vmixer cards only)
   if (vmixerId) {
     for (o=0; o<GMixerSection.Outputs; o++)
-      for (i=0; i<vmixerControl.vchannels; i++)
-        DrawBar(o+1, i+GMixerSection.VmixerFirst, VirLevel[i], DONT_DRAW, vmixerControl.mixer[o][i].Gain);
+      for (i=0; i<vmixerControl.vchannels; i++) {
+        dB=Add_dB(vmixerControl.mixer[o][i].Gain, VirLevel[i]);
+        DrawBar(o+1, i+GMixerSection.VmixerFirst, dB, DONT_DRAW, vmixerControl.mixer[o][i].Gain);
+      }
   }
 
   gtk_widget_draw(Mixdarea, &update_rect);
