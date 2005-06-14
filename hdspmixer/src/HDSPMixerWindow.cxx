@@ -935,6 +935,7 @@ void HDSPMixerWindow::setGain(int in, int out, int value)
     snd_ctl_elem_value_set_integer(ctl, 2, value);
     if ((err = snd_ctl_elem_write(handle, ctl)) < 0) {
         fprintf(stderr, "Alsa error: %s\n", snd_strerror(err));
+        snd_ctl_close(handle);
         return;
     }
     
