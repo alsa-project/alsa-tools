@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
 	loopback_box=create_loopback_toggle();
 	gtk_box_pack_start(GTK_BOX(col1_box),loopback_box,TRUE,FALSE,0);
 
-       	clock_box=create_enum_elem_radio("Sample Clock Source",&clock_iv);
+	clock_box=create_enum_elem_radio("Sample Clock Source",&clock_iv);
 	gtk_box_pack_start(GTK_BOX(col1_box),clock_box,TRUE,FALSE,0);
 
 	gtk_box_pack_start(GTK_BOX(main_box),col1_box,TRUE,FALSE,8);
@@ -172,14 +172,15 @@ GtkWidget *create_enum_elem_radio(char *elem_name,ctl_elem_info_val_t *iv)
 		r=gtk_radio_button_new_with_label(group,snd_ctl_elem_info_get_item_name(iv->info));
 		group=gtk_radio_button_group(GTK_RADIO_BUTTON(r));
 		gtk_signal_connect(GTK_OBJECT(r),"toggled",GTK_SIGNAL_FUNC(elem_radio_toggled),(gpointer)iv);
-		if(i==snd_ctl_elem_value_get_enumerated(iv->val,0))
+		if(i==snd_ctl_elem_value_get_integer(iv->val,0))
 			active=r;
 		gtk_box_pack_start(GTK_BOX(box),r,TRUE,FALSE,0);
 	}
-	if(active)	
+	if(active)
 		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(active),TRUE);
 	frame=gtk_frame_new(elem_name);
 	gtk_frame_set_shadow_type(GTK_FRAME(frame),GTK_SHADOW_IN);
 	gtk_container_add(GTK_CONTAINER(frame),box);
 	return frame;
 }
+
