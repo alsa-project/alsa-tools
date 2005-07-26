@@ -1889,7 +1889,7 @@ int main(int argc, char *argv[]) {
       continue;
     }
     if ((err=snd_ctl_card_info(ctlhandle, hw_info))>=0) {
-      if (!strncmp(snd_ctl_card_info_get_driver(hw_info), "Echoaudio", 9)) {
+      if (!strncmp(snd_ctl_card_info_get_driver(hw_info), "Echo_", 5)) {
         strncpy(card, hwname, 7);
         hwname[7]=0;
         strncpy(cardname, snd_ctl_card_info_get_name(hw_info), 31);
