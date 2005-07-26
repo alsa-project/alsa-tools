@@ -59,7 +59,7 @@ int strstr_icase_blank(const char * const string1, const char * const string2)
 	{
 		if ((pos_first_non_blank < 0) && (!isblank(search_string[i])))
 			pos_first_non_blank = i;
-		search_string[i] = toupper(search_string[i]);
+		search_string[i] = (char)toupper(search_string[i]);
 	}
 
 	// replace blanks in search string with SEP_CHAR to compare without blanks
@@ -91,7 +91,7 @@ int strstr_icase_blank(const char * const string1, const char * const string2)
 	while (position < strlen(string1))
 	{
 		strncpy(line, (string1 + (position * sizeof(char))), MAX_SEARCH_FIELD_LENGTH);
-		line[MAX_SEARCH_FIELD_LENGTH] = '\0';
+		line[MAX_SEARCH_FIELD_LENGTH - 1] = '\0';
 		pos_first_non_blank = -1;
 		for (i = 0; i < strlen(line); i++)
 		{
