@@ -1,7 +1,7 @@
 /*****************************************************************************
    envy24control.c - Env24 chipset (ICE1712) control utility
    midi controller code
-   (c) 2004 by Dirk Jagdmann <doj@cubic.org>
+   (c) 2004, 2005 by Dirk Jagdmann <doj@cubic.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License
@@ -27,13 +27,12 @@
 static snd_seq_t *seq=0;
 static int client, clientId, port, ch;
 static char *portname=0, *appname=0;
-static int nofeedback=-1;
 static int maxstreams=0;
-static uint8_t currentvalues[128];
+static int currentvalue[128];
 
 void midi_maxstreams(int m)
 {
-  maxstreams=(m-1)*2;
+  maxstreams=m*2;
 }
 
 int midi_close()
@@ -56,6 +55,10 @@ static void do_controller(int c, int v)
 {
   snd_seq_event_t ev;
   if(!seq) return;
+  if(currentvalue[c]==v) return;
+#if 0
+  fprintf(stderr, "do_controller(%i,%i)\n",c,v);
+#endif
   snd_seq_ev_clear(&ev);
   snd_seq_ev_set_source(&ev, port);
   snd_seq_ev_set_subs(&ev);
@@ -63,18 +66,31 @@ static void do_controller(int c, int v)
   snd_seq_ev_set_controller(&ev,ch,c,v);
   snd_seq_event_output(seq, &ev);
   snd_seq_drain_output(seq);
+
+  currentvalue[c]=v;
 }
 
 int midi_controller(int c, int v)
 {
-  if(c==nofeedback) return 0;
   if(c<0 || c>127) return 0;
 
   v*=127; v/=96;
   if(v<0) v=0;
   if(v>127) v=127;
-  currentvalues[c]=v;
+#if 0
+  fprintf(stderr, "midi_controller(%i,%i)\n",c,v);
+#endif
+  if(currentvalue[c]==v-1 || currentvalue[c]==v-2) return 0; /* because of 96to127 conversion values can differ up to two integers */
   do_controller(c,v);
+  return 0;
+}
+
+int midi_button(int b, int v)
+{
+  if(b<0) return 0;
+  b+=maxstreams;
+  if(b>127) return 0;
+  do_controller(b, v?127:0);
   return 0;
 }
 
@@ -86,6 +102,9 @@ int midi_init(char *appname, int channel)
 
   if(seq)
     return 0;
+
+  for(npfd=0; npfd!=128; ++npfd)
+    currentvalue[npfd]=-1;
 
   ch=channel;
 
@@ -139,6 +158,7 @@ int midi_init(char *appname, int channel)
 }
 
 void mixer_adjust(GtkAdjustment *adj, gpointer data);
+void mixer_set_mute(int stream, int left, int right);
 
 void midi_process(gpointer data, gint source, GdkInputCondition condition)
 {
@@ -158,15 +178,27 @@ void midi_process(gpointer data, gint source, GdkInputCondition condition)
 	  fprintf(stderr, "Channel %02d: Controller %03d: Value:%d\n",
 		  ev->data.control.channel, ev->data.control.param, ev->data.control.value);
 #endif
-	  if(ev->data.control.channel == ch && ev->data.control.param < maxstreams)
+	  if(ev->data.control.channel == ch)
 	    {
-	      int stream=ev->data.control.param+1;
-	      long data=((stream/2)<<16)|(stream&1);
-	      int v=ev->data.control.value; v*=96; v/=127;
-	      gtk_adjustment_set_value(adj, 96-v);
-	      nofeedback=ev->data.control.param;
-	      mixer_adjust(adj, (gpointer)data);
-	      nofeedback=-1;
+	      currentvalue[ev->data.control.param]=ev->data.control.value;
+	      if(ev->data.control.param < maxstreams)
+		{
+		  int stream=ev->data.control.param;
+		  long data=((stream/2+1)<<16)|(stream&1);
+		  int v=ev->data.control.value; v*=96; v/=127;
+		  gtk_adjustment_set_value(adj, 96-v);
+		  mixer_adjust(adj, (gpointer)data);
+		}
+	      else if(ev->data.control.param < maxstreams*2)
+		{
+		  int b=ev->data.control.param-maxstreams;
+		  int left=-1, right=-1;
+		  if(b&1)
+		    right=ev->data.control.value;
+		  else
+		    left=ev->data.control.value;
+		  mixer_set_mute(b/2+1, left, right);
+		}
 	    }
 	  break;
 
@@ -178,8 +210,14 @@ void midi_process(gpointer data, gint source, GdkInputCondition condition)
 	  if(ev->data.connect.dest.client!=clientId)
 	    {
 	      int i;
-	      for(i=0; i<sizeof(currentvalues); ++i)
-		do_controller(i, currentvalues[i]);
+	      for(i=0; i!=128; ++i)
+		if(currentvalue[i] >= 0)
+		  {
+		    /* set currentvalue[i] to a fake value, so the check in do_controller does not trigger */
+		    int v=currentvalue[i];
+		    currentvalue[i]=-1;
+		    do_controller(i, v);
+		  }
 	    }
 	  break;
 	}
