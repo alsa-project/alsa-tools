@@ -133,10 +133,15 @@ void mixer_toggled_mute(GtkWidget *togglebutton, gpointer data)
 
 void mixer_set_mute(int stream, int left, int right)
 {
-	if (left >= 0)
+	int stereo = is_active(mixer_stereo_toggle[stream-1]) ? 1 : 0;
+	if (left >= 0 || stereo) {
 		toggle_set(mixer_mute_toggle[stream-1][0], left ? TRUE : FALSE);
-	if (right >= 0)
+		if(stereo && left<0) left=right;
+	}
+	if (right >= 0 || stereo) {
 		toggle_set(mixer_mute_toggle[stream-1][1], right ? TRUE : FALSE);
+		if(stereo && right<0) right=left;
+	}
 	set_switch1(stream, left, right);
 }
 
