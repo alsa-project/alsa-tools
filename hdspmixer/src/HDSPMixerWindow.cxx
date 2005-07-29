@@ -918,10 +918,8 @@ void HDSPMixerWindow::setGain(int in, int out, int value)
     snd_ctl_elem_value_alloca(&ctl);
     snd_ctl_elem_id_alloca(&id);
     snd_ctl_elem_id_set_name(id, "Mixer");
-    snd_ctl_elem_id_set_numid(id, 0);
     snd_ctl_elem_id_set_interface(id, SND_CTL_ELEM_IFACE_HWDEP);
     snd_ctl_elem_id_set_device(id, 0);
-    snd_ctl_elem_id_set_subdevice(id, 0);
     snd_ctl_elem_id_set_index(id, 0);
     snd_ctl_elem_value_set_id(ctl, id);
 
@@ -966,10 +964,8 @@ void HDSPMixerWindow::setMixer(int idx, int src, int dst)
 	snd_ctl_elem_value_alloca(&ctl);
 	snd_ctl_elem_id_alloca(&id);
 	snd_ctl_elem_id_set_name(id, "Mixer");
-	snd_ctl_elem_id_set_numid(id, 0);
 	snd_ctl_elem_id_set_interface(id, SND_CTL_ELEM_IFACE_HWDEP);
 	snd_ctl_elem_id_set_device(id, 0);
-	snd_ctl_elem_id_set_subdevice(id, 0);
 	snd_ctl_elem_id_set_index(id, 0);
 	snd_ctl_elem_value_set_id(ctl, id);
     
@@ -1009,6 +1005,7 @@ muted:
 	snd_ctl_elem_value_set_integer(ctl, 2, (int)left_val);
 	if ((err = snd_ctl_elem_write(handle, ctl)) < 0) {
 	    fprintf(stderr, "Alsa error: %s\n", snd_strerror(err));
+	    snd_ctl_close(handle);
 	    return;
 	}
 	snd_ctl_elem_value_set_integer(ctl, 0, src*cards[current_card]->playbacks_offset+cards[current_card]->channel_map[idx-1]);
@@ -1016,6 +1013,7 @@ muted:
 	snd_ctl_elem_value_set_integer(ctl, 2, (int)right_val);
 	if ((err = snd_ctl_elem_write(handle, ctl)) < 0) {
 	    fprintf(stderr, "Alsa error: %s\n", snd_strerror(err));
+	    snd_ctl_close(handle);
 	    return;
 	}
 	snd_ctl_close(handle);

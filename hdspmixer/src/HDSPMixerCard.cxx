@@ -155,13 +155,14 @@ int HDSPMixerCard::getAutosyncSpeed()
     }
     
     snd_ctl_elem_id_set_name(elemid, "System Sample Rate");
-    snd_ctl_elem_id_set_numid(elemid, 16);
-    snd_ctl_elem_id_set_interface(elemid, SND_CTL_ELEM_IFACE_HWDEP);
-    snd_ctl_elem_id_set_device(elemid, 0);
-    snd_ctl_elem_id_set_subdevice(elemid, 0);
+    snd_ctl_elem_id_set_interface(elemid, SND_CTL_ELEM_IFACE_MIXER);
     snd_ctl_elem_id_set_index(elemid, 0);
     snd_ctl_elem_value_set_id(elemval, elemid);
-    snd_ctl_elem_read(handle, elemval);
+    if (snd_ctl_elem_read(handle, elemval) < 0) {
+	snd_ctl_elem_id_set_interface(elemid, SND_CTL_ELEM_IFACE_HWDEP);
+	snd_ctl_elem_value_set_id(elemval, elemid);
+	snd_ctl_elem_read(handle, elemval);
+    }
     rate = snd_ctl_elem_value_get_integer(elemval, 0);
 
     snd_ctl_close(handle);
@@ -187,13 +188,14 @@ int HDSPMixerCard::getSpeed()
 	return -1; 
     }
     snd_ctl_elem_id_set_name(elemid, "Sample Clock Source");
-    snd_ctl_elem_id_set_numid(elemid, 11);
-    snd_ctl_elem_id_set_interface(elemid, SND_CTL_ELEM_IFACE_PCM);
-    snd_ctl_elem_id_set_device(elemid, 0);
-    snd_ctl_elem_id_set_subdevice(elemid, 0);
+    snd_ctl_elem_id_set_interface(elemid, SND_CTL_ELEM_IFACE_MIXER);
     snd_ctl_elem_id_set_index(elemid, 0);
     snd_ctl_elem_value_set_id(elemval, elemid);
-    snd_ctl_elem_read(handle, elemval);
+    if (snd_ctl_elem_read(handle, elemval) < 0) {
+	snd_ctl_elem_id_set_interface(elemid, SND_CTL_ELEM_IFACE_PCM);
+	snd_ctl_elem_value_set_id(elemval, elemid);
+	snd_ctl_elem_read(handle, elemval);
+    }
     val = snd_ctl_elem_value_get_enumerated(elemval, 0);
     snd_ctl_close(handle);
     switch (val) {

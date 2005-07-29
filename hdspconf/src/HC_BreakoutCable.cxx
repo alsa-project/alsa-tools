@@ -32,10 +32,7 @@ static void setXlrStatus(char *ctl_name, int val, int card_index)
     snd_ctl_elem_value_alloca(&ctl);
     snd_ctl_elem_id_alloca(&id);
     snd_ctl_elem_id_set_name(id, ctl_name);
-    snd_ctl_elem_id_set_numid(id, 0);
-    snd_ctl_elem_id_set_interface(id, SND_CTL_ELEM_IFACE_HWDEP);
-    snd_ctl_elem_id_set_device(id, 0);
-    snd_ctl_elem_id_set_subdevice(id, 0);
+    snd_ctl_elem_id_set_interface(id, SND_CTL_ELEM_IFACE_MIXER);
     snd_ctl_elem_id_set_index(id, 0);
     snd_ctl_elem_value_set_id(ctl, id);
     snd_ctl_elem_value_set_integer(ctl, 0, val);
@@ -44,8 +41,13 @@ static void setXlrStatus(char *ctl_name, int val, int card_index)
 	return;
     }
     if ((err = snd_ctl_elem_write(handle, ctl)) < 0) {
-	fprintf(stderr, "Error accessing ctl interface on card %s\n", card_name);
-	return;
+	snd_ctl_elem_id_set_interface(id, SND_CTL_ELEM_IFACE_HWDEP);
+	snd_ctl_elem_value_set_id(ctl, id);
+	if ((err = snd_ctl_elem_write(handle, ctl)) < 0) {
+	    fprintf(stderr, "Error accessing ctl interface on card %s\n", card_name);
+	    snd_ctl_close(handle);
+	    return;
+	}
     }
     snd_ctl_close(handle);
 }
