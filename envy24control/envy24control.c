@@ -1951,7 +1951,7 @@ int main(int argc, char **argv)
 	snd_ctl_elem_value_t *val;
 	int npfds;
 	struct pollfd *pfds;
-	int midi_fd = -1, midi_channel = -1;
+	int midi_fd = -1, midi_channel = -1, midi_enhanced = 0;
 	int page;
 	int input_channels_set = 0;
 	int output_channels_set = 0;
@@ -1961,6 +1961,7 @@ int main(int argc, char **argv)
 		{"profiles_file", 1, 0, 'f'},
 		{"inputs", 1, 0, 'i'},
 		{"midichannel", 1, 0, 'm'},
+		{"midienhanced", 0, 0, 'M'},
 		{"outputs", 1, 0, 'o'},
 		{"pcm_outputs", 1, 0, 'p'},
 		{"spdif", 1, 0, 's'},
@@ -1984,7 +1985,7 @@ int main(int argc, char **argv)
 	view_spdif_playback = 0;
 	profiles_file_name = DEFAULT_PROFILERC;
 	default_profile = NULL;
-	while ((c = getopt_long(argc, argv, "D:c:f:i:m:o:p:s:v", long_options, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "D:c:f:i:m:Mo:p:s:v", long_options, NULL)) != -1) {
 		switch (c) {
 		case 'D':
 			name = optarg;
@@ -2023,6 +2024,7 @@ int main(int argc, char **argv)
 			}
 			--midi_channel;
 			break;
+		case 'M': midi_enhanced = 1; break;
 		case 'o':
 			output_channels = atoi(optarg);
 			if (output_channels < 0 || output_channels > MAX_OUTPUT_CHANNELS) {
@@ -2122,7 +2124,7 @@ int main(int argc, char **argv)
 	hardware_init();
 	analog_volume_init();
 	if (midi_channel >= 0)
-		midi_fd = midi_init(argv[0], midi_channel);
+		midi_fd = midi_init(argv[0], midi_channel, midi_enhanced);
 
 	fprintf(stderr, "using\t --- input_channels: %i\n\t --- output_channels: %i\n\t --- pcm_output_channels: %i\n\t --- spdif in/out channels: %i\n", \
 		input_channels, output_channels, pcm_output_channels, spdif_channels);

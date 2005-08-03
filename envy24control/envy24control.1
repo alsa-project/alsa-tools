@@ -1,10 +1,10 @@
-.TH "envy24control" "1" "16 May 2004" "" ""
+.TH "envy24control" "1" "30 July 2005" "" ""
 .SH "NAME"
 envy24control \- GUI control tool for Envy24 (ice1712) based
 soundcards, under ALSA.
 
 .SH "SYNOPSIS"
-\fBenvy24control\fP [\fI\-c\fP card\-number] [\fI\-D\fP control\-name] [\fI\-o\fP 0\-num DACs max 8] [\fI\-i\fP 0\-num ADCs max 8] [\fI\-p\fP 0\-8] [\fI\-s\fP 0\-2] [\fI\-f\fP <profiles file name>] [\fI\-v\fP] [<profile number>|<profile name>] [\fI\-m\fP midi\-channel]
+\fBenvy24control\fP [\fI\-c\fP card\-number] [\fI\-D\fP control\-name] [\fI\-o\fP 0\-num DACs max 8] [\fI\-i\fP 0\-num ADCs max 8] [\fI\-p\fP 0\-8] [\fI\-s\fP 0\-2] [\fI\-f\fP <profiles file name>] [\fI\-v\fP] [<profile number>|<profile name>] [\fI\-m\fP midi\-channel] [\fI\-M\fP]
 
 .SH "DESCRIPTION"
 \fBenvy24control\fP allows control of the digital mixer, channel gains
@@ -13,7 +13,7 @@ chipset (Midiman Delta series, Terratec EWS and EWX series). It also
 displays a level meter for each input and output channel.
 
 .SH "INVOKING"
-\fBenvy24control\fP [\fI\-c\fP card\-number] [\fI\-D\fP control\-name] [\fI\-o\fP 0\-num DACs max 8] [\fI\-i\fP 0\-num ADCs max 8] [\fI\-p\fP 0\-8] [\fI\-s\fP 0\-2] [\fI\-f\fP <profiles file name>] [\fI\-v\fP] [<profile number>|<profile name>] [\fI\-m\fP midi\-channel]
+\fBenvy24control\fP [\fI\-c\fP card\-number] [\fI\-D\fP control\-name] [\fI\-o\fP 0\-num DACs max 8] [\fI\-i\fP 0\-num ADCs max 8] [\fI\-p\fP 0\-8] [\fI\-s\fP 0\-2] [\fI\-f\fP <profiles file name>] [\fI\-v\fP] [<profile number>|<profile name>] [\fI\-m\fP midi\-channel] [\fI\-M\fP]
 .TP 
 If no control\-name is given, then the first sound card is used.
 
@@ -62,6 +62,9 @@ Default is no view of spdif playback channels in the mixer.
 Use MIDI controller values to control the Faders in the mixer view.
 The application will react to controllers on channel midi\-channel and
 send controllers on this channel when the user moves the GUI sliders.
+.TP 
+\fI\-M\fP
+Use an enhanced mapping from midi controller values to db sliders.
 .SH "SEE ALSO"
 \fB
 alsamixer(1),
