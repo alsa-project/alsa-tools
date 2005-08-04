@@ -22,6 +22,7 @@
 
 #include "envy24control.h"
 #include "midi.h"
+#include "config.h"
 #define _GNU_SOURCE
 #include <getopt.h>
 
@@ -244,7 +245,9 @@ static void create_mixer_frame(GtkWidget *box, int stream)
 	gtk_widget_show(toggle);
 	gtk_box_pack_end(GTK_BOX(vbox), toggle, FALSE, FALSE, 0);
 	/* gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(toggle), TRUE); */
-	
+	gtk_signal_connect(GTK_OBJECT(toggle), "toggled",
+			   GTK_SIGNAL_FUNC(config_set_stereo), (gpointer)stream-1);
+
 	hbox = gtk_hbox_new(TRUE, 6);
 	gtk_widget_show(hbox);
 	gtk_box_pack_end(GTK_BOX(vbox), hbox, FALSE, FALSE, 0);
@@ -2118,6 +2121,7 @@ int main(int argc, char **argv)
 	}
 
 	/* Initialize code */
+	config_open();
 	level_meters_init();
 	mixer_init();
 	patchbay_init();
@@ -2187,6 +2191,7 @@ int main(int argc, char **argv)
 
 	snd_ctl_close(ctl);
 	midi_close();
+	config_close();
 
 	return EXIT_SUCCESS;
 }

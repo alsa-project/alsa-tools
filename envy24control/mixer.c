@@ -19,6 +19,7 @@
 
 #include "envy24control.h"
 #include "midi.h"
+#include "config.h"
 
 #define	MULTI_PLAYBACK_SWITCH		"Multi Playback Switch"
 #define MULTI_PLAYBACK_VOLUME		"Multi Playback Volume"
@@ -268,4 +269,6 @@ void mixer_postinit(void)
 		if (stream_is_active[stream - 1])
 			mixer_update_stream(stream, 1, 1);
 	}
+
+	config_restore_stereo();
 }
