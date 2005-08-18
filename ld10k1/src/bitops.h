@@ -15,13 +15,17 @@
  * 
  * C language equivalents written by Theodore Ts'o, 9/26/92
  */
+/*
+ * Converted to be independent of the size of longs.
+ * Zephaniah E. Hull 2005-08-15.
+ */
 
 __inline__ int set_bit(int nr, unsigned long * addr)
 {
 	int	mask, retval;
 
-	addr += nr >> 5;
-	mask = 1 << (nr & 0x1f);
+	addr += nr >> (sizeof(long) + 1);
+	mask = 1 << (nr & (sizeof(long) * 8 - 1));
 	retval = (mask & *addr) != 0;
 	*addr |= mask;
 	return retval;
@@ -31,8 +35,8 @@ __inline__ int clear_bit(int nr, unsigned long * addr)
 {
 	int	mask, retval;
 
-	addr += nr >> 5;
-	mask = 1 << (nr & 0x1f);
+	addr += nr >> (sizeof(long) + 1);
+	mask = 1 << (nr & (sizeof(long) * 8 - 1));
 	retval = (mask & *addr) != 0;
 	*addr &= ~mask;
 	return retval;
@@ -42,8 +46,8 @@ __inline__ int test_bit(int nr, unsigned long * addr)
 {
 	int	mask;
 
-	addr += nr >> 5;
-	mask = 1 << (nr & 0x1f);
+	addr += nr >> (sizeof(long) + 1);
+	mask = 1 << (nr & (sizeof(long) * 8 - 1));
 	return ((mask & *addr) != 0);
 }
 
