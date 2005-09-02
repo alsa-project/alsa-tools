@@ -142,6 +142,10 @@ static void do_controller(int c, int v)
 int midi_controller(int c, int v)
 {
   int v2;
+
+  if (! seq)
+    return 0;
+
   if(c<0 || c>127) return 0;
 
   if(v<0) v=0;
