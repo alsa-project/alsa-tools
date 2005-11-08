@@ -20,34 +20,36 @@
  * Zephaniah E. Hull 2005-08-15.
  */
 
-__inline__ int set_bit(int nr, unsigned long * addr)
+static inline int set_bit(int nr, unsigned long * addr)
 {
-	int	mask, retval;
+	unsigned long mask;
+	int retval;
 
-	addr += nr >> (sizeof(long) + 1);
-	mask = 1 << (nr & (sizeof(long) * 8 - 1));
+	addr += nr / (sizeof(long) * 8);
+	mask = 1UL << (nr & (sizeof(long) * 8 - 1));
 	retval = (mask & *addr) != 0;
 	*addr |= mask;
 	return retval;
 }
 
-__inline__ int clear_bit(int nr, unsigned long * addr)
+static inline int clear_bit(int nr, unsigned long * addr)
 {
-	int	mask, retval;
+	unsigned long mask;
+	int retval;
 
-	addr += nr >> (sizeof(long) + 1);
-	mask = 1 << (nr & (sizeof(long) * 8 - 1));
+	addr += nr / (sizeof(long) * 8);
+	mask = 1UL << (nr & (sizeof(long) * 8 - 1));
 	retval = (mask & *addr) != 0;
 	*addr &= ~mask;
 	return retval;
 }
 
-__inline__ int test_bit(int nr, unsigned long * addr)
+static inline int test_bit(int nr, unsigned long * addr)
 {
-	int	mask;
+	unsigned long mask;
 
-	addr += nr >> (sizeof(long) + 1);
-	mask = 1 << (nr & (sizeof(long) * 8 - 1));
+	addr += nr / (sizeof(long) * 8);
+	mask = 1UL << (nr & (sizeof(long) * 8 - 1));
 	return ((mask & *addr) != 0);
 }
 
