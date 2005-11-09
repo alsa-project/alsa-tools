@@ -20,7 +20,7 @@
  * Zephaniah E. Hull 2005-08-15.
  */
 
-static inline int set_bit(int nr, unsigned long * addr)
+static inline int set_bit(unsigned int nr, unsigned long * addr)
 {
 	unsigned long mask;
 	int retval;
@@ -32,7 +32,7 @@ static inline int set_bit(int nr, unsigned long * addr)
 	return retval;
 }
 
-static inline int clear_bit(int nr, unsigned long * addr)
+static inline int clear_bit(unsigned int nr, unsigned long * addr)
 {
 	unsigned long mask;
 	int retval;
@@ -44,7 +44,7 @@ static inline int clear_bit(int nr, unsigned long * addr)
 	return retval;
 }
 
-static inline int test_bit(int nr, unsigned long * addr)
+static inline int test_bit(unsigned int nr, unsigned long * addr)
 {
 	unsigned long mask;
 
