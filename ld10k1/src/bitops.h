@@ -25,8 +25,8 @@ static inline int set_bit(unsigned int nr, unsigned long * addr)
 	unsigned long mask;
 	int retval;
 
-	addr += nr / (sizeof(long) * 8);
-	mask = 1UL << (nr & (sizeof(long) * 8 - 1));
+	addr += nr / (sizeof(unsigned long) * 8);
+	mask = 1UL << (nr % (sizeof(unsigned long) * 8));
 	retval = (mask & *addr) != 0;
 	*addr |= mask;
 	return retval;
@@ -37,8 +37,8 @@ static inline int clear_bit(unsigned int nr, unsigned long * addr)
 	unsigned long mask;
 	int retval;
 
-	addr += nr / (sizeof(long) * 8);
-	mask = 1UL << (nr & (sizeof(long) * 8 - 1));
+	addr += nr / (sizeof(unsigned long) * 8);
+	mask = 1UL << (nr % (sizeof(unsigned long) * 8));
 	retval = (mask & *addr) != 0;
 	*addr &= ~mask;
 	return retval;
@@ -48,8 +48,8 @@ static inline int test_bit(unsigned int nr, unsigned long * addr)
 {
 	unsigned long mask;
 
-	addr += nr / (sizeof(long) * 8);
-	mask = 1UL << (nr & (sizeof(long) * 8 - 1));
+	addr += nr / (sizeof(unsigned long) * 8);
+	mask = 1UL << (nr % (sizeof(unsigned long) * 8));
 	return ((mask & *addr) != 0);
 }
 
