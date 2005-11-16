@@ -33,7 +33,7 @@
 
 static uint_8 buffer[BUFFER_SIZE];
 
-static uint_8 *buffer_start, *buffer_end;
+static uint_32 *buffer_start, *buffer_end;
 static uint_8 *chunk_start, *chunk_end;
 
 uint_32 bits_left;
@@ -52,7 +52,7 @@ int bitstream_get_byte(void)
 
 uint_8 *bitstream_get_buffer_start(void)
 {
-	return buffer_start;
+	return (uint_8 *) buffer_start;
 }
 
 int
@@ -83,8 +83,8 @@ bitstream_buffer_frame(uint_32 frame_size)
   }
   while (bytes_read != frame_size);
 
-  buffer_start = buffer;
-  buffer_end   = buffer + frame_size;
+  buffer_start = (uint_32 *) buffer;
+  buffer_end   = (uint_32 *) (buffer + frame_size);
 
   bits_left = 0;
   return 0;
@@ -94,7 +94,7 @@ bitstream_buffer_frame(uint_32 frame_size)
 static inline void
 bitstream_fill_current()
 {
-	current_word = *((uint_32*)buffer_start)++;
+	current_word = *buffer_start++;
 	current_word = swab32(current_word);
 }
 
