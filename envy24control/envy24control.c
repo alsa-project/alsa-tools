@@ -1165,7 +1165,7 @@ static void create_spdif_input_select(GtkWidget *box)
 	if((card_eeprom.subvendor == ICE1712_SUBDEVICE_DELTADIO2496) || (card_eeprom.subvendor == ICE1712_SUBDEVICE_DMX6FIRE))
 		hide = 0;
 
-	frame = gtk_frame_new("S/PDIF Input");
+	frame = gtk_frame_new("Digital Input");
 	gtk_widget_show(frame);
 	gtk_box_pack_start(GTK_BOX(box), frame, FALSE, TRUE, 0);
 	gtk_container_set_border_width(GTK_CONTAINER(frame), 6);
@@ -1208,7 +1208,7 @@ static void create_spdif_on_off(GtkWidget *box)
         if( card_eeprom.subvendor == ICE1712_SUBDEVICE_DMX6FIRE)
                 hide = 0;
 
-        frame = gtk_frame_new("S/PDIF On/Off");
+        frame = gtk_frame_new("Digital Select");
         gtk_widget_show(frame);
         gtk_box_pack_start(GTK_BOX(box), frame, FALSE, TRUE, 0);
         gtk_container_set_border_width(GTK_CONTAINER(frame), 6);
@@ -1218,7 +1218,7 @@ static void create_spdif_on_off(GtkWidget *box)
         gtk_container_add(GTK_CONTAINER(frame), vbox);
         gtk_container_set_border_width(GTK_CONTAINER(vbox), 6);
 
-        radiobutton = gtk_radio_button_new_with_label(group, "On");
+        radiobutton = gtk_radio_button_new_with_label(group, "Front Digital");
         hw_spdif_switch_on_radio = radiobutton;
         group = gtk_radio_button_group(GTK_RADIO_BUTTON(radiobutton));
         gtk_widget_show(radiobutton);
@@ -1227,7 +1227,7 @@ static void create_spdif_on_off(GtkWidget *box)
                           (GtkSignalFunc)spdif_on_off_toggled,
                           (gpointer)"On");
 
-        radiobutton = gtk_radio_button_new_with_label(group, "Off");
+        radiobutton = gtk_radio_button_new_with_label(group, "Internal CD");
         hw_spdif_switch_off_radio = radiobutton;
         group = gtk_radio_button_group(GTK_RADIO_BUTTON(radiobutton));
         gtk_widget_show(radiobutton);

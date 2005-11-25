@@ -734,10 +734,10 @@ void spdif_on_off_toggled(GtkWidget *togglebutton, gpointer data)
         if (!is_active(togglebutton))
                 return;
         if (!strcmp(str, "On"))
-                snd_ctl_elem_value_set_boolean(spdif_input, 0, 1);
+                snd_ctl_elem_value_set_boolean(spdif_on_off, 0, 1);
         else
-                snd_ctl_elem_value_set_boolean(spdif_input, 0, 0);
-        if ((err = snd_ctl_elem_write(ctl, spdif_input)) < 0)
+                snd_ctl_elem_value_set_boolean(spdif_on_off, 0, 0);
+        if ((err = snd_ctl_elem_write(ctl, spdif_on_off)) < 0)
                 g_print("Unable to write S/PDIF on/off switch: %s\n", snd_strerror(err));
 }
 
