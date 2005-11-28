@@ -32,7 +32,7 @@
 #	if defined (__i386__)
 
 #	define swab32(x) __i386_swab32(x)
-	static inline const uint_32 __i386_swab32(uint_32 x)
+	static inline uint_32 __i386_swab32(uint_32 x)
 	{
 		__asm__("bswap %0" : "=r" (x) : "0" (x));
 		return x;
