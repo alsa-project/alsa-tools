@@ -165,7 +165,7 @@ gint master_clock_status_timeout_callback(gpointer data)
 	if (card_eeprom.subvendor != ICE1712_SUBDEVICE_DELTA1010)
 		return FALSE;
 	snd_ctl_elem_value_alloca(&sw);
-	snd_ctl_elem_value_set_interface(sw, SND_CTL_ELEM_IFACE_PCM);
+	snd_ctl_elem_value_set_interface(sw, SND_CTL_ELEM_IFACE_MIXER);
 	snd_ctl_elem_value_set_name(sw, "Word Clock Status");
 	if ((err = snd_ctl_elem_read(ctl, sw)) < 0)
 		g_print("Unable to determine word clock status: %s\n", snd_strerror(err));
@@ -795,7 +795,7 @@ void hardware_init(void)
 	snd_ctl_elem_value_set_interface(internal_clock_default, SND_CTL_ELEM_IFACE_MIXER);
 	snd_ctl_elem_value_set_name(internal_clock_default, "Multi Track Internal Clock Default");
 
-	snd_ctl_elem_value_set_interface(word_clock_sync, SND_CTL_ELEM_IFACE_PCM);
+	snd_ctl_elem_value_set_interface(word_clock_sync, SND_CTL_ELEM_IFACE_MIXER);
 	snd_ctl_elem_value_set_name(word_clock_sync, "Word Clock Sync");
 
 	snd_ctl_elem_value_set_interface(rate_locking, SND_CTL_ELEM_IFACE_MIXER);
@@ -811,7 +811,7 @@ void hardware_init(void)
 		snd_ctl_elem_value_set_interface(spdif_input, SND_CTL_ELEM_IFACE_MIXER);
 		snd_ctl_elem_value_set_name(spdif_input, "Optical Digital Input Switch");
 	} else {
-	snd_ctl_elem_value_set_interface(spdif_input, SND_CTL_ELEM_IFACE_PCM);
+	snd_ctl_elem_value_set_interface(spdif_input, SND_CTL_ELEM_IFACE_MIXER);
 	snd_ctl_elem_value_set_name(spdif_input, "IEC958 Input Optical");
 	}
 
