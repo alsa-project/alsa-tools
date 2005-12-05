@@ -156,9 +156,13 @@ static void create_mixer_frame(GtkWidget *box, int stream)
 	} else if ((card_eeprom.subvendor == ICE1712_SUBDEVICE_DMX6FIRE) && (stream == 14)) {
 		sprintf(str, "Line In R");
 	} else if ((card_eeprom.subvendor == ICE1712_SUBDEVICE_DMX6FIRE) && (stream == 15)) {
-		sprintf(str, "Phono/Mic In L");
+		sprintf(str, "Phono/Mic L");
 	} else if ((card_eeprom.subvendor == ICE1712_SUBDEVICE_DMX6FIRE) && (stream == 16)) {
-		sprintf(str, "Phono/Mic In R");
+		sprintf(str, "Phono/Mic R");
+	} else if ((card_eeprom.subvendor == ICE1712_SUBDEVICE_DMX6FIRE) && (stream == 19)) {
+		sprintf(str, "Digital In L");
+	} else if ((card_eeprom.subvendor == ICE1712_SUBDEVICE_DMX6FIRE) && (stream == 20)) {
+		sprintf(str, "Digital In R");
 	} else if (stream <= (MAX_PCM_OUTPUT_CHANNELS + MAX_SPDIF_CHANNELS + MAX_INPUT_CHANNELS)) {
 		sprintf(str, "H/W In %i", stream - (MAX_PCM_OUTPUT_CHANNELS + MAX_SPDIF_CHANNELS));
 	} else if (stream <= (MAX_PCM_OUTPUT_CHANNELS + MAX_SPDIF_CHANNELS + MAX_INPUT_CHANNELS + MAX_SPDIF_CHANNELS)) {
@@ -416,23 +420,33 @@ static void create_router_frame(GtkWidget *box, int stream, int pos)
 
 	if (card_eeprom.subvendor == ICE1712_SUBDEVICE_DMX6FIRE)
 	{
-		table[2] = "CD In L";
+                table[0] = "Digital In L";
+                table[1] = "Digital In R";
+                table[2] = "CD In L";
                 table[3] = "CD In R";
                 table[4] = "Line In L";
                 table[5] = "Line In R";
-                table[6] = "Phono/Mic In L";
-                table[7] = "Phono/Mic In R";
+                table[6] = "Phono/Mic L";
+                table[7] = "Phono/Mic R";
 	}
 
 	if (stream <= MAX_OUTPUT_CHANNELS) {
 		sprintf(str, "H/W Out %i (%s)", stream, stream & 1 ? "L" : "R");
 	} else if (stream == (MAX_OUTPUT_CHANNELS + 1)) {
-		strcpy(str, "S/PDIF Out (L)");
+		if (card_eeprom.subvendor == ICE1712_SUBDEVICE_DMX6FIRE) {
+				strcpy(str, "Digital Out (L)");
+			} else {
+				strcpy(str, "S/PDIF Out (L)");
+				}
 	} else if (stream == (MAX_OUTPUT_CHANNELS + 2)) {
-		strcpy(str, "S/PDIF Out (R)");
+		if (card_eeprom.subvendor == ICE1712_SUBDEVICE_DMX6FIRE) {
+				strcpy(str, "Digital Out (R)");
+			} else {
+				strcpy(str, "S/PDIF Out (R)");
+				}
 	} else {
 		strcpy(str, "???");
-	}
+		}
 	if ((stream == MAX_PCM_OUTPUT_CHANNELS + 1) || (stream == MAX_PCM_OUTPUT_CHANNELS + 2)) {
 		sprintf(str1, "S/PDIF Out (%s)", stream & 1 ? "L" : "R");
 	} else { 
@@ -1193,95 +1207,20 @@ static void create_spdif_input_select(GtkWidget *box)
 			  (GtkSignalFunc)spdif_input_toggled, 
 			  (gpointer)"Optical");
 
-	if(hide)
-		gtk_widget_hide_all(frame);
-}
-
-static void create_spdif_on_off(GtkWidget *box)
-{
-        GtkWidget *frame;
-        GtkWidget *vbox;
-        GtkWidget *radiobutton;
-        GSList *group = NULL;
-        int hide = 1;
-
-        if( card_eeprom.subvendor == ICE1712_SUBDEVICE_DMX6FIRE)
-                hide = 0;
-
-        frame = gtk_frame_new("Digital Select");
-        gtk_widget_show(frame);
-        gtk_box_pack_start(GTK_BOX(box), frame, FALSE, TRUE, 0);
-        gtk_container_set_border_width(GTK_CONTAINER(frame), 6);
-
-        vbox = gtk_vbox_new(FALSE, 0);
-        gtk_widget_show(vbox);
-        gtk_container_add(GTK_CONTAINER(frame), vbox);
-        gtk_container_set_border_width(GTK_CONTAINER(vbox), 6);
-
-        radiobutton = gtk_radio_button_new_with_label(group, "Front Digital");
-        hw_spdif_switch_on_radio = radiobutton;
-        group = gtk_radio_button_group(GTK_RADIO_BUTTON(radiobutton));
-        gtk_widget_show(radiobutton);
-        gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
-        gtk_signal_connect(GTK_OBJECT(radiobutton), "toggled",
-                          (GtkSignalFunc)spdif_on_off_toggled,
-                          (gpointer)"On");
-
         radiobutton = gtk_radio_button_new_with_label(group, "Internal CD");
         hw_spdif_switch_off_radio = radiobutton;
         group = gtk_radio_button_group(GTK_RADIO_BUTTON(radiobutton));
-        gtk_widget_show(radiobutton);
+	if(card_eeprom.subvendor == ICE1712_SUBDEVICE_DMX6FIRE)
+	        gtk_widget_show(radiobutton);
         gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
         gtk_signal_connect(GTK_OBJECT(radiobutton), "toggled",
-                          (GtkSignalFunc)spdif_on_off_toggled,
+                          (GtkSignalFunc)spdif_input_toggled,
                           (gpointer)"Off");
 
         if(hide)
                 gtk_widget_hide_all(frame);
 }
 
-static void create_breakbox_led(GtkWidget *box)
-{
-        GtkWidget *frame;
-        GtkWidget *vbox;
-        GtkWidget *radiobutton;
-        GSList *group = NULL;
-        int hide = 1;
-
-        if( card_eeprom.subvendor == ICE1712_SUBDEVICE_DMX6FIRE)
-                hide = 0;
-
-        frame = gtk_frame_new("Breakbox LED On/Off");
-        gtk_widget_show(frame);
-        gtk_box_pack_start(GTK_BOX(box), frame, FALSE, TRUE, 0);
-        gtk_container_set_border_width(GTK_CONTAINER(frame), 6);
-
-        vbox = gtk_vbox_new(FALSE, 0);
-        gtk_widget_show(vbox);
-        gtk_container_add(GTK_CONTAINER(frame), vbox);
-        gtk_container_set_border_width(GTK_CONTAINER(vbox), 6);
-
-        radiobutton = gtk_radio_button_new_with_label(group, "On");
-        hw_breakbox_led_on_radio = radiobutton;
-        group = gtk_radio_button_group(GTK_RADIO_BUTTON(radiobutton));
-        gtk_widget_show(radiobutton);
-        gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
-        gtk_signal_connect(GTK_OBJECT(radiobutton), "toggled",
-                          (GtkSignalFunc)breakbox_led_toggled,
-                          (gpointer)"On");
-
-        radiobutton = gtk_radio_button_new_with_label(group, "Off");
-        hw_breakbox_led_off_radio = radiobutton;
-        group = gtk_radio_button_group(GTK_RADIO_BUTTON(radiobutton));
-        gtk_widget_show(radiobutton);
-        gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
-        gtk_signal_connect(GTK_OBJECT(radiobutton), "toggled",
-                          (GtkSignalFunc)breakbox_led_toggled,
-                          (gpointer)"Off");
-
-        if(hide)
-                gtk_widget_hide_all(frame);
-}
 
 static void create_phono_input(GtkWidget *box)
 {
@@ -1374,7 +1313,7 @@ static void create_input_interface(GtkWidget *box)
                           (GtkSignalFunc)analog_input_select_toggled,
                           (gpointer)"Rear Input");
 
-        radiobutton = gtk_radio_button_new_with_label(group, "Wave Table");
+        radiobutton = gtk_radio_button_new_with_label(group, "Wavetable");
         input_interface_wavetable = radiobutton;
         group = gtk_radio_button_group(GTK_RADIO_BUTTON(radiobutton));
         gtk_widget_show(radiobutton);
@@ -1423,9 +1362,7 @@ static void create_hardware(GtkWidget *main, GtkWidget *notebook, int page)
 
  	create_spdif_input_select(vbox2);
 	create_input_interface(vbox2);
-	create_breakbox_led(vbox2);
 	create_phono_input(vbox2);
-	create_spdif_on_off(vbox2);
 }
 
 static void create_about(GtkWidget *main, GtkWidget *notebook, int page)
@@ -1485,10 +1422,10 @@ static void create_analog_volume(GtkWidget *main, GtkWidget *notebook, int page)
 	static char* dmx6fire_inputs[6] = {
 		"CD In (L)",
 		"CD In (R)",
-		"Line In (L)",
-		"Line In (R)",
-		"Phono In (L)",
-		"Phono In (R)"
+		"Line  (L)",
+		"Line  (R)",
+		"Phono (L)",
+		"Phono (R)"
 	};
 	static char* dmx6fire_outputs[6] = {
 		"Front (L)",
@@ -1958,6 +1895,7 @@ int main(int argc, char **argv)
 	int page;
 	int input_channels_set = 0;
 	int output_channels_set = 0;
+	int pcm_output_channels_set = 0;
 	static struct option long_options[] = {
 		{"device", 1, 0, 'D'},
 		{"card", 1, 0, 'c'},
@@ -2042,6 +1980,7 @@ int main(int argc, char **argv)
 				fprintf(stderr, "envy24control: must have 0-%i pcm outputs\n", MAX_PCM_OUTPUT_CHANNELS);
 				exit(1);
 			}
+			pcm_output_channels_set = 1;
 			break;
 		case 's':
 			spdif_channels = atoi(optarg);
@@ -2117,6 +2056,12 @@ int main(int argc, char **argv)
 	if(!output_channels_set) {
 		if(card_eeprom.subvendor == ICE1712_SUBDEVICE_DMX6FIRE) {
 			output_channels = 6;
+		}
+	}
+
+	if(!pcm_output_channels_set) {
+		if(card_eeprom.subvendor == ICE1712_SUBDEVICE_DMX6FIRE) {
+			pcm_output_channels = 6; /* PCMs 7&8 can be used -set using option -p8 */
 		}
 	}
 

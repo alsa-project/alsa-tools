@@ -605,17 +605,29 @@ void spdif_output_toggled(GtkWidget *togglebutton, gpointer data)
 void spdif_input_update(void)
 {
 	int err;
-	
+	int digoptical = FALSE;
+	int diginternal = FALSE;
+
 	if ((card_eeprom.subvendor != ICE1712_SUBDEVICE_DELTADIO2496) && (card_eeprom.subvendor != ICE1712_SUBDEVICE_DMX6FIRE))
 		return;
 	if ((err = snd_ctl_elem_read(ctl, spdif_input)) < 0)
 		g_print("Unable to read S/PDIF input switch: %s\n", snd_strerror(err));
-	if (snd_ctl_elem_value_get_boolean(spdif_input, 0)) {
+	if (snd_ctl_elem_value_get_boolean(spdif_input, 0))
+		digoptical = TRUE;
+	if (card_eeprom.subvendor = ICE1712_SUBDEVICE_DMX6FIRE) {
+        	if ((err = snd_ctl_elem_read(ctl, spdif_on_off)) < 0)
+			g_print("Unable to read S/PDIF on/off switch: %s\n", snd_strerror(err));
+	      	if (!(snd_ctl_elem_value_get_boolean(spdif_on_off, 0)))
+			diginternal = TRUE;
+	}
+	if (digoptical) {
 		toggle_set(hw_spdif_input_optical_radio, TRUE);
 	} else {
 		toggle_set(hw_spdif_input_coaxial_radio, TRUE);
 	}
-}
+	if (diginternal)
+		toggle_set(hw_spdif_switch_off_radio, TRUE);
+ }
 
 void spdif_input_toggled(GtkWidget *togglebutton, gpointer data)
 {
@@ -624,10 +636,18 @@ void spdif_input_toggled(GtkWidget *togglebutton, gpointer data)
 	
 	if (!is_active(togglebutton))
 		return;
-	if (!strcmp(str, "Optical"))
-		snd_ctl_elem_value_set_boolean(spdif_input, 0, 1);
-	else
-		snd_ctl_elem_value_set_boolean(spdif_input, 0, 0);
+	if (!strcmp(str, "Off"))
+               	snd_ctl_elem_value_set_boolean(spdif_on_off, 0, 0);
+	else {
+		snd_ctl_elem_value_set_boolean(spdif_on_off, 0, 1);
+		if (!strcmp(str, "Optical"))
+			snd_ctl_elem_value_set_boolean(spdif_input, 0, 1);
+		else
+			if (!strcmp(str, "Coaxial"))
+				snd_ctl_elem_value_set_boolean(spdif_input, 0, 0);
+	}
+	if ((err = snd_ctl_elem_write(ctl, spdif_on_off)) < 0)
+               g_print("Unable to write S/PDIF on/off switch: %s\n", snd_strerror(err));
 	if ((err = snd_ctl_elem_write(ctl, spdif_input)) < 0)
 		g_print("Unable to write S/PDIF input switch: %s\n", snd_strerror(err));
 }
@@ -664,81 +684,27 @@ void analog_input_select_set(int value)
 void analog_input_select_toggled(GtkWidget *togglebutton, gpointer data)
 {
 	char *what = (char *) data;
+       int err;
 
         if (!is_active(togglebutton))
                 return;
         if (!strcmp(what, "Internal")) {
                 analog_input_select_set(0);
+               snd_ctl_elem_value_set_boolean(breakbox_led, 0, 0);
         } else if (!strcmp(what, "Front Input")) {
                 analog_input_select_set(1);
+               snd_ctl_elem_value_set_boolean(breakbox_led, 0, 1);
         } else if (!strcmp(what, "Rear Input")) {
                 analog_input_select_set(2);
+               snd_ctl_elem_value_set_boolean(breakbox_led, 0, 0);
         } else if (!strcmp(what, "Wave Table")) {
                 analog_input_select_set(3);
+               snd_ctl_elem_value_set_boolean(breakbox_led, 0, 0);
         } else {
                 g_print("analog_input_select_toggled: %s ???\n", what);
         }
-}
-
-
-void breakbox_led_update(void)
-{
-	int err;
-
-	 if (card_eeprom.subvendor != ICE1712_SUBDEVICE_DMX6FIRE)
-		return;
-	if ((err = snd_ctl_elem_read(ctl, breakbox_led)) < 0)
-		g_print("Unable to read breakbox LED switch: %s\n", snd_strerror(err));
-	if (snd_ctl_elem_value_get_boolean(breakbox_led, 0)) {
-		 toggle_set(hw_breakbox_led_on_radio, TRUE);
-	} else {
-		 toggle_set(hw_breakbox_led_off_radio, TRUE);
-	}
-}
-
-void breakbox_led_toggled(GtkWidget *togglebutton, gpointer data)
-{
-	int err;
-		char *str = (char *)data;
-
-	 if (!is_active(togglebutton))
-		return;
-	if (!strcmp(str, "On"))
-			snd_ctl_elem_value_set_boolean(breakbox_led, 0, 1);
-	else
-			snd_ctl_elem_value_set_boolean(breakbox_led, 0, 0);
-	if ((err = snd_ctl_elem_write(ctl, breakbox_led)) < 0)
-		g_print("Unable to write breakbox LED switch: %s\n", snd_strerror(err));
-}
-
-void spdif_on_off_update(void)
-{
-        int err;
-
-        if (card_eeprom.subvendor != ICE1712_SUBDEVICE_DMX6FIRE)
-                return;
-        if ((err = snd_ctl_elem_read(ctl, spdif_on_off)) < 0)
-                g_print("Unable to read S/PDIF on/off switch: %s\n", snd_strerror(err));
-        if (snd_ctl_elem_value_get_boolean(spdif_on_off, 0)) {
-                toggle_set(hw_spdif_switch_on_radio, TRUE);
-        } else {
-                toggle_set(hw_spdif_switch_off_radio, TRUE);
-        }
-}
-
-void spdif_on_off_toggled(GtkWidget *togglebutton, gpointer data)
-{
-        int err;
-        char *str = (char *) data;
-
-        if (!is_active(togglebutton))
-                return;
-        if (!strcmp(str, "On"))
-                snd_ctl_elem_value_set_boolean(spdif_on_off, 0, 1);
-        else
-                snd_ctl_elem_value_set_boolean(spdif_on_off, 0, 0);
-        if ((err = snd_ctl_elem_write(ctl, spdif_on_off)) < 0)
-                g_print("Unable to write S/PDIF on/off switch: %s\n", snd_strerror(err));
+       if ((err = snd_ctl_elem_write(ctl, breakbox_led)) < 0)
+               g_print("Unable to write breakbox LED switch: %s\n", snd_strerror(err));
 }
 
 void phono_input_update(void)
@@ -841,7 +807,5 @@ void hardware_postinit(void)
 	spdif_input_update();
 	spdif_output_update();
 	analog_input_select_update();
-	breakbox_led_update();
-	spdif_on_off_update();
 	phono_input_update();
 }
