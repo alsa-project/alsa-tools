@@ -1877,6 +1877,7 @@ static void usage(void)
 	fprintf(stderr, "\t-v, --view_spdif_playback\tshows the spdif playback channels in the mixer\n");
 	fprintf(stderr, "\t-f, --profiles_file\tuse file as profiles file\n");
 	fprintf(stderr, "\t-m, --midichannel\tmidi channel number for controller control\n");
+	fprintf(stderr, "\t-M, --midienhanced\tUse an enhanced mapping from midi controller to db slider\n");
 }
 
 int main(int argc, char **argv)
