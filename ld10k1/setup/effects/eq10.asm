@@ -42,7 +42,7 @@ toutc	equ inc
 inlfe	io
 toutlfe	equ inlfe
 
-Equalizer control 0,0,#1
+Equalizer control #0,0,#1
 F0_31Hz control #0.5,0,#1
 F1_62Hz control #0.5,0,#1	
 F2_125Hz control #0.5,0,#1	
@@ -75,12 +75,12 @@ dlx5 sta 0 0
 
 ;;; Band Pass Filter Macro:
 BPF	macro   OUT , IN , DELAY , DLXCB , COEF , GAIN
-		macs1	ACCUM,C_0,COEF+1,DLXCB+1
-    		macs	ACCUM,ACCUM,COEF+1,IN
-		macs	ACCUM,ACCUM,COEF+2,DELAY
-		macs1	ACCUM,ACCUM,COEF,DELAY+1
-		macmv	DELAY+1,DELAY,C_0,C_0
-		macints	DELAY,C_0,ACCUM,sco
+		macs1	tmp2,C_0,COEF+1,DLXCB+1
+    		macs	tmp2,tmp2,COEF+1,IN
+		macs	tmp2,tmp2,COEF+2,DELAY
+		macs1	tmp2,tmp2,COEF,DELAY+1
+		macs	DELAY+1,DELAY,C_0,C_0
+		macints	DELAY,C_0,tmp2,sco
 		macs	OUT,OUT,DELAY,GAIN
 	endm
 
@@ -109,8 +109,5 @@ IIR	macro	OUT, IN , DLXC, DLYC
 	IIR	toutrr,inrr,dlx3,dly3
 	IIR	toutc,inc,dlx4,dly4
 	IIR	toutlfe,inlfe,dlx5,dly5
-;	macmv	toutlfe,inlfe,C_0,C_0
 
 	end
-
-
