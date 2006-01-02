@@ -170,7 +170,7 @@ gint master_clock_status_timeout_callback(gpointer data)
 	if ((err = snd_ctl_elem_read(ctl, sw)) < 0)
 		g_print("Unable to determine word clock status: %s\n", snd_strerror(err));
 	gtk_label_set_text(GTK_LABEL(hw_master_clock_status_label),
-			   snd_ctl_elem_value_get_boolean(sw, 0) ? "Locked" : "No signal");
+			   snd_ctl_elem_value_get_boolean(sw, 0) ? "No signal" : "Locked");
 	return TRUE;
 }
 
