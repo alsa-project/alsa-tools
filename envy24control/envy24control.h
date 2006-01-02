@@ -165,6 +165,9 @@ extern GtkLabel *av_ipga_volume_label[];
 extern GtkWidget *av_dac_sense_radio[][4];
 extern GtkWidget *av_adc_sense_radio[][4];
 
+/* flags */
+extern int card_is_dmx6fire;
+
 gint level_meters_configure_event(GtkWidget *widget, GdkEventConfigure *event);
 gint level_meters_expose_event(GtkWidget *widget, GdkEventExpose *event);
 gint level_meters_timeout_callback(gpointer data);
@@ -243,3 +246,4 @@ void adc_sense_toggled(GtkWidget *togglebutton, gpointer data);
 
 void control_input_callback(gpointer data, gint source, GdkInputCondition condition);
 void mixer_input_callback(gpointer data, gint source, GdkInputCondition condition);
+

@@ -608,13 +608,14 @@ void spdif_input_update(void)
 	int digoptical = FALSE;
 	int diginternal = FALSE;
 
-	if ((card_eeprom.subvendor != ICE1712_SUBDEVICE_DELTADIO2496) && (card_eeprom.subvendor != ICE1712_SUBDEVICE_DMX6FIRE))
+	if ((card_eeprom.subvendor != ICE1712_SUBDEVICE_DELTADIO2496) &&
+	    ! card_is_dmx6fire)
 		return;
 	if ((err = snd_ctl_elem_read(ctl, spdif_input)) < 0)
 		g_print("Unable to read S/PDIF input switch: %s\n", snd_strerror(err));
 	if (snd_ctl_elem_value_get_boolean(spdif_input, 0))
 		digoptical = TRUE;
-	if (card_eeprom.subvendor = ICE1712_SUBDEVICE_DMX6FIRE) {
+	if (card_is_dmx6fire) {
         	if ((err = snd_ctl_elem_read(ctl, spdif_on_off)) < 0)
 			g_print("Unable to read S/PDIF on/off switch: %s\n", snd_strerror(err));
 	      	if (!(snd_ctl_elem_value_get_boolean(spdif_on_off, 0)))
@@ -656,7 +657,7 @@ void analog_input_select_update(void)
 {
 	int err, input_interface;
 
-	if (card_eeprom.subvendor != ICE1712_SUBDEVICE_DMX6FIRE)
+	if (! card_is_dmx6fire)
 		return;
 	if ((err = snd_ctl_elem_read(ctl, analog_input_select)) < 0)
 		g_print("Unable to read analog input switch: %s\n", snd_strerror(err));
@@ -711,7 +712,7 @@ void phono_input_update(void)
 {
         int err;
 
-        if (card_eeprom.subvendor != ICE1712_SUBDEVICE_DMX6FIRE)
+        if (! card_is_dmx6fire)
                 return;
         if ((err = snd_ctl_elem_read(ctl, phono_input)) < 0)
                 g_print("Unable to read phono input switch: %s\n", snd_strerror(err));
@@ -773,12 +774,12 @@ void hardware_init(void)
 	snd_ctl_elem_value_set_interface(volume_rate, SND_CTL_ELEM_IFACE_MIXER);
 	snd_ctl_elem_value_set_name(volume_rate, "Multi Track Volume Rate");
 
-	if(card_eeprom.subvendor == ICE1712_SUBDEVICE_DMX6FIRE){
+	if (! card_is_dmx6fire) {
 		snd_ctl_elem_value_set_interface(spdif_input, SND_CTL_ELEM_IFACE_MIXER);
 		snd_ctl_elem_value_set_name(spdif_input, "Optical Digital Input Switch");
 	} else {
-	snd_ctl_elem_value_set_interface(spdif_input, SND_CTL_ELEM_IFACE_MIXER);
-	snd_ctl_elem_value_set_name(spdif_input, "IEC958 Input Optical");
+		snd_ctl_elem_value_set_interface(spdif_input, SND_CTL_ELEM_IFACE_MIXER);
+		snd_ctl_elem_value_set_name(spdif_input, "IEC958 Input Optical");
 	}
 
 	snd_ctl_elem_value_set_interface(spdif_output, SND_CTL_ELEM_IFACE_PCM);
