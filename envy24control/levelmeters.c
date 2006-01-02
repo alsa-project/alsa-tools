@@ -200,57 +200,57 @@ gint level_meters_timeout_callback(gpointer data)
 	for (idx = 0; idx <= pcm_output_channels; idx++) {
 		get_levels(idx, &l1, &l2);
 		widget = idx == 0 ? mixer_mix_drawing : mixer_drawing[idx-1];
-		if (!GTK_WIDGET_VISIBLE(widget))
-			continue;
-		redraw_meters(idx, widget->allocation.width, widget->allocation.height, l1, l2);
-		gdk_draw_pixmap(widget->window,
-				widget->style->black_gc,
-				pixmap[idx],
-				0, 0,
-				0, 0,
-				widget->allocation.width, widget->allocation.height);	
-	}
-	if (view_spdif_playback) {
-		for (idx = MAX_PCM_OUTPUT_CHANNELS + 1; idx <= MAX_OUTPUT_CHANNELS + spdif_channels; idx++) {
-			get_levels(idx, &l1, &l2);
-			widget = idx == 0 ? mixer_mix_drawing : mixer_drawing[idx-1];
-			if (!GTK_WIDGET_VISIBLE(widget))
-				continue;
+		if (GTK_WIDGET_VISIBLE(widget) && (pixmap[idx] != NULL)) {
 			redraw_meters(idx, widget->allocation.width, widget->allocation.height, l1, l2);
 			gdk_draw_pixmap(widget->window,
 					widget->style->black_gc,
 					pixmap[idx],
 					0, 0,
 					0, 0,
-					widget->allocation.width, widget->allocation.height);	
+					widget->allocation.width, widget->allocation.height);
+		}
+	}
+	if (view_spdif_playback) {
+		for (idx = MAX_PCM_OUTPUT_CHANNELS + 1; idx <= MAX_OUTPUT_CHANNELS + spdif_channels; idx++) {
+			get_levels(idx, &l1, &l2);
+			widget = idx == 0 ? mixer_mix_drawing : mixer_drawing[idx-1];
+			if (GTK_WIDGET_VISIBLE(widget) && (pixmap[idx] != NULL)) {
+				redraw_meters(idx, widget->allocation.width, widget->allocation.height, l1, l2);
+				gdk_draw_pixmap(widget->window,
+						widget->style->black_gc,
+						pixmap[idx],
+						0, 0,
+						0, 0,
+						widget->allocation.width, widget->allocation.height);
+			}
 		}
 	}
 	for (idx = MAX_PCM_OUTPUT_CHANNELS + MAX_SPDIF_CHANNELS + 1; idx <= input_channels + MAX_PCM_OUTPUT_CHANNELS + MAX_SPDIF_CHANNELS; idx++) {
 		get_levels(idx, &l1, &l2);
 		widget = idx == 0 ? mixer_mix_drawing : mixer_drawing[idx-1];
-		if (!GTK_WIDGET_VISIBLE(widget))
-			continue;
-		redraw_meters(idx, widget->allocation.width, widget->allocation.height, l1, l2);
-		gdk_draw_pixmap(widget->window,
-				widget->style->black_gc,
-				pixmap[idx],
-				0, 0,
-				0, 0,
-				widget->allocation.width, widget->allocation.height);	
+		if (GTK_WIDGET_VISIBLE(widget) && (pixmap[idx] != NULL)) {
+			redraw_meters(idx, widget->allocation.width, widget->allocation.height, l1, l2);
+			gdk_draw_pixmap(widget->window,
+					widget->style->black_gc,
+					pixmap[idx],
+					0, 0,
+					0, 0,
+					widget->allocation.width, widget->allocation.height);
+		}
 	}
 	for (idx = MAX_PCM_OUTPUT_CHANNELS + MAX_SPDIF_CHANNELS + MAX_INPUT_CHANNELS + 1; \
 		    idx <= spdif_channels + MAX_PCM_OUTPUT_CHANNELS + MAX_SPDIF_CHANNELS + MAX_INPUT_CHANNELS; idx++) {
 		get_levels(idx, &l1, &l2);
 		widget = idx == 0 ? mixer_mix_drawing : mixer_drawing[idx-1];
-		if (!GTK_WIDGET_VISIBLE(widget))
-			continue;
-		redraw_meters(idx, widget->allocation.width, widget->allocation.height, l1, l2);
-		gdk_draw_pixmap(widget->window,
-				widget->style->black_gc,
-				pixmap[idx],
-				0, 0,
-				0, 0,
-				widget->allocation.width, widget->allocation.height);	
+		if (GTK_WIDGET_VISIBLE(widget) && (pixmap[idx] != NULL)) {
+			redraw_meters(idx, widget->allocation.width, widget->allocation.height, l1, l2);
+			gdk_draw_pixmap(widget->window,
+					widget->style->black_gc,
+					pixmap[idx],
+					0, 0,
+					0, 0,
+					widget->allocation.width, widget->allocation.height);
+		}
 	}
 	return TRUE;
 }
