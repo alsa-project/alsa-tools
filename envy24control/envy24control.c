@@ -105,20 +105,15 @@ GtkWidget *hw_spdif_output_notebook;
 
 GtkWidget *hw_spdif_input_coaxial_radio;
 GtkWidget *hw_spdif_input_optical_radio;
+GtkWidget *hw_spdif_switch_off_radio;
 
 GtkWidget *input_interface_internal;
 GtkWidget *input_interface_front_input;
 GtkWidget *input_interface_rear_input;
 GtkWidget *input_interface_wavetable;
 
-GtkWidget *hw_breakbox_led_on_radio;
-GtkWidget *hw_breakbox_led_off_radio;
-
 GtkWidget *hw_phono_input_on_radio;
 GtkWidget *hw_phono_input_off_radio;
-
-GtkWidget *hw_spdif_switch_on_radio;
-GtkWidget *hw_spdif_switch_off_radio;
 
 GtkObject *av_dac_volume_adj[10];
 GtkObject *av_adc_volume_adj[10];
