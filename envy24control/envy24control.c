@@ -301,7 +301,7 @@ static void create_inputs_mixer(GtkWidget *main, GtkWidget *notebook, int page)
 	gtk_widget_show(scrolledwindow);
 	gtk_box_pack_start(GTK_BOX(hbox), scrolledwindow, TRUE, TRUE, 0);
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolledwindow),
-					GTK_POLICY_ALWAYS, GTK_POLICY_NEVER);
+					GTK_POLICY_AUTOMATIC, GTK_POLICY_NEVER);
 
 	viewport = gtk_viewport_new(NULL, NULL);
 	gtk_widget_show(viewport);
@@ -352,7 +352,7 @@ static void create_pcms_mixer(GtkWidget *main, GtkWidget *notebook, int page)
 	gtk_widget_show(scrolledwindow);
 	gtk_box_pack_start(GTK_BOX(hbox), scrolledwindow, TRUE, TRUE, 0);
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolledwindow), 
-					GTK_POLICY_ALWAYS, GTK_POLICY_NEVER);
+					GTK_POLICY_AUTOMATIC, GTK_POLICY_NEVER);
 
 	viewport = gtk_viewport_new(NULL, NULL);
 	gtk_widget_show(viewport);
@@ -515,7 +515,7 @@ static void create_router(GtkWidget *main, GtkWidget *notebook, int page)
 	gtk_widget_show(scrolledwindow);
 	gtk_container_add(GTK_CONTAINER(notebook), scrolledwindow);
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolledwindow), 
-				       GTK_POLICY_ALWAYS, GTK_POLICY_NEVER);
+				       GTK_POLICY_AUTOMATIC, GTK_POLICY_NEVER);
 
         label = gtk_label_new("Patchbay / Router");
         gtk_widget_show(label);
@@ -1336,7 +1336,7 @@ static void create_hardware(GtkWidget *main, GtkWidget *notebook, int page)
 	gtk_widget_show(scrolledwindow);
 	gtk_box_pack_start(GTK_BOX(hbox), scrolledwindow, TRUE, TRUE, 0);
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolledwindow),
-					GTK_POLICY_ALWAYS, GTK_POLICY_NEVER);
+					GTK_POLICY_AUTOMATIC, GTK_POLICY_NEVER);
 
 	viewport = gtk_viewport_new(NULL, NULL);
 	gtk_widget_show(viewport);
@@ -1402,7 +1402,7 @@ static void create_about(GtkWidget *main, GtkWidget *notebook, int page)
 	gtk_widget_show(scrolledwindow);
 	gtk_box_pack_start(GTK_BOX(hbox), scrolledwindow, TRUE, TRUE, 0);
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolledwindow),
-					GTK_POLICY_ALWAYS, GTK_POLICY_NEVER);
+					GTK_POLICY_AUTOMATIC, GTK_POLICY_NEVER);
 
 	viewport = gtk_viewport_new(NULL, NULL);
 	gtk_widget_show(viewport);
@@ -1483,7 +1483,7 @@ static void create_analog_volume(GtkWidget *main, GtkWidget *notebook, int page)
 				   label);
 
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolledwindow), 
-				       GTK_POLICY_ALWAYS, GTK_POLICY_NEVER);
+				       GTK_POLICY_AUTOMATIC, GTK_POLICY_NEVER);
 	viewport = gtk_viewport_new(NULL, NULL);
 	gtk_widget_show(viewport);
 	gtk_container_add(GTK_CONTAINER(scrolledwindow), viewport);
@@ -1832,7 +1832,7 @@ static void create_profiles(GtkWidget *main, GtkWidget *notebook, int page)
 	gtk_widget_show(scrolledwindow);
 	gtk_box_pack_start(GTK_BOX(hbox), scrolledwindow, TRUE, TRUE, 0);
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolledwindow),
-					GTK_POLICY_ALWAYS, GTK_POLICY_NEVER);
+					GTK_POLICY_AUTOMATIC, GTK_POLICY_NEVER);
 
 	viewport = gtk_viewport_new(NULL, NULL);
 	gtk_widget_show(viewport);
