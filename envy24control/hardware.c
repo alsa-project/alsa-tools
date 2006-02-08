@@ -128,6 +128,7 @@ void internal_clock_toggled(GtkWidget *togglebutton, gpointer data)
 	} else if (!strcmp(what, "SPDIF")) {
 		internal_clock_set(13);
 	} else if (!strcmp(what, "WordClock")) {
+		internal_clock_set(13); // 13 should be considered '!internal'
 		master_clock_word_select(1);
 	} else {
 		g_print("internal_clock_toggled: %s ???\n", what);
