@@ -163,7 +163,7 @@ gint master_clock_status_timeout_callback(gpointer data)
 	snd_ctl_elem_value_t *sw;
 	int err;
 	
-	if (card_eeprom.subvendor != ICE1712_SUBDEVICE_DELTA1010)
+	if (card_eeprom.subvendor != ICE1712_SUBDEVICE_DELTA1010 && card_eeprom.subvendor != ICE1712_SUBDEVICE_DELTA1010LT)
 		return FALSE;
 	snd_ctl_elem_value_alloca(&sw);
 	snd_ctl_elem_value_set_interface(sw, SND_CTL_ELEM_IFACE_MIXER);
