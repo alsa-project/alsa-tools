@@ -4,7 +4,7 @@ envy24control \- GUI control tool for Envy24 (ice1712) based
 soundcards, under ALSA.
 
 .SH "SYNOPSIS"
-\fBenvy24control\fP [\fI\-c\fP card\-number] [\fI\-D\fP control\-name] [\fI\-o\fP 0\-num DACs max 8] [\fI\-i\fP 0\-num ADCs max 8] [\fI\-p\fP 0\-8] [\fI\-s\fP 0\-2] [\fI\-f\fP <profiles file name>] [\fI\-v\fP] [<profile number>|<profile name>] [\fI\-m\fP midi\-channel] [\fI\-M\fP]
+\fBenvy24control\fP [\fI\-c\fP card\-number] [\fI\-D\fP control\-name] [\fI\-o\fP 0\-num DACs max 8] [\fI\-i\fP 0\-num ADCs max 8] [\fI\-p\fP 0\-8] [\fI\-s\fP 0\-2] [\fI\-f\fP <profiles file name>] [\fI\-v\fP] [<profile number>|<profile name>] [\fI\-m\fP midi\-channel] [\fI\-M\fP] [\fI\-w\fP window\-width] [\fI\-t\fP 0\-9]
 
 .SH "DESCRIPTION"
 \fBenvy24control\fP allows control of the digital mixer, channel gains
@@ -13,7 +13,7 @@ chipset (Midiman Delta series, Terratec EWS and EWX series). It also
 displays a level meter for each input and output channel.
 
 .SH "INVOKING"
-\fBenvy24control\fP [\fI\-c\fP card\-number] [\fI\-D\fP control\-name] [\fI\-o\fP 0\-num DACs max 8] [\fI\-i\fP 0\-num ADCs max 8] [\fI\-p\fP 0\-8] [\fI\-s\fP 0\-2] [\fI\-f\fP <profiles file name>] [\fI\-v\fP] [<profile number>|<profile name>] [\fI\-m\fP midi\-channel] [\fI\-M\fP]
+\fBenvy24control\fP [\fI\-c\fP card\-number] [\fI\-D\fP control\-name] [\fI\-o\fP 0\-num DACs max 8] [\fI\-i\fP 0\-num ADCs max 8] [\fI\-p\fP 0\-8] [\fI\-s\fP 0\-2] [\fI\-f\fP <profiles file name>] [\fI\-v\fP] [<profile number>|<profile name>] [\fI\-m\fP midi\-channel] [\fI\-M\fP] [\fI\-w\fP window\-width] [\fI\-t\fP 0\-9]
 .TP 
 If no control\-name is given, then the first sound card is used.
 
@@ -65,6 +65,16 @@ send controllers on this channel when the user moves the GUI sliders.
 .TP 
 \fI\-M\fP
 Use an enhanced mapping from midi controller values to db sliders.
+.TP
+\fI\-w\fP window\-width
+Specify the initial width of the envy24control window.
+Using window\-width in the range 0\-20 specifies approx number of mixer channels visible.
+Values >20 are interpreted as screen pixels.
+.TP
+\fI\-t\fP tall\-equal mixer heights
+Using \fI\-t\fP 1 enlarges the channel mixers to the same height as the digital mixer.
+With values >1 the height of all mixers is increased in stages.
+\fI\-t\fP 0 is the default, set for minimum window height.
 .SH "SEE ALSO"
 \fB
 alsamixer(1),
@@ -75,4 +85,5 @@ gamix(1)
 .SH "AUTHOR"
 \fBenvy24control\fP is  by Jaroslav Kysela <perex@suse.cz>
 This document is by James Tappin <james@xena.uklinux.net>.
-Last updated by Dirk Kalis <dirk.kalis@t\-online.de>.
+Updated by Dirk Kalis <dirk.kalis@t\-online.de>.
+Options\fI\-w\ and \fI\-t\fP added Alan Horstmann <gineera@aspect135.co.uk>
