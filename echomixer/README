@@ -13,7 +13,8 @@ master, PCM and monitors gains separately and it provides emulation of master vo
 for cards that don't support it in hardware (all non-Vmixer cards). Furthermore it
 has a matrix mixer which is more easy to use than the Echoaudio console interface.
 
-Emixer requires GTK+ 1.2 or above.
+Emixer requires GTK+ 1.2 or GTK+ 2.x.
+To build with GTK+-1.2, pass --with-gtk2=no configure option.
 
 For more informations:  http://xoomer.virgilio.it/g_pochini/ea-emixer.html
 

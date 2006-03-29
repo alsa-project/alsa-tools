@@ -5,6 +5,8 @@ Needs:
 
 To build (from unpacked tarball):
 	./configure
+If you use GTK+-1.2, pass --with-gtk2=no
+
 	make
 	su -c 'make install'
 

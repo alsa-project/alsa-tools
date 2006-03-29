@@ -5,7 +5,7 @@ envy24control_SOURCES = envy24control.c envy24control.h levelmeters.c midi.c \
                         mixer.c patchbay.c hardware.c driverevents.c volume.c \
 			profiles.c profiles.h midi.h config.c config.h
 envy24control_LDFLAGS = @ENVY24CONTROL_LIBS@
-EXTRA_DIST = envy24control.1 depcomp configure.in-gtk2 \
+EXTRA_DIST = envy24control.1 depcomp configure.in-gtk1 configure.in-gtk2 \
 	     strstr_icase_blank.c new_process.c README.profiles
 AUTOMAKE_OPTIONS = foreign
 
