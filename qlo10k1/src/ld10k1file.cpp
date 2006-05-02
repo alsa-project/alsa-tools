@@ -19,6 +19,7 @@
  *
  */
  
+#include <stdlib.h>
 #include "ld10k1file.h"
 
 class EMU10k1FilePrivate

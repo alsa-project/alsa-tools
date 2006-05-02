@@ -19,6 +19,7 @@
  *
  */
  
+#include <stdlib.h>
 #include <lo10k1/lo10k1.h>
 
 #include "strglobal.h"

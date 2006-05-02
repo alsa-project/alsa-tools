@@ -19,6 +19,7 @@
  *
  */
  
+#include <stdlib.h>
 #include "strglobal.h"
 #include "strparam.h"
 #include "structure.h"
