@@ -1,0 +1,9 @@
+#!/bin/bash
+
+autoreconf -fi
+export CFLAGS='-O2 -Wall -pipe -g'
+echo "CFLAGS=$CFLAGS"
+echo "./configure $@"
+./configure $@
+unset CFLAGS
+make

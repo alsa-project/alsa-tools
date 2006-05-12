@@ -38,7 +38,7 @@ REQUIRED:
 INSTALL:
 --------
 
-	./cvscompile
+	./hgcompile
 or
 	./configure
 

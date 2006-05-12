@@ -13,7 +13,7 @@ Prerequisites
 Installing
 ----------
 
-For Installing from CVS do:
-./cvscompile
+For Installing from HG do:
+./hgcompile
 make install
 

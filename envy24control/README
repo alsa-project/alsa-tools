@@ -10,7 +10,7 @@ If you use GTK+-1.2, pass --with-gtk2=no
 	make
 	su -c 'make install'
 
-To build (from CVS):
-	./cvscompile
+To build (from HG):
+	./hgcompile
 	su -c 'make install'
 
