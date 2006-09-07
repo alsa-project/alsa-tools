@@ -1570,7 +1570,7 @@ static void create_analog_volume(GtkWidget *main, GtkWidget *notebook, int page)
 			gtk_box_pack_start(GTK_BOX(vbox), label, FALSE, TRUE, 6);
 		}
 
-		adj = gtk_adjustment_new(0, -127, 0, 1, 16, 0);
+		adj = gtk_adjustment_new(0, -(envy_adc_max()), 0, 1, 16, 0);
 		av_adc_volume_adj[i] = adj;
 		vscale = gtk_vscale_new(GTK_ADJUSTMENT(adj));
 		gtk_scale_set_draw_value(GTK_SCALE(vscale), FALSE);

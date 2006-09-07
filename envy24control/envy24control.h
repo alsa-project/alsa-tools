@@ -217,6 +217,7 @@ void analog_volume_postinit(void);
 int envy_dac_volumes(void);
 int envy_dac_max(void);
 int envy_adc_volumes(void);
+int envy_adc_max(void);
 int envy_ipga_volumes(void);
 int envy_dac_senses(void);
 int envy_adc_senses(void);

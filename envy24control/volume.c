@@ -33,6 +33,7 @@
 
 static int dac_volumes;
 static int dac_max = 127;
+static int adc_max = 127;
 static int adc_volumes;
 static int ipga_volumes;
 static int dac_senses;
@@ -56,6 +57,11 @@ int envy_dac_max(void)
 int envy_adc_volumes(void)
 {
 	return adc_volumes;
+}
+
+int envy_adc_max(void)
+{
+	return adc_max;
 }
 
 int envy_ipga_volumes(void)
@@ -138,8 +144,9 @@ void adc_volume_update(int idx)
 		g_print("Unable to read ipga volume: %s\n", snd_strerror(err));
 		return;
 	}
-	gtk_adjustment_set_value(GTK_ADJUSTMENT(av_ipga_volume_adj[idx]),
-				 -0);
+	if (ipga_volumes > 0)
+		gtk_adjustment_set_value(GTK_ADJUSTMENT(av_ipga_volume_adj[idx]),
+					 -0);
 }
 
 void ipga_volume_update(int idx)
@@ -165,7 +172,7 @@ void ipga_volume_update(int idx)
 	// set ADC volume to max if IPGA volume greater 0
 	if (ipga_vol)
 		gtk_adjustment_set_value(GTK_ADJUSTMENT(av_adc_volume_adj[idx]),
-					 -127);
+					 -adc_max);
 }
 
 void dac_sense_update(int idx)
@@ -342,6 +349,7 @@ void analog_volume_init(void)
 		snd_ctl_elem_info_set_index(info, i);
 		if (snd_ctl_elem_info(ctl, info) < 0)
 			break;
+		adc_max = snd_ctl_elem_info_get_max(info);
 	}
 	if (i < input_channels - 1)
 		adc_volumes = i;
