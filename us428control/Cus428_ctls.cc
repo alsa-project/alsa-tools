@@ -1,3 +1,4 @@
+/* -*- mode:C++; indent-tabs-mode:t; tab-width:8; c-basic-offset: 8 -*- */
 /*
  * Controller for Tascam US-X2Y
  *
@@ -25,7 +26,7 @@
 
 Cus428State* OneState;
 
-void 
+void
 Cus428_ctls::dump(int n)
 {
 	for (int m = 0; m < n; m++)
@@ -35,7 +36,7 @@ Cus428_ctls::dump(int n)
 	printf("\n");
 }
 
-void 
+void
 Cus428_ctls::analyse(Cus428_ctls *Previous, unsigned n)
 {
 	Cus428_ctls *PreviousL = Previous ? Previous : new Cus428_ctls();
@@ -43,7 +44,7 @@ Cus428_ctls::analyse(Cus428_ctls *Previous, unsigned n)
 	for (; n < 9; n++) {			//Sliders
 		char Diff = DiffValAt(PreviousL, n);
 		if (Diff)
-			OneState->SliderChangedTo(n, ValAt(n));		
+			OneState->SliderChangedTo(n, ValAt(n));
 	}
 	for (; n < 16; n++) {			//Knobs
 		unsigned char Diff = DiffBitAt(PreviousL, n);
@@ -57,7 +58,7 @@ Cus428_ctls::analyse(Cus428_ctls *Previous, unsigned n)
 	for (; n < sizeof(*this); n++) {	//wheels
 		char Diff = DiffValAt(PreviousL, n);
 		if (Diff)
-			OneState->WheelChangedTo((E_In84)n, Diff);				
+			OneState->WheelChangedTo((E_In84)n, Diff);
 	}
 	if (0 == Previous)
 		delete PreviousL;

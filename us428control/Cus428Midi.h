@@ -1,3 +1,4 @@
+/* -*- mode:C++; indent-tabs-mode:t; tab-width:8; c-basic-offset: 8 -*- */
 /*
  *
  * Copyright (c) 2003 by Karsten Wiese <annabellesgarden@yahoo.de>
@@ -62,7 +63,7 @@
 
 
 class Cus428Midi {
- public:
+public:
 	Cus428Midi():
 		Seq(0){}
 
@@ -87,14 +88,23 @@ class Cus428Midi {
 		return Err;
 	}
 
-	int SendMidiControl(char Param, char Val){
-		snd_seq_ev_set_controller(&Ev, 15, Param, Val & 0x7F);
+	int SendMidiControl(char Channel, char Param, char Val){
+		snd_seq_ev_set_controller(&Ev, Channel, Param, Val & 0x7F);
 		SubMitEvent();
 		return 0;
-	} 
+	}
 
-	int SendMidiControl(Cus428State::eKnobs K, bool Down){
-		return SendMidiControl(KnobParam[K - Cus428State::eK_RECORD], Down ? 0x7F : 0);
+	int SendMidiNote(char Channel, char Note, char Val){
+		if (!Val)
+			snd_seq_ev_set_noteoff(&Ev, Channel, Note, Val & 0x7F);
+		else
+			snd_seq_ev_set_noteon(&Ev, Channel, Note, Val & 0x7F);
+		SubMitEvent();
+		return 0;
+	}
+
+	int SendMidiControl(char Channel, Cus428State::eKnobs K, bool Down){
+		return SendMidiControl(Channel, KnobParam[K - Cus428State::eK_RECORD], Down ? 0x7F : 0);
 	}
 
 	// To parse and dispatch input MIDI events.
@@ -106,7 +116,7 @@ class Cus428Midi {
 	// Made public for friendliness.
 	snd_seq_t *Seq;
 
- private:
+private:
 	int Port;
 	snd_seq_event_t Ev;
 	int SubMitEvent(){

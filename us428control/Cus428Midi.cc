@@ -1,3 +1,4 @@
+/* -*- mode:C++; indent-tabs-mode:t; tab-width:8; c-basic-offset: 8 -*- */
 /*
  *
  * Copyright (c) 2003 by Karsten Wiese <annabellesgarden@yahoo.de>
@@ -78,7 +79,7 @@ char Cus428Midi::KnobParam[] = {
 	0x35,
 	0x36,
 	0x37,
-	};
+};
 
 extern int verbose;
 

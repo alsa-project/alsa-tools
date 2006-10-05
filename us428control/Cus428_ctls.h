@@ -1,3 +1,4 @@
+/* -*- mode:C++; indent-tabs-mode:t; tab-width:8; c-basic-offset: 8 -*- */
 /*
  * Controller for Tascam US-X2Y
  *
@@ -24,7 +25,7 @@
 
 
 class Cus428_ctls: public us428_ctls{
- public:
+public:
 	Cus428_ctls() {
 		memset(this, 0, sizeof(*this));
 	}
@@ -33,7 +34,7 @@ class Cus428_ctls: public us428_ctls{
 	bool Knob( int K) {
 		return ((char*)this)[K / 8] & (1 << K % 8);
 	}
- protected:
+protected:
 	unsigned char ValAt(int i) {
 		return ((unsigned char*)this)[i];
 	}

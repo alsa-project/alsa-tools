@@ -1,3 +1,4 @@
+/* -*- mode:C++; indent-tabs-mode:t; tab-width:8; c-basic-offset: 8 -*- */
 /*
  * Controller for Tascam US-X2Y
  *
@@ -61,7 +62,8 @@ static void usage(void)
 {
 	printf("Tascam US-428 Control\n");
 	printf("version %s\n", VERSION);
-	printf("usage: "PROGNAME" [-v verbosity_level 0..2] [-c card] [-D device] [-u usb-device]\n");
+	printf("usage: "PROGNAME" [-v verbosity_level 0..2] [-c card] [-D device] [-u usb-device] [-m mode]\n");
+	printf("mode is one of (native, mixxx)\n");
 }
 /*
  * check the name id of the given hwdep handle
@@ -76,14 +78,14 @@ static int check_hwinfo(snd_hwdep_t *hw, const char *id, const char* usb_dev_nam
 		return err;
 	if (strcmp(snd_hwdep_info_get_id(info), id))
 		return -ENODEV;
-	if (usb_dev_name) 
+	if (usb_dev_name)
 		if (strcmp(snd_hwdep_info_get_name(info), usb_dev_name))
 			return -ENODEV;
 
 	return 0; /* ok */
 }
 
-int US428Control(const char* DevName)
+int US428Control(const char* DevName, int mode)
 {
 	snd_hwdep_t		*hw;
 	int			err;
@@ -117,7 +119,11 @@ int US428Control(const char* DevName)
 		return -ENOMEM;
 	}
 	us428ctls_sharedmem->CtlSnapShotRed = us428ctls_sharedmem->CtlSnapShotLast;
-	OneState = new Cus428State(us428ctls_sharedmem);
+	if (mode == 1)
+		OneState = new Cus428StateMixxx(us428ctls_sharedmem);
+	else
+		OneState = new Cus428State(us428ctls_sharedmem);
+
 	OneState->InitDevice();
 
 	while ((pollrc = poll(pfds, npfd, 60000)) >= 0) {
@@ -152,12 +158,13 @@ int US428Control(const char* DevName)
 int main (int argc, char *argv[])
 {
 	int c;
+	int mode = 0;
 	int card = -1;
 	char	*device_name = NULL,
 		*usb_device_name = getenv("DEVICE");
 	char name[64];
 
-	while ((c = getopt(argc, argv, "c:D:u:v:")) != -1) {
+	while ((c = getopt(argc, argv, "c:D:u:v:m:")) != -1) {
 		switch (c) {
 		case 'c':
 			card = atoi(optarg);
@@ -170,6 +177,10 @@ int main (int argc, char *argv[])
 			break;
 		case 'v':
 			verbose = atoi(optarg);
+			break;
+		case 'm':
+			if (!strcmp(optarg, "mixxx"))
+				mode = 1;
 			break;
 		default:
 			usage();
@@ -190,18 +201,18 @@ int main (int argc, char *argv[])
 		}
 	}
 	if (device_name) {
-		return US428Control(device_name) != 0;
+		return US428Control(device_name, mode) != 0;
 	}
 	if (card >= 0) {
 		sprintf(name, "hw:%d", card);
-		return US428Control(name) != 0;
+		return US428Control(name, mode) != 0;
 	}
 
 	/* probe the all cards */
 	for (c = 0; c < SND_CARDS; c++) {
-	//	verbose--;
+		//	verbose--;
 		sprintf(name, "hw:%d", c);
-		if (! US428Control(name))
+		if (!US428Control(name, mode))
 			card = c;
 	}
 	if (card < 0) {

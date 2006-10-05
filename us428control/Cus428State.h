@@ -1,3 +1,4 @@
+/* -*- mode:C++; indent-tabs-mode:t; tab-width:8; c-basic-offset: 8 -*- */
 /*
  * Controller for Tascam US-X2Y
  *
@@ -24,7 +25,7 @@
 #include "Cus428_ctls.h"
 
 class Cus428State: public us428_lights{
- public:
+public:
 	Cus428State(struct us428ctls_sharedmem* Pus428ctls_sharedmem)
 		:us428ctls_sharedmem(Pus428ctls_sharedmem)
 		,MuteInputMonitor(0)
@@ -39,12 +40,12 @@ class Cus428State: public us428_lights{
 		,bSetLocate(false)
 		,uTransport(0)
 		,aWheelSpeed(0)
-		{
-			init_us428_lights();
-			for (int v = 0; v < 5; ++v) {
-				Volume[v].init(v);
-			}
+	{
+		init_us428_lights();
+		for (int v = 0; v < 5; ++v) {
+			Volume[v].init(v);
 		}
+	}
 	enum eKnobs{
 		eK_RECORD =	72,
 		eK_PLAY,
@@ -84,10 +85,15 @@ class Cus428State: public us428_lights{
 		eK_F3,
 	};
 	void InitDevice(void);
+
 	void KnobChangedTo(eKnobs K, bool V);
 	void SliderChangedTo(int S, unsigned char New);
-	void SliderSend(int S);
 	void WheelChangedTo(E_In84 W, char Diff);
+	virtual void UserSliderChangedTo(int S, unsigned char New);
+	virtual void UserWheelChangedTo(E_In84 W, char Diff);
+	virtual void UserKnobChangedTo(eKnobs K, bool V);
+
+	void SliderSend(int S);
 	Cus428_ctls *Set_us428_ctls(Cus428_ctls *New) {
 		Cus428_ctls *Old = us428_ctls;
 		us428_ctls = New;
@@ -104,7 +110,7 @@ class Cus428State: public us428_lights{
 	void TransportSend();
 	// Reset internal MMC state.
 	void MmcReset();
- private:
+protected:
 	void SendVolume(usX2Y_volume &V);
 	struct us428ctls_sharedmem* us428ctls_sharedmem;
 	bool StateInputMonitor() {
@@ -121,9 +127,9 @@ class Cus428State: public us428_lights{
 
 	usX2Y_volume_t	Volume[5];
 	char		MuteInputMonitor,
-			Mute,
-			SelectInputMonitor,
-			Select;
+		Mute,
+		SelectInputMonitor,
+		Select;
 	Cus428_ctls	*us428_ctls;
 	// Differential wheel tracking.
 	int W0;
@@ -138,6 +144,18 @@ class Cus428State: public us428_lights{
 	unsigned char uTransport;
 	// Shuttle wheel absolute speed.
 	int aWheelSpeed;
+};
+
+
+class Cus428StateMixxx: public Cus428State{
+public:
+	Cus428StateMixxx(struct us428ctls_sharedmem* Pus428ctls_sharedmem);
+	void UserKnobChangedTo(eKnobs K, bool V);
+	void UserSliderChangedTo(int S, unsigned char New);
+	void UserWheelChangedTo(E_In84 W, char Diff);
+protected:
+	int focus;
+	int eq;
 };
 
 extern Cus428State* OneState;

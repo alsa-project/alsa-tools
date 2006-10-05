@@ -1,3 +1,4 @@
+/* -*- mode:C++; indent-tabs-mode:t; tab-width:8; c-basic-offset: 8 -*- */
 /*
  *
  * Copyright (c) 2003 by Karsten Wiese <annabellesgarden@yahoo.de>
@@ -64,7 +65,7 @@ struct us428_ctls{
 	unsigned char 	Select;
 	unsigned char   Mute;
 	unsigned char   UNKNOWN;
-	unsigned char   Switch;	     
+	unsigned char   Switch;
 	unsigned char   Wheel[5];
 };
 
@@ -82,15 +83,15 @@ enum {
 
 typedef struct usX2Y_volume {
 	unsigned char	Channel,
-			LH,
-			LL,
-			RH,
-			RL;
+		LH,
+		LL,
+		RH,
+		RL;
 	unsigned char	Slider;
 	char		Pan,
-			Mute;
+		Mute;
 #ifdef __cplusplus
-	public:
+public:
 	void init(unsigned char _Channel) {
 		memset(this, 0, sizeof(*this));
 		Channel = _Channel;
@@ -119,7 +120,7 @@ typedef struct usX2Y_volume {
 		if (Grob) {
 			static int GrobVals[] = {-128, -64, 0, 64, 127};
 			int i = 4;
-			while (i >= 0 && GrobVals[i] > Pan) 
+			while (i >= 0 && GrobVals[i] > Pan)
 				i--;
 			if (GrobVals[i] != Pan  &&  RawValue < 0)
 				i++;
@@ -145,7 +146,7 @@ typedef struct usX2Y_volume {
 struct us428_lights{
 	us428_setByte_t Light[7];
 #ifdef __cplusplus
-	public:
+public:
 	enum eLight{
 		eL_Select0 = 0,
 		eL_Rec0 = 8,
@@ -158,7 +159,12 @@ struct us428_lights{
 		eL_FFwd = 29,
 		eL_Play = 30,
 		eL_Record = 31,
-		eL_Null
+		eL_AnalogDigital = 32,
+		eL_Null = 34,
+		eL_Low = 36,
+		eL_LowMid = 37,
+		eL_HiMid = 38,
+		eL_High = 39
 	};
 	bool LightIs(int L){
 		return Light[L / 8].Value & (1 << (L % 8));
