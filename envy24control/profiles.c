@@ -71,9 +71,11 @@ int which_cfgfile(char ** const cfgfile)
 	filename_without_tilde[MAX_FILE_NAME_LENGTH - 1] = '\0';
 	subst_tilde_in_filename(filename_without_tilde);
 	if ((inputFile = fopen(filename_without_tilde, "r")) == NULL) {
-		if ((*cfgfile != DEFAULT_PROFILERC) && (*cfgfile != SYS_PROFILERC)) {
+		if (strcmp(*cfgfile, DEFAULT_PROFILERC) &&
+		    strcmp(*cfgfile, SYS_PROFILERC)) {
 			res = -ENOENT;
-		} else if ((*cfgfile == DEFAULT_PROFILERC) && ((inputFile = fopen(SYS_PROFILERC, "r")) == NULL)) {
+		} else if (!strcmp(*cfgfile, DEFAULT_PROFILERC) &&
+			   (inputFile = fopen(SYS_PROFILERC, "r")) == NULL) {
 			res = -ENOENT;
 		} else {
 			fclose(inputFile);
