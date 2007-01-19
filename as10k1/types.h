@@ -108,7 +108,7 @@ struct macrdef{
 #define NO_SYM "__NO_NAME"
 
 
-#define MAX_DEF_MACRO 25
+#define MAX_DEF_MACRO 30
 #define MAX_MAC_DEPTH 5
 
 

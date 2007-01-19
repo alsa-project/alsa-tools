@@ -46,6 +46,10 @@ void new_macro(char *symbol, char *line, char *operand)
 {
         extern int source_line_num;
         struct sym *sym;
+
+	if (macro_ctn >= MAX_DEF_MACRO)
+                as_exit("Parse Error: Too many macros");
+
         if(isalpha(*symbol)==0)
                 as_exit("Parse Error: Symbol must start with an alpha character");
         
