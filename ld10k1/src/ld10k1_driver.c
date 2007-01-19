@@ -194,8 +194,10 @@ int ld10k1_update_driver(ld10k1_dsp_mgr_t *dsp_mgr)
 
 	/* controls to add */
 	if (dsp_mgr->add_list_count > 0) {
-		add_ctrl = (emu10k1_fx8010_control_gpr_t *)malloc(sizeof(emu10k1_fx8010_control_gpr_t) * dsp_mgr->add_list_count);
-		memset(add_ctrl, 0, sizeof(emu10k1_fx8010_control_gpr_t) * dsp_mgr->add_list_count);
+		add_ctrl = calloc(dsp_mgr->add_list_count,
+				  sizeof(emu10k1_fx8010_control_gpr_t));
+		if (!add_ctrl)
+			return LD10K1_ERR_NO_MEM;
 		for (i = 0, item = dsp_mgr->add_ctl_list; item != NULL; item = item->next, i++) {
 			strcpy(add_ctrl[i].id.name, item->ctl.name);
 			add_ctrl[i].id.iface = EMU10K1_CTL_ELEM_IFACE_MIXER;
@@ -218,8 +220,10 @@ int ld10k1_update_driver(ld10k1_dsp_mgr_t *dsp_mgr)
 
 	/* controls to del */
 	if (dsp_mgr->del_list_count > 0) {
-		del_ids = (emu10k1_ctl_elem_id_t *)malloc(sizeof(emu10k1_ctl_elem_id_t) * dsp_mgr->del_list_count);
-		memset(del_ids, 0, sizeof(emu10k1_ctl_elem_id_t) * dsp_mgr->del_list_count);
+		del_ids = calloc(dsp_mgr->del_list_count,
+				 sizeof(emu10k1_ctl_elem_id_t));
+		if (!del_ids)
+			return LD10K1_ERR_NO_MEM;
 		for (i = 0, item = dsp_mgr->del_ctl_list; item != NULL; item = item->next, i++) {
 			strcpy(del_ids[i].name, item->ctl.name);
 			del_ids[i].iface = EMU10K1_CTL_ELEM_IFACE_MIXER;
@@ -333,6 +337,11 @@ int ld10k1_init_driver(ld10k1_dsp_mgr_t *dsp_mgr, int tram_size)
 	
 	int err;
 	
+	if (snd_hwdep_ioctl(handle, SNDRV_EMU10K1_IOCTL_PVERSION, &i) < 0) {
+		error("Cannot get emu10k1 driver version, likely an old driver is running.");
+		return LD10K1_ERR_DRIVER_INFO;
+	}
+
 	if ((err = ld10k1_alloc_code_struct(&code)) < 0)
     		return err;
 	
@@ -363,7 +372,8 @@ int ld10k1_init_driver(ld10k1_dsp_mgr_t *dsp_mgr, int tram_size)
 		return LD10K1_ERR_DRIVER_CODE_PEEK;
 	}
 
-	ctrl = (emu10k1_fx8010_control_gpr_t *)malloc(sizeof(emu10k1_fx8010_control_gpr_t) * code.gpr_list_control_total);
+	ctrl = calloc(code.gpr_list_control_total,
+		      sizeof(emu10k1_fx8010_control_gpr_t));
 	if (!ctrl) {
 		ld10k1_free_code_struct(&code);
 		return LD10K1_ERR_NO_MEM;
@@ -397,7 +407,8 @@ int ld10k1_init_driver(ld10k1_dsp_mgr_t *dsp_mgr, int tram_size)
 		code.gpr_map[i] = 0;
 	}
 
-	ids = (emu10k1_ctl_elem_id_t *)malloc(sizeof(emu10k1_ctl_elem_id_t) * code.gpr_list_control_total);
+	ids = calloc(code.gpr_list_control_total,
+		     sizeof(emu10k1_ctl_elem_id_t));
 	if (!ids) {
 		ld10k1_free_code_struct(&code);
 		free(ctrl);
