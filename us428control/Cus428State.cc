@@ -3,6 +3,7 @@
  * Controller for Tascam US-X2Y
  *
  * Copyright (c) 2003 by Karsten Wiese <annabellesgarden@yahoo.de>
+ * Copyright (c) 2004-2007 by Rui Nuno Capela <rncbc@rncbc.org>
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -84,9 +85,9 @@ void Cus428State::SliderChangedTo(int S, unsigned char New)
 		V.SetTo(S, New);
 		if (S == eFaderM || !LightIs(eL_Mute0 + S))
 			SendVolume(V);
-	}
-	else
+	} else {
 		UserSliderChangedTo(S, New);
+	}
 }
 
 void Cus428State::UserKnobChangedTo(eKnobs K, bool V)
@@ -132,12 +133,12 @@ void Cus428State::UserKnobChangedTo(eKnobs K, bool V)
 		break;
 	case eK_SET:
 		if (verbose > 1)
-			printf("Knob SET now %i", V);
+			printf("Knob SET now %i\n", V);
 		bSetLocate = V;
 		break;
 	case eK_LOCATE_L:
 		if (verbose > 1)
-			printf("Knob LOCATE_L now %i", V);
+			printf("Knob LOCATE_L now %i\n", V);
 		if (V) {
 			if (bSetLocate)
 				aWheel_L = aWheel;
@@ -149,7 +150,7 @@ void Cus428State::UserKnobChangedTo(eKnobs K, bool V)
 		break;
 	case eK_LOCATE_R:
 		if (verbose > 1)
-			printf("Knob LOCATE_R now %i", V);
+			printf("Knob LOCATE_R now %i\n", V);
 		if (V) {
 			if (bSetLocate)
 				aWheel_R = aWheel;
@@ -158,6 +159,118 @@ void Cus428State::UserKnobChangedTo(eKnobs K, bool V)
 				LocateSend();
 			}
 		}
+		break;
+	case eK_REC:
+		if (verbose > 1)
+			printf("Knob REC now %i\n", V);
+		bSetRecord = V;
+		break;
+	case eK_SOLO:
+		if (verbose > 1)
+			printf("Knob SOLO now %i", V);
+		if (V) {
+			bool bSolo = ! LightIs(eL_Solo);
+			if (StateInputMonitor()) {
+				if (bSolo) {
+					MuteInputMonitor = Light[2].Value;
+					Light[2].Value = SoloInputMonitor;
+				} else {
+					SoloInputMonitor = Light[2].Value;
+					Light[2].Value = MuteInputMonitor;
+				}
+			} else {
+				if (bSolo) {
+					Mute[aBank] = Light[2].Value;
+					Light[2].Value = Solo[aBank];
+				} else {
+					Solo[aBank] = Light[2].Value;
+					Light[2].Value = Mute[aBank];
+				}
+			}
+			LightSet(eL_Solo, bSolo);
+			LightSend();
+		}
+		if (verbose > 1)
+			printf(" Light is %i\n", LightIs(eL_Solo));
+		break;
+	case eK_NULL:
+		if (verbose > 1)
+			printf("Knob NULL now %i", V);
+		if (V) {
+			bool bNull = ! LightIs(eL_Null);
+			LightSet(eL_Null, bNull);
+			LightSend();
+		}
+		if (verbose > 1)
+			printf(" Light is %i\n", LightIs(eL_Null));
+		break;
+	case eK_BANK_L:
+		if (verbose > 1)
+			printf("Knob BANK_L now %i", V);
+		if (V) {
+			if (aBank > 0) {
+				bool bInputMonitor = StateInputMonitor();
+				bool bSolo = LightIs(eL_Solo);
+				if (!bInputMonitor) {
+					Select[aBank] = Light[0].Value;
+					Rec[aBank] = Light[1].Value;
+					if (bSolo) {
+						Solo[aBank] = Light[2].Value;
+					} else {
+						Mute[aBank] = Light[2].Value;
+					}
+				}
+				aBank--;
+				if (!bInputMonitor) {
+					Light[0].Value = Select[aBank];
+					Light[1].Value = Rec[aBank];
+					if (bSolo) {
+						Light[2].Value = Solo[aBank];
+					} else {
+						Light[2].Value = Mute[aBank];
+					}
+				}
+			}
+			LightSet(eL_BankL, (aBank == 0));
+			LightSet(eL_BankR, (aBank == cBanks - 1));
+			LightSend();
+		}
+		if (verbose > 1)
+			printf(" Light is %i\n", LightIs(eL_BankL));
+		break;
+	case eK_BANK_R:
+		if (verbose > 1)
+			printf("Knob BANK_R now %i", V);
+		if (V) {
+			if (aBank < 3) {
+				bool bInputMonitor = StateInputMonitor();
+				bool bSolo = LightIs(eL_Solo);
+				if (!bInputMonitor) {
+					Select[aBank] = Light[0].Value;
+					Rec[aBank] = Light[1].Value;
+					if (bSolo) {
+						Solo[aBank] = Light[2].Value;
+					} else {
+						Mute[aBank] = Light[2].Value;
+					}
+				}
+				aBank++;
+				if (!bInputMonitor) {
+					Light[0].Value = Select[aBank];
+					Light[1].Value = Rec[aBank];
+					if (bSolo) {
+						Light[2].Value = Solo[aBank];
+					} else {
+						Light[2].Value = Mute[aBank];
+					}
+				}
+			}
+			LightSet(eL_BankL, (aBank == 0));
+			LightSet(eL_BankR, (aBank == cBanks - 1));
+			LightSend();
+		}
+		if (verbose > 1)
+			printf(" Light is %i\n", LightIs(eL_BankR));
 		break;
 	default:
 		if (verbose > 1)
@@ -169,12 +282,21 @@ void Cus428State::UserKnobChangedTo(eKnobs K, bool V)
 
 void Cus428State::KnobChangedTo(eKnobs K, bool V)
 {
-	switch (K & ~(StateInputMonitor() ? 3 : -1)) {
+//	switch (K & ~(StateInputMonitor() ? 3 : -1)) {
+	switch (K & ~3) {
 	case eK_Select0:
 		if (V) {
 			int S = eL_Select0 + (K & 7);
 			Light[eL_Select0 / 8].Value = 0;
 			LightSet(S, !LightIs(S));
+			if (bSetRecord) {
+				int R = eL_Rec0 + (K & 7);
+				LightSet(R, !LightIs(R));
+				if (!StateInputMonitor()) {
+					SendMaskedWrite(MMC_CIF_TRACK_RECORD,
+						Y * aBank + (K & 7), LightIs(R));
+				}
+			}
 			LightSend();
 		}
 		break;
@@ -184,10 +306,27 @@ void Cus428State::KnobChangedTo(eKnobs K, bool V)
 			LightSet(M, !LightIs(M));
 			LightSend();
 			if (StateInputMonitor()) {
-				usX2Y_volume V = Volume[M - eL_Mute0];
-				if (LightIs(M))
-					V.LH = V.LL = V.RL = V.RH = 0;
-				SendVolume(V);
+				if (LightIs(eL_Solo)) {
+					for (int i = 0; i < 8; ++i) {
+						usX2Y_volume V = Volume[i];
+						if (!LightIs(eL_Mute0 + i) || (MuteInputMonitor & (1 << i)))
+							V.LH = V.LL = V.RL = V.RH = 0;
+						SendVolume(V);
+					}
+				} else {
+					usX2Y_volume V = Volume[M - eL_Mute0];
+					if (LightIs(M))
+						V.LH = V.LL = V.RL = V.RH = 0;
+					SendVolume(V);
+				}
+			} else {
+				if (LightIs(eL_Solo)) {
+					SendMaskedWrite(MMC_CIF_TRACK_SOLO,
+						Y * aBank + (K & 7), LightIs(M));
+				} else {
+					SendMaskedWrite(MMC_CIF_TRACK_MUTE,
+						Y * aBank + (K & 7), LightIs(M));
+				}
 			}
 		}
 		break;
@@ -196,16 +335,33 @@ void Cus428State::KnobChangedTo(eKnobs K, bool V)
 			if (verbose > 1)
 				printf("Knob InputMonitor now %i", V);
 			if (V) {
-				if (StateInputMonitor()) {
-					SelectInputMonitor = Light[0].Value;
-					MuteInputMonitor = Light[2].Value;
+				bool bInputMonitor = ! StateInputMonitor();
+				if (bInputMonitor) {
+					Select[aBank] = Light[0].Value;
+					Rec[aBank] = Light[1].Value;
+					Light[0].Value = SelectInputMonitor;
+					Light[1].Value = RecInputMonitor;
+					if (LightIs(eL_Solo)) {
+						Solo[aBank] = Light[2].Value;
+						Light[2].Value = SoloInputMonitor;
+					} else {
+						Mute[aBank] = Light[2].Value;
+						Light[2].Value = MuteInputMonitor;
+					}
 				} else {
-					Select = Light[0].Value;
-					Mute = Light[2].Value;
+					SelectInputMonitor = Light[0].Value;
+					RecInputMonitor = Light[1].Value;
+					Light[0].Value = Select[aBank];
+					Light[1].Value = Rec[aBank];
+					if (LightIs(eL_Solo)) {
+						SoloInputMonitor = Light[2].Value;
+						Light[2].Value = Solo[aBank];
+					} else {
+						MuteInputMonitor = Light[2].Value;
+						Light[2].Value = Mute[aBank];
+					}
 				}
-				LightSet(eL_InputMonitor, ! StateInputMonitor());
-				Light[0].Value = StateInputMonitor() ? SelectInputMonitor : Select;
-				Light[2].Value = StateInputMonitor() ? MuteInputMonitor : Mute;
+				LightSet(eL_InputMonitor, bInputMonitor);
 				LightSend();
 			}
 			if (verbose > 1)
@@ -232,8 +388,8 @@ void Cus428State::UserWheelChangedTo(E_In84 W, char Diff)
 		Param = 0x4A;
 		break;
 	case eWheel:
-	        Param = 0x60;
-	        // Update the absolute wheel position.
+		Param = 0x60;
+		// Update the absolute wheel position.
 		WheelDelta((int) ((unsigned char *) us428_ctls)[W]);
 		break;
 	}
@@ -242,21 +398,18 @@ void Cus428State::UserWheelChangedTo(E_In84 W, char Diff)
 
 void Cus428State::WheelChangedTo(E_In84 W, char Diff)
 {
-	if (W == eWheelPan && StateInputMonitor() && Light[0].Value)
-		{
-			int index = 0;
-
-			while( index < 4 && (1 << index) !=  Light[0].Value)
-				index++;
-
-			if (index >= 4)
-				return;
-
-			Volume[index].PanTo(Diff, us428_ctls->Knob(eK_SET));
-			if (!LightIs(eL_Mute0 + index))
-				SendVolume(Volume[index]);
+	if (W == eWheelPan && StateInputMonitor() && Light[0].Value) {
+		int index = 0;
+		while( index < 4 && (1 << index) !=  Light[0].Value)
+			index++;
+		if (index >= 4)
 			return;
-		}
+		Volume[index].PanTo(Diff, us428_ctls->Knob(eK_SET));
+		if (!LightIs(eL_Mute0 + index))
+			SendVolume(Volume[index]);
+		return;
+	}
+
 	UserWheelChangedTo(W, Diff);
 }
 
@@ -265,9 +418,9 @@ void Cus428State::WheelChangedTo(E_In84 W, char Diff)
 void Cus428State::LocateWheel ( unsigned char *tc )
 {
 	aWheel  = (60 * 60 * 30) * (int) tc[0]		// hh - hours    [0..23]
-		+ (     60 * 30) * (int) tc[1]		// mm - minutes  [0..59]
-		+ (          30) * (int) tc[2]		// ss - seconds  [0..59]
-		+                  (int) tc[3];		// ff - frames   [0..29]
+			+ (     60 * 30) * (int) tc[1]		// mm - minutes  [0..59]
+			+ (          30) * (int) tc[2]		// ss - seconds  [0..59]
+			+                  (int) tc[3];		// ff - frames   [0..29]
 }
 
 
@@ -426,6 +579,7 @@ void Cus428State::TransportSet ( unsigned char T, bool V )
 	TransportSend();
 }
 
+
 // Update transport status lights.
 void Cus428State::TransportSend()
 {
@@ -447,6 +601,7 @@ void Cus428State::TransportSend()
 	LightSend();
 }
 
+
 // Reset MMC state.
 void Cus428State::MmcReset()
 {
@@ -454,13 +609,101 @@ void Cus428State::MmcReset()
 	aWheel = aWheel_L = aWheel_R = 0;
 	aWheelSpeed = 0;
 	bSetLocate = false;
+	bSetRecord = false;
 	uTransport = 0;
 
 	TransportSend();
 	LocateSend();
 }
 
-Cus428StateMixxx::Cus428StateMixxx(struct us428ctls_sharedmem* Pus428ctls_sharedmem):Cus428State(Pus428ctls_sharedmem)
+
+// Process MMC maked-write sub-command.
+void Cus428State::MaskedWrite ( unsigned char *data )
+{
+	// data[0] - sub-command / information field.
+	// data[1] - target track bitmap byte address.
+	// data[2] - bitmap changed mask.
+	// data[3] - bitmap changed value.
+
+	int track = (data[1] > 0 ? (data[1] * 7) : 0) - 5;
+	for (int i = 0; i < 7; ++i) {
+		int mask = (1 << i);
+		if (data[2] & mask) {
+			// Only touch tracks that have the "mask" bit set.
+			int enable = (data[3] & mask);
+			int bank = (track / Y);
+			int N = (track % Y);
+			switch (data[0]) {
+			case MMC_CIF_TRACK_RECORD:
+				if (verbose > 1)
+					fprintf(stderr, "TRACK RECORD(%d, %d).\n", track, enable);
+				if (!StateInputMonitor() && bank >= 0 && bank < cBanks) {
+					if (bank == aBank) {
+						LightSet(eL_Rec0 + N, enable);
+						LightSend();
+					} else if (enable) {
+						Rec[bank] |=  (1 << N);
+					} else {
+						Rec[bank] &= ~(1 << N);
+					}
+				}
+				break;
+			case MMC_CIF_TRACK_MUTE:
+				if (verbose > 1)
+					fprintf(stderr, "TRACK MUTE(%d, %d).\n", track, enable);
+				if (!StateInputMonitor() && bank >= 0 && bank < cBanks) {
+					if (bank == aBank && !LightIs(eL_Solo)) {
+						LightSet(eL_Mute0 + N, enable);
+						LightSend();
+					} else if (enable) {
+						Mute[bank] |=  (1 << N);
+					} else {
+						Mute[bank] &= ~(1 << N);
+					}
+				}
+				break;
+			case MMC_CIF_TRACK_SOLO:
+				if (verbose > 1)
+					fprintf(stderr, "TRACK SOLO(%d, %d).\n", track, enable);
+				if (!StateInputMonitor() && bank >= 0 && bank < cBanks) {
+					if (bank == aBank && LightIs(eL_Solo)) {
+						LightSet(eL_Mute0 + N, enable);
+						LightSend();
+					} else if (enable) {
+						Solo[bank] |=  (1 << N);
+					} else {
+						Solo[bank] &= ~(1 << N);
+					}
+				}
+				break;
+			default:
+				break;
+			}
+		}
+		track++;
+	}
+}
+
+
+// Send own MMC masked-write subcommand.
+void Cus428State::SendMaskedWrite ( unsigned char scmd, int track, bool V )
+{
+	unsigned char data[4];
+	int mask = (1 << (track < 2 ? track + 5 : (track - 2) % 7));
+
+	data[0] = scmd;
+	data[1] = (unsigned char) (track < 2 ? 0 : 1 + (track - 2) / 7);
+	data[2] = (unsigned char) mask;
+	data[3] = (unsigned char) (V ? mask : 0);
+
+	Midi.SendMmcCommand(MMC_CMD_MASKED_WRITE, &data[0], sizeof(data));
+}
+
+
+
+Cus428StateMixxx::Cus428StateMixxx(
+	struct us428ctls_sharedmem* Pus428ctls_sharedmem, int y)
+	: Cus428State(Pus428ctls_sharedmem, y)
 {
 	focus = 0;
 	eq = 0;
@@ -476,26 +719,26 @@ void Cus428StateMixxx::UserKnobChangedTo(eKnobs K, bool V)
 	switch (K) {
 	case eK_BANK_L:
 		if (verbose > 1)
-			printf("Knob BANK_L now %i", V);
+			printf("Knob BANK_L now %i\n", V);
 		if (V) LightSet(eL_BankL, !LightIs(eL_BankL));
 		LightSend();
 		Midi.SendMidiNote(0, 51, V ? 127 : 0);
 		break;
 	case eK_BANK_R:
 		if (verbose > 1)
-			printf("Knob BANK_R now %i", V);
+			printf("Knob BANK_R now %i\n", V);
 		if (V) LightSet(eL_BankR, !LightIs(eL_BankR));
 		LightSend();
 		Midi.SendMidiNote(1, 51, V ? 127 : 0);
 		break;
 	case eK_REW:
 		if (verbose > 1)
-			printf("Knob REW now %i", V);
+			printf("Knob REW now %i\n", V);
 		Midi.SendMidiNote(focus, 60, V ? 127 : 0);
 		break;
 	case eK_FFWD:
 		if (verbose > 1)
-			printf("Knob FFWD now %i", V);
+			printf("Knob FFWD now %i\n", V);
 		Midi.SendMidiNote(focus, 61, V ? 127 : 0);
 		break;
 	case eK_STOP:
@@ -505,17 +748,17 @@ void Cus428StateMixxx::UserKnobChangedTo(eKnobs K, bool V)
 		break;
 	case eK_PLAY:
 		if (verbose > 1)
-			printf("Knob PLAY now %i", V);
+			printf("Knob PLAY now %i\n", V);
 		Midi.SendMidiNote(focus, 63, V ? 127 : 0);
 		break;
 	case eK_RECORD:
 		if (verbose > 1)
-			printf("Knob RECORD now %i", V);
+			printf("Knob RECORD now %i\n", V);
 		Midi.SendMidiNote(focus, 64, V ? 127 : 0);
 		break;
 	case eK_LOW:
 		if (verbose > 1)
-			printf("Knob LOW now %i", V);
+			printf("Knob LOW now %i\n", V);
 		if (V)
 			{
 				eq = 0;
@@ -528,7 +771,7 @@ void Cus428StateMixxx::UserKnobChangedTo(eKnobs K, bool V)
 		break;
 	case eK_LOWMID:
 		if (verbose > 1)
-			printf("Knob LOWMID now %i", V);
+			printf("Knob LOWMID now %i\n", V);
 		if (V)
 			{
 				eq = 1;
@@ -541,7 +784,7 @@ void Cus428StateMixxx::UserKnobChangedTo(eKnobs K, bool V)
 		break;
 	case eK_HIMID:
 		if (verbose > 1)
-			printf("Knob HIMID now %i", V);
+			printf("Knob HIMID now %i\n", V);
 		if (V)
 			{
 				eq = 2;
@@ -554,7 +797,7 @@ void Cus428StateMixxx::UserKnobChangedTo(eKnobs K, bool V)
 		break;
 	case eK_HIGH:
 		if (verbose > 1)
-			printf("Knob HIGH now %i", V);
+			printf("Knob HIGH now %i\n", V);
 		if (V)
 			{
 				eq = 3;
@@ -567,19 +810,19 @@ void Cus428StateMixxx::UserKnobChangedTo(eKnobs K, bool V)
 		break;
 	case eK_SET:
 		if (verbose > 1)
-			printf("Knob SET now %i", V);
+			printf("Knob SET now %i\n", V);
 		Midi.SendMidiNote(focus, 65, V ? 127 : 0);
 		break;
 	case eK_LOCATE_L:
 		if (verbose > 1)
-			printf("Knob LOCATE_L now %i", V);
+			printf("Knob LOCATE_L now %i\n", V);
 		if (V) {
 			focus = 0;
 		}
 		break;
 	case eK_LOCATE_R:
 		if (verbose > 1)
-			printf("Knob LOCATE_R now %i", V);
+			printf("Knob LOCATE_R now %i\n", V);
 		if (V) {
 			focus = 1;
 		}

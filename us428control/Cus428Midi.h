@@ -2,6 +2,7 @@
 /*
  *
  * Copyright (c) 2003 by Karsten Wiese <annabellesgarden@yahoo.de>
+ * Copyright (c) 2004-2007 by Rui Nuno Capela <rncbc@rncbc.org>
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -60,6 +61,11 @@
 #define MMC_CMD_RECORD_STROBE_VARIABLE  0x55
 #define MMC_CMD_WAIT                    0x7c
 #define MMC_CMD_RESUME                  0x7f
+
+// Available MMC Masked Write sub-commands (information fields).
+#define MMC_CIF_TRACK_RECORD            0x4f
+#define MMC_CIF_TRACK_MUTE              0x62
+#define MMC_CIF_TRACK_SOLO              0x66 // Custom-implementation ;)
 
 
 class Cus428Midi {

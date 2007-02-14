@@ -3,6 +3,7 @@
  * Controller for Tascam US-X2Y
  *
  * Copyright (c) 2003 by Karsten Wiese <annabellesgarden@yahoo.de>
+ * Copyright (c) 2004-2007 by Rui Nuno Capela <rncbc@rncbc.org>
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -24,29 +25,50 @@
 
 #include "Cus428_ctls.h"
 
-class Cus428State: public us428_lights{
+class Cus428State: public us428_lights
+{
 public:
-	Cus428State(struct us428ctls_sharedmem* Pus428ctls_sharedmem)
-		:us428ctls_sharedmem(Pus428ctls_sharedmem)
-		,MuteInputMonitor(0)
-		,Mute(0)
-		,SelectInputMonitor(0)
-		,Select(0)
+
+	// Constructor.
+	Cus428State(struct us428ctls_sharedmem* Pus428ctls_sharedmem, int y = 8)
+		:us428ctls_sharedmem(Pus428ctls_sharedmem),Y(y)
 		,us428_ctls(0)
+		,MuteInputMonitor(0)
+		,SoloInputMonitor(0)
+		,RecInputMonitor(0)
+		,SelectInputMonitor(0)
+		,aBank(0)
+		,cBanks(32 / y)
 		,W0(0)
 		,aWheel(0)
 		,aWheel_L(0)
 		,aWheel_R(0)
 		,bSetLocate(false)
+		,bSetRecord(false)
 		,uTransport(0)
 		,aWheelSpeed(0)
 	{
+		Mute = new unsigned char [cBanks];
+		Solo = new unsigned char [cBanks];
+		Rec = new unsigned char [cBanks];
+		Select = new unsigned char [cBanks];
+		for (int i = 0; i < cBanks; ++i)
+			Mute[i] = Solo[i] = Rec[i] = Select[i] = 0;
 		init_us428_lights();
 		for (int v = 0; v < 5; ++v) {
 			Volume[v].init(v);
 		}
 	}
-	enum eKnobs{
+
+	// Destructor.
+	virtual ~Cus428State() {
+		delete Select;
+		delete Rec;
+		delete Solo;
+		delete Mute;
+	}
+
+	enum eKnobs {
 		eK_RECORD =	72,
 		eK_PLAY,
 		eK_STOP,
@@ -84,6 +106,7 @@ public:
 		eK_F2,
 		eK_F3,
 	};
+
 	void InitDevice(void);
 
 	void KnobChangedTo(eKnobs K, bool V);
@@ -108,9 +131,13 @@ public:
 	void TransportToggle(unsigned char T);
 	void TransportSet(unsigned char T, bool V);
 	void TransportSend();
+	// Process masked-write sub-command.
+	void MaskedWrite(unsigned char *data);
 	// Reset internal MMC state.
 	void MmcReset();
+
 protected:
+
 	void SendVolume(usX2Y_volume &V);
 	struct us428ctls_sharedmem* us428ctls_sharedmem;
 	bool StateInputMonitor() {
@@ -124,13 +151,19 @@ protected:
 	void WheelShuttle(int dW);
 	// Get the curent wheel timecode.
 	void LocateTimecode(unsigned char *tc);
+	// Send own MMC masked-write subcommand.
+	void SendMaskedWrite(unsigned char scmd, int track, bool V);
 
 	usX2Y_volume_t	Volume[5];
-	char		MuteInputMonitor,
-		Mute,
-		SelectInputMonitor,
-		Select;
 	Cus428_ctls	*us428_ctls;
+	// To hold channel light-mode states.
+	unsigned char
+		MuteInputMonitor,	*Mute,
+		SoloInputMonitor,	*Solo,
+		RecInputMonitor,	*Rec,
+		SelectInputMonitor,	*Select;
+	// The current selected bank, maximum number of bank/layers.
+	int aBank, cBanks;
 	// Differential wheel tracking.
 	int W0;
 	// Some way to convert wheel (absolute) position into hh:mm:ss:ff:fr
@@ -140,16 +173,20 @@ protected:
 	int aWheel_R;
 	// SET knob state.
 	bool bSetLocate;
+	// REC knob state.
+	bool bSetRecord;
 	// Last/current transport state.
 	unsigned char uTransport;
 	// Shuttle wheel absolute speed.
 	int aWheelSpeed;
+	// The official number of faders (channels per bank)
+	int Y;
 };
 
 
 class Cus428StateMixxx: public Cus428State{
 public:
-	Cus428StateMixxx(struct us428ctls_sharedmem* Pus428ctls_sharedmem);
+	Cus428StateMixxx(struct us428ctls_sharedmem* Pus428ctls_sharedmem, int y);
 	void UserKnobChangedTo(eKnobs K, bool V);
 	void UserSliderChangedTo(int S, unsigned char New);
 	void UserWheelChangedTo(E_In84 W, char Diff);

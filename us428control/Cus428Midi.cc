@@ -2,6 +2,7 @@
 /*
  *
  * Copyright (c) 2003 by Karsten Wiese <annabellesgarden@yahoo.de>
+ * Copyright (c) 2004-2007 by Rui Nuno Capela <rncbc@rncbc.org>
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -139,6 +140,11 @@ void Cus428Midi::ProcessMidiEvents()
 					if (verbose > 1)
 						fprintf(stderr, "LOCATE.\n");
 					OneState->LocateWheel(&data[7]);
+					break;
+				case MMC_CMD_MASKED_WRITE:
+					if (verbose > 1)
+						fprintf(stderr, "MASKED WRITE.\n");
+					OneState->MaskedWrite(&data[6]);
 					break;
 				case MMC_CMD_MMC_RESET:
 					if (verbose > 1)

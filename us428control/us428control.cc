@@ -3,6 +3,7 @@
  * Controller for Tascam US-X2Y
  *
  * Copyright (c) 2003 by Karsten Wiese <annabellesgarden@yahoo.de>
+ * Copyright (c) 2004-2007 by Rui Nuno Capela <rncbc@rncbc.org>
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -63,7 +64,7 @@ static void usage(void)
 	printf("Tascam US-428 Control\n");
 	printf("version %s\n", VERSION);
 	printf("usage: "PROGNAME" [-v verbosity_level 0..2] [-c card] [-D device] [-u usb-device] [-m mode]\n");
-	printf("mode is one of (native, mixxx)\n");
+	printf("mode is one of (us224, us428, mixxx)\n");
 }
 /*
  * check the name id of the given hwdep handle
@@ -85,7 +86,7 @@ static int check_hwinfo(snd_hwdep_t *hw, const char *id, const char* usb_dev_nam
 	return 0; /* ok */
 }
 
-int US428Control(const char* DevName, int mode)
+int US428Control(const char* DevName, int mode, int y)
 {
 	snd_hwdep_t		*hw;
 	int			err;
@@ -95,7 +96,8 @@ int US428Control(const char* DevName, int mode)
 	int npfd, pollrc;
 
 	if ((err = snd_hwdep_open(&hw, DevName, O_RDWR)) < 0) {
-		error("cannot open hwdep %s\n", DevName);
+		if (verbose > 1)
+			error("cannot open hwdep %s\n", DevName);
 		return err;
 	}
 
@@ -104,6 +106,9 @@ int US428Control(const char* DevName, int mode)
 		snd_hwdep_close(hw);
 		return -ENODEV;
 	}
+
+	if (verbose > 0)
+		fprintf(stderr, PROGNAME ": US-X2Y-compatible card found on hwdep %s\n", DevName);
 
 	Midi.CreatePorts();
 
@@ -118,11 +123,12 @@ int US428Control(const char* DevName, int mode)
 		snd_hwdep_close(hw);
 		return -ENOMEM;
 	}
+
 	us428ctls_sharedmem->CtlSnapShotRed = us428ctls_sharedmem->CtlSnapShotLast;
 	if (mode == 1)
-		OneState = new Cus428StateMixxx(us428ctls_sharedmem);
+		OneState = new Cus428StateMixxx(us428ctls_sharedmem, y);
 	else
-		OneState = new Cus428State(us428ctls_sharedmem);
+		OneState = new Cus428State(us428ctls_sharedmem, y);
 
 	OneState->InitDevice();
 
@@ -131,7 +137,7 @@ int US428Control(const char* DevName, int mode)
 			if (verbose > 1 || pfds[0].revents & (POLLERR|POLLHUP))
 				printf("poll returned 0x%X\n", pfds[0].revents);
 			if (pfds[0].revents & (POLLERR|POLLHUP))
-				return -ENXIO;
+				return 0; /* -ENXIO; */
 			int Last = us428ctls_sharedmem->CtlSnapShotLast;
 			if (verbose > 1)
 				printf("Last is %i\n", Last);
@@ -158,6 +164,7 @@ int US428Control(const char* DevName, int mode)
 int main (int argc, char *argv[])
 {
 	int c;
+	int y = 8;
 	int mode = 0;
 	int card = -1;
 	char	*device_name = NULL,
@@ -179,6 +186,12 @@ int main (int argc, char *argv[])
 			verbose = atoi(optarg);
 			break;
 		case 'm':
+			if (!strcmp(optarg, "us224"))
+				y = 4;
+			else
+			if (!strcmp(optarg, "us428"))
+				y = 8;
+			else
 			if (!strcmp(optarg, "mixxx"))
 				mode = 1;
 			break;
@@ -201,24 +214,28 @@ int main (int argc, char *argv[])
 		}
 	}
 	if (device_name) {
-		return US428Control(device_name, mode) != 0;
+		return US428Control(device_name, mode, y) != 0;
 	}
 	if (card >= 0) {
 		sprintf(name, "hw:%d", card);
-		return US428Control(name, mode) != 0;
+		return US428Control(name, mode, y) != 0;
 	}
 
 	/* probe the all cards */
 	for (c = 0; c < SND_CARDS; c++) {
 		//	verbose--;
 		sprintf(name, "hw:%d", c);
-		if (!US428Control(name, mode))
+		if (US428Control(name, mode, y) == 0) {
 			card = c;
+			break;
+		}
 	}
+
 	if (card < 0) {
 		fprintf(stderr, PROGNAME ": no US-X2Y-compatible cards found\n");
 		return 1;
 	}
+
 	return 0;
 }
 
