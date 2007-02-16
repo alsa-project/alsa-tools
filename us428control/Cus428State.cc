@@ -207,68 +207,14 @@ void Cus428State::UserKnobChangedTo(eKnobs K, bool V)
 	case eK_BANK_L:
 		if (verbose > 1)
 			printf("Knob BANK_L now %i", V);
-		if (V) {
-			if (aBank > 0) {
-				bool bInputMonitor = StateInputMonitor();
-				bool bSolo = LightIs(eL_Solo);
-				if (!bInputMonitor) {
-					Select[aBank] = Light[0].Value;
-					Rec[aBank] = Light[1].Value;
-					if (bSolo) {
-						Solo[aBank] = Light[2].Value;
-					} else {
-						Mute[aBank] = Light[2].Value;
-					}
-				}
-				aBank--;
-				if (!bInputMonitor) {
-					Light[0].Value = Select[aBank];
-					Light[1].Value = Rec[aBank];
-					if (bSolo) {
-						Light[2].Value = Solo[aBank];
-					} else {
-						Light[2].Value = Mute[aBank];
-					}
-				}
-			}
-			LightSet(eL_BankL, (aBank == 0));
-			LightSet(eL_BankR, (aBank == cBanks - 1));
-			LightSend();
-		}
+		if (V) BankSet(aBank - 1);
 		if (verbose > 1)
 			printf(" Light is %i\n", LightIs(eL_BankL));
 		break;
 	case eK_BANK_R:
 		if (verbose > 1)
 			printf("Knob BANK_R now %i", V);
-		if (V) {
-			if (aBank < 3) {
-				bool bInputMonitor = StateInputMonitor();
-				bool bSolo = LightIs(eL_Solo);
-				if (!bInputMonitor) {
-					Select[aBank] = Light[0].Value;
-					Rec[aBank] = Light[1].Value;
-					if (bSolo) {
-						Solo[aBank] = Light[2].Value;
-					} else {
-						Mute[aBank] = Light[2].Value;
-					}
-				}
-				aBank++;
-				if (!bInputMonitor) {
-					Light[0].Value = Select[aBank];
-					Light[1].Value = Rec[aBank];
-					if (bSolo) {
-						Light[2].Value = Solo[aBank];
-					} else {
-						Light[2].Value = Mute[aBank];
-					}
-				}
-			}
-			LightSet(eL_BankL, (aBank == 0));
-			LightSet(eL_BankR, (aBank == cBanks - 1));
-			LightSend();
-		}
+		if (V) BankSet(aBank + 1);
 		if (verbose > 1)
 			printf(" Light is %i\n", LightIs(eL_BankR));
 		break;
@@ -602,10 +548,48 @@ void Cus428State::TransportSend()
 }
 
 
+// Set new bank layer state.
+void Cus428State::BankSet( int B )
+{
+	if (B >= 0 && B < cBanks) {
+		if (!StateInputMonitor()) {
+			bool bSolo = LightIs(eL_Solo);
+			Select[aBank] = Light[0].Value;
+			Rec[aBank] = Light[1].Value;
+			if (bSolo) {
+				Solo[aBank] = Light[2].Value;
+			} else {
+				Mute[aBank] = Light[2].Value;
+			}
+			Light[0].Value = Select[B];
+			Light[1].Value = Rec[B];
+			if (bSolo) {
+				Light[2].Value = Solo[B];
+			} else {
+				Light[2].Value = Mute[B];
+			}
+		}
+		aBank = B;
+	}
+
+	BankSend();
+}
+
+
+// Update bank status lights.
+void Cus428State::BankSend()
+{
+	LightSet(eL_BankL, (aBank == 0));
+	LightSet(eL_BankR, (aBank == cBanks - 1));
+	LightSend();
+}
+
+
 // Reset MMC state.
 void Cus428State::MmcReset()
 {
 	W0 = 0;
+	aBank = 0;
 	aWheel = aWheel_L = aWheel_R = 0;
 	aWheelSpeed = 0;
 	bSetLocate = false;
@@ -614,6 +598,7 @@ void Cus428State::MmcReset()
 
 	TransportSend();
 	LocateSend();
+	BankSend();
 }
 
 
