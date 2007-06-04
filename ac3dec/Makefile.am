@@ -3,7 +3,7 @@ AUTOMAKE_OPTIONS = 1.3 foreign
 
 bin_PROGRAMS = ac3dec 
 
-ac3dec_LDADD= -L./libac3 -lac3
+ac3dec_LDADD= -L./libac3 -lac3 -lm
 
 noinst_HEADERS = output.h
 ac3dec_SOURCES = ac3dec.c output.c ac3spdif.c
