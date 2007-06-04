@@ -18,6 +18,10 @@ if test x"$QTDIR" = x ; then
 fi
 AC_MSG_RESULT([$QTDIR])
 
+AC_MSG_CHECKING([QTFORCE32])
+AC_ARG_ENABLE([qtforce32], [  --enable-qtforce32      Force search for 32-bit Qt libraries], [QTFORCE32="$enableval"], [QTFORCE32="no"])
+AC_MSG_RESULT([$QTFORCE32])
+
 # Change backslashes in QTDIR to forward slashes to prevent escaping
 # problems later on in the build process, mainly for Cygwin build
 # environment using MSVC as the compiler
@@ -99,7 +103,7 @@ case "${host}" in
             if test "x$QT_IS_DYNAMIC" = x && test "x$QT_IS_DYNAMIC64" = x;  then
                 AC_MSG_ERROR([*** Couldn't find any Qt libraries])
             fi
-            if test "x$QT_IS_DYNAMIC64" != x;  then
+            if test "$QTFORCE32" = "no" && test "x$QT_IS_DYNAMIC64" != x;  then
             	QT_LIB_DIR="lib64"
             fi
         fi
