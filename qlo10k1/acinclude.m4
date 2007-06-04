@@ -62,6 +62,7 @@ AC_PATH_PROG([QEMBED], [qembed], [$QTDIR/bin/qembed], [$PATH:$QTDIR/bin])
 QT_CXXFLAGS="-I$QTDIR/include"
 
 QT_IS_EMBEDDED="no"
+QT_LIB_DIR="lib"
 # On unix, figure out if we're doing a static or dynamic link
 case "${host}" in
     *-cygwin)
@@ -94,22 +95,26 @@ case "${host}" in
         fi
         if test x$QT_IS_STATIC = xno ; then
             QT_IS_DYNAMIC=`ls $QTDIR/lib/*.so 2> /dev/null` 
-            if test "x$QT_IS_DYNAMIC" = x;  then
+            QT_IS_DYNAMIC64=`ls $QTDIR/lib64/*.so 2> /dev/null` 
+            if test "x$QT_IS_DYNAMIC" = x && test "x$QT_IS_DYNAMIC64" = x;  then
                 AC_MSG_ERROR([*** Couldn't find any Qt libraries])
+            fi
+            if test "x$QT_IS_DYNAMIC64" != x;  then
+            	QT_LIB_DIR="lib64"
             fi
         fi
 
-        if test "x`ls $QTDIR/lib/libqt.{a,so} 2> /dev/null`" != x ; then
+        if test "x`ls $QTDIR/$QT_LIB_DIR/libqt.{a,so} 2> /dev/null`" != x ; then
             QT_LIB="-lqt"
             QT_IS_MT="no"
-        elif test "x`ls $QTDIR/lib/libqt-mt.{a,so} 2> /dev/null`" != x ; then
+        elif test "x`ls $QTDIR/$QT_LIB_DIR/libqt-mt.{a,so} 2> /dev/null`" != x ; then
             QT_LIB="-lqt-mt"
             QT_IS_MT="yes"
-        elif test "x`ls $QTDIR/lib/libqte.{a,so} 2> /dev/null`" != x ; then
+        elif test "x`ls $QTDIR/$QT_LIB_DIR/libqte.{a,so} 2> /dev/null`" != x ; then
             QT_LIB="-lqte"
             QT_IS_MT="no"
             QT_IS_EMBEDDED="yes"
-        elif test "x`ls $QTDIR/lib/libqte-mt.{a,so} 2> /dev/null`" != x ; then
+        elif test "x`ls $QTDIR/$QT_LIB_DIR/libqte-mt.{a,so} 2> /dev/null`" != x ; then
             QT_LIB="-lqte-mt"
             QT_IS_MT="yes"
             QT_IS_EMBEDDED="yes"
@@ -195,7 +200,7 @@ if test x"$QT_IS_MT" = "xyes" ; then
         QT_CXXFLAGS="$QT_CXXFLAGS -D_REENTRANT -DQT_THREAD_SUPPORT"
 fi
 
-QT_LDADD="-L$QTDIR/lib $QT_LIBS"
+QT_LDADD="-L$QTDIR/$QT_LIB_DIR $QT_LIBS"
 
 if test x$QT_IS_STATIC = xyes ; then
     OLDLIBS="$LIBS"
