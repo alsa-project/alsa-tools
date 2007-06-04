@@ -8,7 +8,7 @@ AC_MSG_CHECKING([QTDIR])
 AC_ARG_WITH([qtdir], [  --with-qtdir=DIR        Qt installation directory [default=$QTDIR]], QTDIR=$withval)
 # Check that QTDIR is defined or that --with-qtdir given
 if test x"$QTDIR" = x ; then
-    QT_SEARCH="/usr/lib/qt31 /usr/local/qt31 /usr/lib/qt3 /usr/local/qt3 /usr/lib/qt2 /usr/local/qt2 /usr/lib/qt /usr/local/qt"
+    QT_SEARCH="/usr/lib64/qt31 /usr/local/lib64/qt31 /usr/lib64/qt3 /usr/local/qt64/qt3 /usr/lib/qt31 /usr/local/qt31 /usr/lib/qt3 /usr/local/qt3 /usr/lib/qt2 /usr/local/qt2 /usr/lib/qt /usr/local/qt"
     for i in $QT_SEARCH; do
         if test -f $i/include/qglobal.h -a x$QTDIR = x; then QTDIR=$i; fi
     done
