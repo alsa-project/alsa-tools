@@ -775,7 +775,7 @@ void hardware_init(void)
 	snd_ctl_elem_value_set_interface(volume_rate, SND_CTL_ELEM_IFACE_MIXER);
 	snd_ctl_elem_value_set_name(volume_rate, "Multi Track Volume Rate");
 
-	if (! card_is_dmx6fire) {
+	if (card_is_dmx6fire) {
 		snd_ctl_elem_value_set_interface(spdif_input, SND_CTL_ELEM_IFACE_MIXER);
 		snd_ctl_elem_value_set_name(spdif_input, "Optical Digital Input Switch");
 	} else {
