@@ -11,7 +11,7 @@ Author: Daniel Bertrand <d.bertrand@ieee.ca>
 
 
 This version of the assembler was modified for the ALSA driver by
-Jaroslav Kysela <perex@suse.cz>.
+Jaroslav Kysela <perex@perex.cz>.
 
 
 Usage: as10k1 <asm file> [bin output file] 

@@ -10,7 +10,7 @@
  * This program was changed to conform the ALSA ideas. Please,
  * bug reports and all other things should be discussed on the
  * <alsa-devel@alsa-project.org> mailing list.
- *                                   Jaroslav Kysela <perex@suse.cz>
+ *                                   Jaroslav Kysela <perex@perex.cz>
  */
 
 /***************************************************************************

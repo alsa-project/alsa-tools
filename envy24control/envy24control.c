@@ -1,6 +1,6 @@
 /*****************************************************************************
    envy24control.c - Env24 chipset (ICE1712) control utility
-   Copyright (C) 2000 by Jaroslav Kysela <perex@suse.cz>
+   Copyright (C) 2000 by Jaroslav Kysela <perex@perex.cz>
 
    (2003/03/22) Changed to hbox/vbox layout.
    Copyright (C) 2003 by Søren Wedel Nielsen
@@ -1432,7 +1432,7 @@ static void create_about(GtkWidget *main, GtkWidget *notebook, int page)
 
 
 	/* create third line */
-	label = gtk_label_new("Copyright(c) 2000 by Jaroslav Kysela <perex@suse.cz>");
+	label = gtk_label_new("Copyright(c) 2000 by Jaroslav Kysela <perex@perex.cz>");
         gtk_widget_show(label);
 	gtk_box_pack_start(GTK_BOX(vbox), label, FALSE, TRUE, 6);
 

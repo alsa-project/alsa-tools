@@ -2,7 +2,7 @@ dnl Configure Paths for ld10k1 - stolen from ASLA (1.0.5a)
 dnl Configure Paths for Alsa
 dnl Some modifications by Richard Boulton <richard-alsa@tartarus.org>
 dnl Christopher Lansdown <lansdoct@cs.alfred.edu>
-dnl Jaroslav Kysela <perex@suse.cz>
+dnl Jaroslav Kysela <perex@perex.cz>
 dnl AM_PATH_LD10K1([MINIMUM-VERSION [, ACTION-IF-FOUND [, ACTION-IF-NOT-FOUND]]])
 dnl Test for liblo10k1, and define LD10K1_CFLAGS and LD10K1_LIBS as appropriate.
 dnl enables arguments --with-ld10k1-prefix=

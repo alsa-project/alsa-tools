@@ -1,6 +1,6 @@
 /*****************************************************************************
    driverevents.c - Events from the driver processing
-   Copyright (C) 2000 by Jaroslav Kysela <perex@suse.cz>
+   Copyright (C) 2000 by Jaroslav Kysela <perex@perex.cz>
    
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License
