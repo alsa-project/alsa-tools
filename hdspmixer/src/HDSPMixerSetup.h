@@ -54,7 +54,7 @@ public:
     int level_val;
     int numbers_val;
     int rmsplus3_val;
-    HDSPMixerSetup(int w, int h, char *label, HDSPMixerWindow *w);
+    HDSPMixerSetup(int w, int h, char *label, HDSPMixerWindow *win);
     HDSPMixerWindow *basew;
     void updateValues();
 };
