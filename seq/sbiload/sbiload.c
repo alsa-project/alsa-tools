@@ -1,5 +1,5 @@
 /*
- *  ALSA sequencer SBI FM instrument loader
+ *  ALSA hwdep SBI FM instrument loader
  *  Copyright (c) 2000 Uros Bizjak <uros@kss-loka.si>
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -16,11 +16,13 @@
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
  *
+ *
+ *  Oct. 2007 - Takashi Iwai <tiwai@suse.de>
+ *    Changed to use hwdep instead of obsoleted seq-instr interface
  */
 
 #include <errno.h>
 #include <getopt.h>
-#include <alsa/sound/ainstr_fm.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -29,24 +31,13 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <alsa/asoundlib.h>
+#include <alsa/sound/asound_fm.h>
 #include <sys/time.h>
+#include <sys/ioctl.h>
 #include <unistd.h>
 
-typedef struct sbi_header
-{
-  char key[4];
-  char name[32];
-}
-sbi_header_t;
-
-typedef struct sbi_inst
-{
-  sbi_header_t header;
 #define DATA_LEN_2OP	16
 #define DATA_LEN_4OP	24
-  char data[DATA_LEN_4OP];
-}
-sbi_inst_t;
 
 /* offsets for SBI params */
 #define AM_VIB		0
@@ -59,23 +50,25 @@ sbi_inst_t;
 #define CONNECTION	10
 #define OFFSET_4OP	11
 
-/* offsets in sbi_header.name for SBI extensions */
-#define ECHO_DELAY	25
-#define ECHO_ATTEN	26
-#define CHORUS_SPREAD	27
-#define TRNSPS		28
-#define FIX_DUR		29
-#define MODES		30
-#define FIX_KEY		31
+/* offsets for SBI extensions */
+#define ECHO_DELAY	0
+#define ECHO_ATTEN	1
+#define CHORUS_SPREAD	2
+#define TRNSPS		3
+#define FIX_DUR		4
+#define MODES		5
+#define FIX_KEY		6
 
 /* Options for the command */
 #define HAS_ARG 1
 static struct option long_opts[] = {
-  {"port", HAS_ARG, NULL, 'p'},
+  {"device", HAS_ARG, NULL, 'D'},
+  {"opl2", 0, NULL, '2'},
   {"opl3", 0, NULL, '4'},
-  {"list", 0, NULL, 'l'},
+  {"clear", 0, NULL, 'c'},
   {"path", HAS_ARG, NULL, 'P'},
   {"verbose", HAS_ARG, NULL, 'v'},
+  {"quiet", 0, NULL, 'q'},
   {"version", 0, NULL, 'V'},
   {0, 0, 0, 0},
 };
@@ -83,87 +76,37 @@ static struct option long_opts[] = {
 /* Number of elements in an array */
 #define NELEM(a) ( sizeof(a)/sizeof((a)[0]) )
 
-#define ADDR_PARTS 4		/* Number of part in a port description addr 1:2:3:4 */
-#define SEP ", \t"		/* Separators for port description */
-
-#define SBI_FILE_TYPE_2OP 0
-#define SBI_FILE_TYPE_4OP 1
+enum {
+  FM_PATCH_UNKNOWN,
+  FM_PATCH_OPL2,
+  FM_PATCH_OPL3
+};
 
 /* Default file type */
-int file_type = SBI_FILE_TYPE_2OP;
+static int file_type = FM_PATCH_UNKNOWN;
 
 /* Default verbose level */
-int verbose = 0;
+static int quiet;
+static int verbose = 0;
 
 /* Global declarations */
-snd_seq_t *seq_handle;
-
-int seq_client;
-int seq_port;
-int seq_dest_client;
-int seq_dest_port;
+static snd_hwdep_t *handle;
+static int iface;
 
 #ifndef PATCHDIR
 #define PATCHDIR "/usr/share/sounds/opl3"
 #endif
 
-char *patchdir = PATCHDIR;
+static char *patchdir = PATCHDIR;
 
 /* Function prototypes */
-static void show_list ();
-static void show_usage ();
-static void show_op (fm_instrument_t * fm_instr);
+static void show_usage (void);
+static void show_op (struct sbi_patch * instr, int type);
 
-static int load_patch (fm_instrument_t * fm_instr, int bank, int prg, char *name);
+static int load_patch (struct sbi_patch * instr);
 static int load_file (int bank, char *filename);
-static int parse_portdesc (char *portdesc);
 
-static int init_client ();
-
-static void
-ignore_errors (const char *file, int line, const char *function, int err, const char *fmt, ...)
-{
-  /* ignore */
-}
-
-/*
- * Show a list of possible output ports that midi could be sent to.
- */
-static void
-show_list () {
-  snd_seq_client_info_t *cinfo;
-  snd_seq_port_info_t *pinfo;
-
-  int client, err;
-
-  snd_lib_error_set_handler (ignore_errors);
-  if ((err = snd_seq_open (&seq_handle, "hw", SND_SEQ_OPEN_DUPLEX, 0)) < 0) {
-      fprintf (stderr, "Could not open sequencer: %s\n", snd_strerror (err));
-      return;
-  }
-
-  printf (" Port     %-30.30s    %s\n", "Client name", "Port name");
-  snd_seq_client_info_alloca(&cinfo);
-  snd_seq_client_info_set_client(cinfo, -1);
-  while (snd_seq_query_next_client(seq_handle, cinfo) >= 0) {
-      client = snd_seq_client_info_get_client(cinfo);
-      snd_seq_port_info_alloca(&pinfo);
-      snd_seq_port_info_set_client(pinfo, client);
-      snd_seq_port_info_set_port(pinfo, -1);
-      while (snd_seq_query_next_port(seq_handle, pinfo) >= 0) {
-	  unsigned int cap;
-
-	  cap = (SND_SEQ_PORT_CAP_SUBS_WRITE | SND_SEQ_PORT_CAP_WRITE);
-	  if ((snd_seq_port_info_get_capability(pinfo) & cap) == cap) {
-	      printf ("%3d:%-3d   %-30.30s    %s\n",
-		      client, snd_seq_port_info_get_port(pinfo),
-		      snd_seq_client_info_get_name(cinfo),
-		      snd_seq_port_info_get_name(pinfo));
-	  }
-      }
-  }
-  snd_seq_close (seq_handle);
-}
+static int init_hwdep (const char *name);
 
 /*
  * Show usage message
@@ -172,18 +115,22 @@ static void
 show_usage () {
   char **cpp;
   static char *msg[] = {
-    "Usage: sbiload [-p client:port] [-4] [-l] [-P path] [-v level] instfile drumfile",
+    "Usage: sbiload [options] [instfile [drumfile]]",
+    "       sbiload [options] -c",
     "",
-    "  -p client:port  - A alsa client and port number to send midi to",
-    "  -4              - four operators file type (default = two ops)",
-    "  -l              - List possible output ports that could be used",
-    "  -P path         - Specify the patch path",
-    "  -v level        - Verbose level (default = 0)",
-    "  -V              - Show version",
+    "  -D, --device=name     - hwdep device string",
+    "  -c, --clear           - Clear patches and exit",
+    "  -2, --opl2            - two operators file type (OPL2)",
+    "  -4, --opl3            - four operators file type (OPL3)",
+    "  -P, --path=path       - Specify the patch path",
+    "                          (default path: " PATCHDIR ")",
+    "  -v, --verbose=level   - Verbose level (default = 0)",
+    "  -q, --quiet           - Be quiet, no error/warning messages",
+    "  -V, --version         - Show version",
   };
 
   for (cpp = msg; cpp < msg + NELEM (msg); cpp++) {
-      fprintf (stderr, "%s\n", *cpp);
+      printf ("%s\n", *cpp);
   }
 }
 
@@ -199,169 +146,87 @@ show_version () {
  * Show instrument FM operators
  */
 static void
-show_op (fm_instrument_t * fm_instr) {
+show_op (struct sbi_patch * inst, int type) {
   int i = 0;
+  int ofs = 0;
 
   do {
-      printf ("  OP%i: flags: %s %s %s %s\011OP%i: flags: %s %s %s %s\n",
-	      i,
-	      fm_instr->op[i].am_vib & (1 << 7) ? "AM" : "  ",
-	      fm_instr->op[i].am_vib & (1 << 6) ? "VIB" : "   ",
-	      fm_instr->op[i].am_vib & (1 << 5) ? "EGT" : "   ",
-	      fm_instr->op[i].am_vib & (1 << 4) ? "KSR" : "   ",
-	      i + 1,
-	      fm_instr->op[i + 1].am_vib & (1 << 7) ? "AM" : "  ",
-	      fm_instr->op[i + 1].am_vib & (1 << 6) ? "VIB" : "   ",
-	      fm_instr->op[i + 1].am_vib & (1 << 5) ? "EGT" : "   ",
-	      fm_instr->op[i + 1].am_vib & (1 << 4) ? "KSR" : "");
-      printf ("  OP%i: MULT = 0x%x" "\011\011OP%i: MULT = 0x%x\n",
-	      i, fm_instr->op[i].am_vib & 0x0f,
-	      i + 1, fm_instr->op[i + 1].am_vib & 0x0f);
-      printf ("  OP%i: KSL  = 0x%x  TL = 0x%.2x\011OP%i: KSL  = 0x%x  TL = 0x%.2x\n",
-	      i, (fm_instr->op[i].ksl_level >> 6) & 0x03, fm_instr->op[i].ksl_level & 0x3f,
-	      i + 1, (fm_instr->op[i + 1].ksl_level >> 6) & 0x03, fm_instr->op[i + 1].ksl_level & 0x3f);
-      printf ("  OP%i: AR   = 0x%x  DL = 0x%x\011OP%i: AR   = 0x%x  DL = 0x%x\n",
-	      i, (fm_instr->op[i].attack_decay >> 4) & 0x0f, fm_instr->op[i].attack_decay & 0x0f,
-	      i + 1, (fm_instr->op[i + 1].attack_decay >> 4) & 0x0f, fm_instr->op[i + 1].attack_decay & 0x0f);
-      printf ("  OP%i: SL   = 0x%x  RR = 0x%x\011OP%i: SL   = 0x%x  RR = 0x%x\n",
-	      i, (fm_instr->op[i].sustain_release >> 4) & 0x0f, fm_instr->op[i].sustain_release & 0x0f,
-	      i + 1, (fm_instr->op[i + 1].sustain_release >> 4) & 0x0f, fm_instr->op[i + 1].sustain_release & 0x0f);
-      printf ("  OP%i: WS   = 0x%x\011\011OP%i: WS   = 0x%x\n",
-	      i, fm_instr->op[i].wave_select & 0x07,
-	      i + 1, fm_instr->op[i + 1].wave_select & 0x07);
-      printf (" FB = 0x%x,  %s\n",
-	      (fm_instr->feedback_connection[i / 2] >> 1) & 0x07,
-	      fm_instr->feedback_connection[i / 2] & (1 << 0) ? "parallel" : "serial");
-      i += 2;
+    unsigned char val;
+    val = inst->data[AM_VIB + ofs];
+    printf ("  OP%i: flags: %s %s %s %s", i,
+	    val & (1 << 7) ? "AM" : "  ",
+	    val & (1 << 6) ? "VIB" : "   ",
+	    val & (1 << 5) ? "EGT" : "   ",
+	    val & (1 << 4) ? "KSR" : "   ");
+    val = inst->data[AM_VIB + ofs + 1];
+    printf ("\011OP%i: flags: %s %s %s %s\n", i + 1,
+	    val & (1 << 7) ? "AM" : "  ",
+	    val & (1 << 6) ? "VIB" : "   ",
+	    val & (1 << 5) ? "EGT" : "   ",
+	    val & (1 << 4) ? "KSR" : "");
+    val = inst->data[AM_VIB + ofs];
+    printf ("  OP%i: MULT = 0x%x", i, val & 0x0f);
+    val = inst->data[AM_VIB + ofs + 1];
+    printf ("\011\011OP%i: MULT = 0x%x\n", i + 1, val & 0x0f);
+
+    val = inst->data[KSL_LEVEL + ofs];
+    printf ("  OP%i: KSL  = 0x%x  TL = 0x%.2x", i,
+	    (val >> 6) & 0x03, val & 0x3f);
+    val = inst->data[KSL_LEVEL + ofs + 1];
+    printf ("\011OP%i: KSL  = 0x%x  TL = 0x%.2x\n", i + 1,
+	    (val >> 6) & 0x03, val & 0x3f);
+    val = inst->data[ATTACK_DECAY + ofs];
+    printf ("  OP%i: AR   = 0x%x  DL = 0x%x", i,
+	    (val >> 4) & 0x0f, val & 0x0f);
+    val = inst->data[ATTACK_DECAY + ofs + 1];
+    printf ("\011OP%i: AR   = 0x%x  DL = 0x%x\n", i + 1,
+	    (val >> 4) & 0x0f, val & 0x0f);
+    val = inst->data[SUSTAIN_RELEASE + ofs];
+    printf ("  OP%i: SL   = 0x%x  RR = 0x%x", i,
+	    (val >> 4) & 0x0f, val & 0x0f);
+    val = inst->data[SUSTAIN_RELEASE + ofs + 1];
+    printf ("\011OP%i: SL   = 0x%x  RR = 0x%x\n", i + 1,
+	    (val >> 4) & 0x0f, val & 0x0f);
+    val = inst->data[WAVE_SELECT + ofs];
+    printf ("  OP%i: WS   = 0x%x", i, val & 0x07);
+    val = inst->data[WAVE_SELECT + ofs + 1];
+    printf ("\011\011OP%i: WS   = 0x%x\n", i + 1, val & 0x07);
+    val = inst->data[CONNECTION + ofs];
+    printf (" FB = 0x%x,  %s\n", (val >> 1) & 0x07,
+	    val & (1 << 0) ? "parallel" : "serial");
+    i += 2;
+    ofs += OFFSET_4OP;
   }
-  while (i == (fm_instr->type == FM_PATCH_OPL3) << 1);
+  while (i == (type == FM_PATCH_OPL3) << 1);
 
   printf (" Extended data:\n"
 	  "  ED = %.3i  EA = %.3i  CS = %.3i  TR = %.3i\n"
 	  "  FD = %.3i  MO = %.3i  FK = %.3i\n",
-	  fm_instr->echo_delay, fm_instr->echo_atten, fm_instr->chorus_spread, fm_instr->trnsps,
-	  fm_instr->fix_dur, fm_instr->modes, fm_instr->fix_key);
-}
-
-/*
- * Check the result of the previous instr event
- */
-static int
-check_result (int evtype) {
-  snd_seq_event_t *pev;
-  int err;
-
-  for (;;) {
-      if ((err = snd_seq_event_input (seq_handle, &pev)) < 0) {
-	  fprintf (stderr, "Unable to read event input: %s\n",
-		   snd_strerror (err));
-	  return -ENXIO;
-      }
-      if (pev->type == SND_SEQ_EVENT_RESULT && pev->data.result.event == evtype)
-	break;
-      snd_seq_free_event (pev);
-  }
-  err = pev->data.result.result;
-  snd_seq_free_event (pev);
-
-  return err;
+	  inst->extension[ECHO_DELAY], inst->extension[ECHO_ATTEN],
+	  inst->extension[CHORUS_SPREAD], inst->extension[TRNSPS],
+	  inst->extension[FIX_DUR], inst->extension[MODES],
+	  inst->extension[FIX_KEY]);
 }
 
 /*
  * Send patch to destination port
  */
 static int
-load_patch (fm_instrument_t * fm_instr, int bank, int prg, char *name) {
-  snd_instr_header_t *put;
-  snd_seq_instr_t id;
-  snd_seq_event_t ev;
+load_patch (struct sbi_patch * inst) {
 
-  size_t size;
-  int err;
-
-  if (verbose > 1) {
-    printf ("%.3i: [OPL%i] %s\n", prg, fm_instr->type == FM_PATCH_OPL3 ? 3 : 2, name);
-    show_op (fm_instr);
-  }
-
-  if ((err = snd_instr_fm_convert_to_stream (fm_instr, name, &put, &size)) < 0) {
-    fprintf (stderr, "Unable to convert instrument %.3i to stream: %s\n",
-	     prg, snd_strerror (err));
-    return -1;
-  }
-  memset(&id, 0, sizeof(id));
-  id.std = SND_SEQ_INSTR_TYPE2_OPL2_3;
-  id.prg = prg;
-  id.bank = bank;
-  snd_instr_header_set_id(put, &id);
-
-  /* build event */
-  memset (&ev, 0, sizeof (ev));
-  ev.source.client = seq_client;
-  ev.source.port = seq_port;
-  ev.dest.client = seq_dest_client;
-  ev.dest.port = seq_dest_port;
-
-  ev.flags = SND_SEQ_EVENT_LENGTH_VARUSR;
-  ev.queue = SND_SEQ_QUEUE_DIRECT;
-
-__again:
-  ev.type = SND_SEQ_EVENT_INSTR_PUT;
-  ev.data.ext.len = size;
-  ev.data.ext.ptr = put;
-
-  if ((err = snd_seq_event_output (seq_handle, &ev)) < 0) {
-    fprintf (stderr, "Unable to write an instrument %.3i put event: %s\n",
-	     prg, snd_strerror (err));
+  ssize_t ret;
+  ret = snd_hwdep_write(handle, inst, sizeof(*inst));
+  if (ret != sizeof(*inst)) {
+    if (!quiet)
+      fprintf (stderr, "Unable to write an instrument %.3i put event: %s\n",
+	       inst->prog, snd_strerror (ret));
     return -1;
   }
 
-  if ((err = snd_seq_drain_output (seq_handle)) < 0) {
-    fprintf (stderr, "Unable to write instrument %.3i data: %s\n", prg,
-	     snd_strerror (err));
-    return -1;
-  }
-
-  err = check_result (SND_SEQ_EVENT_INSTR_PUT);
-  if (err >= 0) {
-    if (verbose)
-      printf ("Loaded instrument %.3i, bank %.3i: %s\n", prg, bank, name);
-    return 0;
-  } else if (err == -EBUSY) {
-    snd_instr_header_t *remove;
-
-    snd_instr_header_alloca(&remove);
-    snd_instr_header_set_cmd(remove, SND_SEQ_INSTR_FREE_CMD_SINGLE);
-    snd_instr_header_set_id(remove, snd_instr_header_get_id(put));
-
-    /* remove instrument */
-    ev.type = SND_SEQ_EVENT_INSTR_FREE;
-    ev.data.ext.len = snd_instr_header_sizeof();
-    ev.data.ext.ptr = remove;
-
-    if ((err = snd_seq_event_output (seq_handle, &ev)) < 0) {
-      fprintf (stderr, "Unable to write an instrument %.3i free event: %s\n",
-	       prg, snd_strerror (err));
-      return -1;
-    }
-
-    if ((err = snd_seq_drain_output (seq_handle)) < 0) {
-      fprintf (stderr, "Unable to write instrument %.3i data: %s\n", prg,
-	       snd_strerror (err));
-      return -1;
-    }
-
-    if ((err = check_result (SND_SEQ_EVENT_INSTR_FREE)) < 0) {
-      fprintf (stderr, "Instrument %.3i, bank %.3i - free error: %s\n",
-	       prg, bank, snd_strerror (err));
-      return -1;
-    }
-    goto __again;
-  }
-
-  fprintf (stderr, "Instrument %.3i, bank %.3i - put error: %s\n",
-	   prg, bank, snd_strerror (err));
-  return -1;
+  if (verbose)
+    printf ("Loaded instrument %.3i, bank %.3i: %s\n",
+	    inst->prog, inst->bank, inst->name);
+  return 0;
 }
 
 /*
@@ -369,66 +234,45 @@ __again:
  */
 static void
 load_sb (int bank, int fd) {
-  int len, i;
+  int len;
   int prg;
-
-  sbi_inst_t sbi_instr;
-  fm_instrument_t fm_instr;
+  struct sbi_patch inst;
   int fm_instr_type;
 
-  len = (file_type == SBI_FILE_TYPE_4OP) ? DATA_LEN_4OP : DATA_LEN_2OP;
+  len = (file_type == FM_PATCH_OPL3) ? DATA_LEN_4OP : DATA_LEN_2OP;
   for (prg = 0;; prg++) {
-    if (read (fd, &sbi_instr.header, sizeof (sbi_header_t)) < (ssize_t)sizeof (sbi_header_t))
+    inst.prog = prg;
+    inst.bank = bank;
+
+    if (read (fd, inst.key, 4) != 4)
       break;
 
-    if (!strncmp (sbi_instr.header.key, "SBI\032", 4) || !strncmp (sbi_instr.header.key, "2OP\032", 4)) {
+    if (!memcmp (inst.key, "SBI\032", 4) || !memcmp (inst.key, "2OP\032", 4)) {
       fm_instr_type = FM_PATCH_OPL2;
-    } else if (!strncmp (sbi_instr.header.key, "4OP\032", 4)) {
+    } else if (!strncmp (inst.key, "4OP\032", 4)) {
       fm_instr_type = FM_PATCH_OPL3;
     } else {
-      fm_instr_type = 0;
       if (verbose)
 	printf ("%.3i: wrong instrument key!\n", prg);
+      fm_instr_type = FM_PATCH_UNKNOWN;
     }
 
-    if (read (fd, &sbi_instr.data, len) < len)
+    if (read (fd, &inst.name, sizeof(inst.name)) != sizeof(inst.name) ||
+	read (fd, &inst.extension, sizeof(inst.extension)) != sizeof(inst.extension) ||
+	read (fd, &inst.data, len) != len)
       break;
 
-    if (fm_instr_type == 0)
+    if (fm_instr_type == FM_PATCH_UNKNOWN)
       continue;
 
-    memset (&fm_instr, 0, sizeof (fm_instr));
-    fm_instr.type = fm_instr_type;
-
-    for (i = 0; i < 2; i++) {
-      fm_instr.op[i].am_vib = sbi_instr.data[AM_VIB + i];
-      fm_instr.op[i].ksl_level = sbi_instr.data[KSL_LEVEL + i];
-      fm_instr.op[i].attack_decay = sbi_instr.data[ATTACK_DECAY + i];
-      fm_instr.op[i].sustain_release = sbi_instr.data[SUSTAIN_RELEASE + i];
-      fm_instr.op[i].wave_select = sbi_instr.data[WAVE_SELECT + i];
-    }
-    fm_instr.feedback_connection[0] = sbi_instr.data[CONNECTION];
-
-    if (fm_instr_type == FM_PATCH_OPL3) {
-      for (i = 0; i < 2; i++) {
-	fm_instr.op[i + 2].am_vib = sbi_instr.data[OFFSET_4OP + AM_VIB + i];
-	fm_instr.op[i + 2].ksl_level = sbi_instr.data[OFFSET_4OP + KSL_LEVEL + i];
-	fm_instr.op[i + 2].attack_decay = sbi_instr.data[OFFSET_4OP + ATTACK_DECAY + i];
-	fm_instr.op[i + 2].sustain_release = sbi_instr.data[OFFSET_4OP + SUSTAIN_RELEASE + i];
-	fm_instr.op[i + 2].wave_select = sbi_instr.data[OFFSET_4OP + WAVE_SELECT + i];
-      }
-      fm_instr.feedback_connection[1] = sbi_instr.data[OFFSET_4OP + CONNECTION];
+    if (verbose > 1) {
+      printf ("%.3i: [%s] %s\n", inst.prog,
+	      fm_instr_type == FM_PATCH_OPL2 ? "OPL2" : "OPL3",
+	      inst.name);
+      show_op (&inst, fm_instr_type);
     }
 
-    fm_instr.echo_delay = sbi_instr.header.name[ECHO_DELAY];
-    fm_instr.echo_atten = sbi_instr.header.name[ECHO_ATTEN];
-    fm_instr.chorus_spread = sbi_instr.header.name[CHORUS_SPREAD];
-    fm_instr.trnsps = sbi_instr.header.name[TRNSPS];
-    fm_instr.fix_dur = sbi_instr.header.name[FIX_DUR];
-    fm_instr.modes = sbi_instr.header.name[MODES];
-    fm_instr.fix_key = sbi_instr.header.name[FIX_KEY];
-
-    if (load_patch (&fm_instr, bank, prg, sbi_instr.header.name) < 0)
+    if (load_patch (&inst) < 0)
       break;
   }
   return;
@@ -440,19 +284,39 @@ load_sb (int bank, int fd) {
 static int
 load_file (int bank, char *filename) {
   int fd;
+  char path[1024];
+  char *name;
 
-  if (*filename == '/')
-    fd = open (filename, O_RDONLY);
-  else {
-    char path[1024];
+  if (*filename != '/') {
     snprintf(path, sizeof(path), "%s/%s", patchdir, filename);
-    fd = open (path, O_RDONLY);
+    name = path;
+  } else {
+    name = filename;
   }
 
-  if (fd == -1) {
-      perror (filename);
+  fd = open (name, O_RDONLY);
+  if (fd < 0) {
+    /* try to guess from the interface name */
+    const char *ext = iface == SND_HWDEP_IFACE_OPL2 ? "sb" : "o3";
+    if (*filename != '/')
+      snprintf(path, sizeof(path), "%s/%s.%s", patchdir, filename, ext);
+    else
+      snprintf(path, sizeof(path), "%s.%s", filename, ext);
+    name = path;
+    fd = open (name, O_RDONLY);
+    if (fd < 0) {
+      if (!quiet)
+	perror (filename);
       return -1;
+    }
   }
+
+  /* correct file type if not set explicitly */
+  if (file_type == FM_PATCH_UNKNOWN)
+    file_type = iface == SND_HWDEP_IFACE_OPL2 ? FM_PATCH_OPL2 : FM_PATCH_OPL3;
+
+  if (verbose)
+    fprintf (stderr, "Loading from %s\n", name);
 
   load_sb(bank, fd);
 
@@ -460,93 +324,84 @@ load_file (int bank, char *filename) {
   return 0;
 }
 
-/*
- * Parse port description
- */
-static int
-parse_portdesc (char *portdesc) {
-  char *astr;
-  char *cp;
-  int a[ADDR_PARTS];
-  int count;
-
-  if (portdesc == NULL)
-    return -1;
-
-  for (astr = strtok (portdesc, SEP); astr; astr = strtok (NULL, SEP)) {
-    for (cp = astr, count = 0; cp && *cp; cp++) {
-      if (count < ADDR_PARTS)
-	a[count++] = atoi (cp);
-      cp = strchr (cp, ':');
-      if (cp == NULL)
-	break;
-    }
-
-    if (count == 2) {
-      seq_dest_client = a[0];
-      seq_dest_port = a[1];
-    } else {
-      printf ("Addresses in %d parts not supported yet\n", count);
-      return -1;
-    }
-  }
-  return 0;
+static void
+clear_patches (void)
+{
+  snd_hwdep_ioctl(handle, SNDRV_DM_FM_IOCTL_CLEAR_PATCHES, 0);
 }
 
 /*
- * Open sequencer, create client port and
- * subscribe client to destination port
+ * Open a hwdep device
  */
-static int
-init_client () {
-  char name[64];
-  snd_seq_port_subscribe_t *sub;
-  snd_seq_addr_t addr;
+static int open_hwdep (const char *name)
+{
   int err;
+  snd_hwdep_info_t *info;
 
-  if ((err = snd_seq_open (&seq_handle, "hw", SND_SEQ_OPEN_DUPLEX, 0)) < 0) {
-    fprintf (stderr, "Could not open sequencer: %s\n", snd_strerror (err));
+  if ((err = snd_hwdep_open (&handle, name, SND_HWDEP_OPEN_WRITE)) < 0)
+    return err;
+
+  snd_hwdep_info_alloca(&info);
+  if (!snd_hwdep_info (handle, info)) {
+    iface = snd_hwdep_info_get_iface(info);
+    if (iface == SND_HWDEP_IFACE_OPL2 ||
+	iface == SND_HWDEP_IFACE_OPL3 ||
+	iface == SND_HWDEP_IFACE_OPL4)
+      return 0;
+  }
+  snd_hwdep_close(handle);
+  handle = NULL;
+  return -EINVAL;
+}
+
+static int
+init_hwdep (const char *name) {
+
+  int err;
+  char tmpname[16];
+
+  if (!name || !*name) {
+    /* auto probe */
+    int card = -1;
+    snd_ctl_t *ctl;
+
+    while (!snd_card_next(&card) && card >= 0) {
+      int dev;
+      sprintf(tmpname, "hw:%d", card);
+      if (snd_ctl_open(&ctl, tmpname, 0) < 0)
+	continue;
+      dev = -1;
+      while (!snd_ctl_hwdep_next_device(ctl, &dev) && dev >= 0) {
+	sprintf(tmpname, "hw:%d,%d", card, dev);
+	if (!open_hwdep(tmpname)) {
+	  snd_ctl_close(ctl);
+	  return 0;
+	}
+      }
+      snd_ctl_close(ctl);
+    }
+    if (!quiet)
+      fprintf (stderr, "Can't find any OPL3 hwdep device\n");
     return -1;
   }
 
-  seq_client = snd_seq_client_id (seq_handle);
-  if (seq_client < 0) {
-    snd_seq_close (seq_handle);
-    fprintf (stderr, "Unable to determine my client number: %s\n",
-	     snd_strerror (err));
-    return -1;
+  if (*name == '/') {
+    /* guess card and device numbers - for convenience to user
+     * from udev rules
+     */
+    int card, device;
+    if (sscanf(name, "/dev/snd/hwC%dD%d", &card, &device) == 2) {
+      if (card >= 0 && card <= 32 && device >= 0 && device <= 32) {
+	sprintf(tmpname, "hw:%d,%d", card, device);
+	name = tmpname; /* override */
+      }
+    }
   }
 
-  sprintf (name, "sbiload - %i", getpid ());
-  if ((err = snd_seq_set_client_name (seq_handle, name)) < 0) {
-    snd_seq_close (seq_handle);
-    fprintf (stderr, "Unable to set client info: %s\n",
-	     snd_strerror (err));
-    return -1;
-  }
-
-  if ((seq_port = snd_seq_create_simple_port (seq_handle, "Output",
-					      SND_SEQ_PORT_CAP_READ | SND_SEQ_PORT_CAP_WRITE,
-					      SND_SEQ_PORT_TYPE_SPECIFIC)) < 0) {
-    snd_seq_close (seq_handle);
-    fprintf (stderr, "Unable to create a client port: %s\n",
-	     snd_strerror (seq_port));
-    return -1;
-  }
-
-  snd_seq_port_subscribe_alloca(&sub);
-  addr.client = seq_client;
-  addr.port = seq_port;
-  snd_seq_port_subscribe_set_sender(sub, &addr);
-  addr.client = seq_dest_client;
-  addr.port = seq_dest_port;
-  snd_seq_port_subscribe_set_dest(sub, &addr);
-  snd_seq_port_subscribe_set_exclusive(sub, 1);
-
-  if ((err = snd_seq_subscribe_port (seq_handle, sub)) < 0) {
-    snd_seq_close (seq_handle);
-    fprintf (stderr, "Unable to subscribe destination port: %s\n",
-	     snd_strerror (errno));
+  if ((err = open_hwdep (name)) < 0) {
+    if (!quiet)
+      fprintf (stderr, "Could not open hwdep %s: %s\n",
+	       name, snd_strerror (err));
     return -1;
   }
 
@@ -558,42 +413,30 @@ init_client () {
  * and close sequencer
  */
 static void
-finish_client ()
+finish_hwdep ()
 {
-  snd_seq_port_subscribe_t *sub;
-  snd_seq_addr_t addr;
-  int err;
-
-  snd_seq_port_subscribe_alloca(&sub);
-  addr.client = seq_client;
-  addr.port = seq_port;
-  snd_seq_port_subscribe_set_sender(sub, &addr);
-  addr.client = seq_dest_client;
-  addr.port = seq_dest_port;
-  snd_seq_port_subscribe_set_dest(sub, &addr);
-  if ((err = snd_seq_unsubscribe_port (seq_handle, sub)) < 0) {
-    fprintf (stderr, "Unable to unsubscribe destination port: %s\n",
-	     snd_strerror (errno));
-  }
-  snd_seq_close (seq_handle);
+  snd_hwdep_close(handle);
+  handle = NULL;
 }
 
 /*
  * Load a .SBI FM instrument patch
  *   sbiload [-p client:port] [-l] [-P path] [-v level] instfile drumfile
  *
- *   -p, --port=client:port  - An ALSA client and port number to use
- *   -4  --opl3              - four operators file type
- *   -l, --list              - List possible output ports that could be used
+ *   -D, --device=name       - An ALSA hwdep name to use
+ *   -2  --opl2              - two operators file type (*.sb)
+ *   -4  --opl3              - four operators file type (*.o3)
  *   -P, --path=path         - Specify the patch path
  *   -v, --verbose=level     - Verbose level
+ *   -q, --quiet             - Be quiet, no error/warning messages
  */
 int
 main (int argc, char **argv) {
   char opts[NELEM (long_opts) * 2 + 1];
-  char *portdesc;
+  char *name;
   char *cp;
   int c;
+  int clear = 0;
   struct option *op;
 
   /* Build up the short option string */
@@ -604,7 +447,7 @@ main (int argc, char **argv) {
       *cp++ = ':';
   }
 
-  portdesc = NULL;
+  name = NULL;
 
   /* Deal with the options */
   for (;;) {
@@ -613,21 +456,29 @@ main (int argc, char **argv) {
       break;
 
     switch (c) {
-    case 'p':
-      portdesc = optarg;
+    case 'D':
+      name = optarg;
+      break;
+    case 'c':
+      clear = 1;
+      break;
+    case '2':
+      file_type = FM_PATCH_OPL2;
       break;
     case '4':
-      file_type = SBI_FILE_TYPE_4OP;
+      file_type = FM_PATCH_OPL3;
+      break;
+    case 'q':
+      quiet = 1;
+      verbose = 0;
       break;
     case 'v':
+      quiet = 0;
       verbose = atoi (optarg);
       break;
     case 'V':
       show_version();
       exit (1);
-    case 'l':
-      show_list ();
-      exit (0);
     case 'P':
       patchdir = optarg;
       break;
@@ -637,46 +488,33 @@ main (int argc, char **argv) {
     }
   }
 
-  if (portdesc == NULL) {
-    portdesc = getenv ("ALSA_OUT_PORT");
-    if (portdesc == NULL) {
-      fprintf (stderr, "No client/port specified.\n"
-	       "You must supply one with the -p option or with the\n"
-	       "environment variable ALSA_OUT_PORT\n");
-      exit (1);
-    }
-  }
-
-  /* Parse port description to dest_client and dest_port */
-  if (parse_portdesc (portdesc) < 0) {
+  if (init_hwdep (name) < 0) {
     return 1;
   }
 
-  /* Initialize client and subscribe to destination port */
-  if (init_client () < 0) {
-    return 1;
-  }
+  clear_patches ();
+  if (clear)
+    goto done;
 
   /* Process instrument and drum file */
-  if (optind < argc) {
-    if (load_file (0, argv[optind++]) < 0) {
-      finish_client();
-      return 1;
-    }
-  } else {
-    fprintf(stderr, "Warning: instrument file was not specified\n");
+  if (optind < argc)
+    name = argv[optind++];
+  else
+    name = "std";
+  if (load_file (0, name) < 0) {
+    finish_hwdep();
+    return 1;
   }
-  if (optind < argc) {
-    if (load_file (128, argv[optind]) < 0) {
-      finish_client();
-      return 1;
-    }
-  } else {
-    fprintf(stderr, "Warning: drum file was not specified\n");
+  if (optind < argc)
+    name = argv[optind];
+  else
+    name = "drums";
+  if (load_file (128, name) < 0) {
+    finish_hwdep();
+    return 1;
   }
 
-  /* Unsubscribe destination port and close client */
-  finish_client();
-
+ done:
+  finish_hwdep();
   return 0;
 }
