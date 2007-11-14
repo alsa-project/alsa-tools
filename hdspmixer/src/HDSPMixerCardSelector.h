@@ -37,6 +37,7 @@ public:
     int card;
     HDSPMixerWindow *basew;
     HDSPMixerCardSelector(int x, int y, int w, int h, int card);
+    void ActivateCard (int i);
     void draw();
     int handle(int e);
 };

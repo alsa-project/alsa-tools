@@ -45,27 +45,25 @@ void HDSPMixerCardSelector::draw()
     }    
 }
 
+void HDSPMixerCardSelector::ActivateCard (int i)
+{
+  card = i + 1;
+  basew->current_card = i;
+  basew->cards[i]->setMode (basew->cards[i]->getSpeed ());
+  redraw ();
+}
+
 int HDSPMixerCardSelector::handle(int e)
 {
     int xpos = Fl::event_x()-x();
     switch (e) {
 	case FL_PUSH:
-	    if (xpos < 13 && card != 1) {
-		    card = 1;
-		    basew->current_card = 0;
-		    basew->cards[0]->setMode(basew->cards[0]->getSpeed());
-		    redraw();
-	    } else if (xpos >= 24 && xpos < 37 && card != 2 && basew->cards[1] != NULL) {
-		    card = 2;
-		    basew->current_card = 1;
-		    basew->cards[1]->setMode(basew->cards[1]->getSpeed());
-		    redraw();
-	    } else if (xpos >= 48 && card != 3 && basew->cards[2] != NULL) {
-		    card = 3;
-		    basew->current_card = 2;
-		    basew->cards[2]->setMode(basew->cards[2]->getSpeed());
-		    redraw();
-	    }
+	    if (xpos < 13 && card != 1)
+	      ActivateCard (0);
+	    else if (xpos >= 24 && xpos < 37 && card != 2 && basew->cards[1] != NULL)
+	      ActivateCard (1);
+	    else if (xpos >= 48 && card != 3 && basew->cards[2] != NULL)
+	      ActivateCard (2);
 	    return 1;
 	default:
 	    return Fl_Widget::handle(e);

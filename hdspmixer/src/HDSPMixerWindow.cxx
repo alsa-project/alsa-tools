@@ -700,6 +700,9 @@ HDSPMixerWindow::HDSPMixerWindow(int x, int y, int w, int h, const char *label, 
     Fl::atclose = atclose_cb;
     Fl::add_handler(handler_cb);
     Fl::add_timeout(0.030, readregisters_cb, this);
+    i = 0;
+    while (cards[i] != NULL)
+      inputs->buttons->cardselector->ActivateCard (i++);
 }
 
 int HDSPMixerWindow::handle(int e) 
