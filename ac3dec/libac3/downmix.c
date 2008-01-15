@@ -251,7 +251,23 @@ downmix_3f_0r_to_2ch(bsi_t* bsi, stream_samples_t samples,sint_16 *s16_samples)
 		s16_samples[j * 2 + 1] = (sint_16) (right_tmp * 32767.0f);
 	}
 }
-				
+
+static void
+downmix_2f_0r_to_6ch(bsi_t* bsi, stream_samples_t samples,sint_16 *s16_samples)
+{
+	uint_32 j;
+	float *left = 0, *right = 0;
+
+	left      = samples[0];
+	right     = samples[1];
+
+	for (j = 0; j < 256; j++) 
+	{
+		s16_samples[j * 6 ]    = (sint_16) (*left++  * 32767.0f);
+		s16_samples[j * 6 + 1] = (sint_16) (*right++ * 32767.0f);
+	} //FIXME enable output on surround channels, too.
+}
+
 static void
 downmix_2f_0r_to_2ch(bsi_t* bsi, stream_samples_t samples,sint_16 *s16_samples)
 {
@@ -368,13 +384,19 @@ void downmix(bsi_t* bsi, stream_samples_t samples,sint_16 *s16_samples)
 			downmix_3f_0r_to_2ch(bsi,samples,s16_samples);
 		break;
 
-		// 2/0
+		// 2/0 - 2f_0r_to_6ch not really, but allows -D pcm.surround51:1 with 2/0 and 3/2 input (VDR e.g.)
 		case 2:
-			if (ac3_config.num_output_ch != 2) {
+			switch (ac3_config.num_output_ch) {
+			case 2:
+				downmix_2f_0r_to_2ch(bsi,samples,s16_samples);
+				break;
+			case 6:
+				downmix_2f_0r_to_6ch(bsi,samples,s16_samples);
+				break;
+			default:
 				fprintf(stderr,"unsupported 2/0 channels %d\n", ac3_config.num_output_ch);
 				exit(1);
 			}
-			downmix_2f_0r_to_2ch(bsi,samples,s16_samples);
 		break;
 
 		// 1/0
