@@ -72,6 +72,7 @@ int main(int argc, char **argv)
 	    } 
 	}
     }
+    free(name);
     if (!cards) {
 	printf("No Hammerfall DSP card found.\n");
 	exit(EXIT_FAILURE);
