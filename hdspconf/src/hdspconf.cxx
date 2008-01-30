@@ -174,6 +174,7 @@ int main(int argc, char **argv)
 	    } else if (!strncmp(name, "RME Hammerfall DSP", 18)) {
 		printf("Uninitialized HDSP card found.\nUse hdsploader to upload configuration data to the card.\n");
 	    }
+            free(name);
 	}
     }
 #endif
