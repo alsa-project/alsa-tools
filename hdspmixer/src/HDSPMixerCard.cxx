@@ -299,7 +299,7 @@ void HDSPMixerCard::adjustSettings() {
 	    break;
 	case 1:
 	    channels = 14;
-	    channel_map = channel_map_ds;
+	    channel_map = meter_map_ds;
 	    dest_map = dest_map_ds;
 	    meter_map = meter_map_ds;
 	    lineouts = 2;
