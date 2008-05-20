@@ -5,7 +5,7 @@ SUBDIRS = ac3dec as10k1 envy24control hdsploader hdspconf hdspmixer \
 	usx2yloader vxloader echomixer ld10k1 qlo10k1
 
 all:
-	@for i in $(SUBDIRS); do cd $(TOP)/$$i; ./hgcompile $(HGCOMPILE_ARGS); cd ..; make -C $$i; done
+	@for i in $(SUBDIRS); do cd $(TOP)/$$i; ./hgcompile $(GITCOMPILE_ARGS); cd ..; make -C $$i; done
 
 install:
 	@for i in $(SUBDIRS); do make -C $$i DESTDIR=$(DESTDIR) install; done
@@ -13,7 +13,7 @@ install:
 alsa-dist:
 	@echo $(VERSION) >> $(TOP)/version
 	@mkdir -p $(TOP)/distdir
-	@for i in $(SUBDIRS); do cd $(TOP)/$$i; ./hgcompile $(HGCOMPILE_ARGS); cd ..; make -C $$i alsa-dist; done
+	@for i in $(SUBDIRS); do cd $(TOP)/$$i; ./hgcompile $(GITCOMPILE_ARGS); cd ..; make -C $$i alsa-dist; done
 	@mv distdir alsa-tools-$(VERSION)
 	@tar --create --verbose --file=- alsa-tools-$(VERSION) | bzip2 -c -9 > alsa-tools-$(VERSION).tar.bz2
 	@mv alsa-tools-$(VERSION) distdir
