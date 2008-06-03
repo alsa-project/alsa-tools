@@ -4,7 +4,7 @@ TO COMPILE:
 2. compile with:
 	'./configure; make'
    or
-        './hgcompile'
+        './gitcompile'
 3. install with:
 	'make install'
 4. read cspctl.1 manpage:

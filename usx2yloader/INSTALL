@@ -13,7 +13,7 @@ Prerequisites
 Installing
 ----------
 
-For Installing from HG do:
-./hgcompile
+For Installing from GIT do:
+./gitcompile
 make install
 

@@ -1,7 +1,7 @@
 SUBDIRS = sbiload
 
 all:
-	@for i in $(SUBDIRS); do cd $$i; ./hgcompile $(HGCOMPILE_ARGS); cd ..; $(MAKE) -C $$i; done	
+	@for i in $(SUBDIRS); do cd $$i; ./gitcompile $(GITCOMPILE_ARGS); cd ..; $(MAKE) -C $$i; done	
 
 install:
 	@for i in $(SUBDIRS); do $(MAKE) -C $$i DESTDIR=$(DESTDIR) install; done	
