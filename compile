@@ -1,0 +1,10 @@
+#!/bin/sh
+
+for i in * ; do
+  if test -d $i ; then
+    cd $i || exit 1
+    ./configure $COMPILE_ARGS || exit 1
+    make || exit 1
+    cd ..
+  fi
+done
