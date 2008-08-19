@@ -7,7 +7,7 @@ if test -z "$AUTOMAKE_DIR"; then
   if test -d /usr/share/automake; then
     AUTOMAKE_DIR="/usr/share/automake"
   fi
-  if -z "$AUTOMAKE_DIR"; then
+  if test -z "$AUTOMAKE_DIR"; then
     AUTOMAKE_DIR=/usr/share/`ls /usr/share | grep automake | tail -n 1`
   fi
 fi
