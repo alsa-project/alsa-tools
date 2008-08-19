@@ -8,6 +8,6 @@ echo "CFLAGS=$CFLAGS"
 echo "./configure $@"
 ./configure $@ || exit 1
 unset CFLAGS
-if [ -z "$GITCOMPILE_NO_MAKE" ]; then
+if test -z "$GITCOMPILE_NO_MAKE"; then
   make || exit 1
 fi
