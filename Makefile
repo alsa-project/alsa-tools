@@ -8,7 +8,7 @@ all:
 	@for i in $(SUBDIRS); do cd $(TOP)/$$i; echo $(TOP)/$$i; ./gitcompile $(GITCOMPILE_ARGS) || exit 1; cd ..; make -C $$i || exit 1; done
 
 install:
-	@for i in $(SUBDIRS); do make -C $$i DESTDIR=$(DESTDIR) install; done
+	@for i in $(SUBDIRS); do make -C $$i DESTDIR=$(DESTDIR) install || exit 1; done
 
 alsa-dist:
 	@echo $(VERSION) >> $(TOP)/version
@@ -20,4 +20,4 @@ alsa-dist:
 
 clean:
 	rm -rf *~ distdir
-	@for i in $(SUBDIRS); do make -C $$i clean; done
+	@for i in $(SUBDIRS); do make -C $$i clean || exit 1; done
