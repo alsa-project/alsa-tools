@@ -3,7 +3,7 @@ bin_PROGRAMS = echomixer
 man_MANS = 
 echomixer_SOURCES = echomixer.c 
 echomixer_LDFLAGS = @ECHOMIXER_LIBS@
-EXTRA_DIST = git-compile configure.in-gtk1 configure.in-gtk2
+EXTRA_DIST = gitcompile configure.in-gtk1 configure.in-gtk2
 AUTOMAKE_OPTIONS = foreign
 
 alsa-dist: distdir
