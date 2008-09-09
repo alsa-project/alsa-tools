@@ -5,7 +5,7 @@ bin_PROGRAMS = sscape_ctl
 
 sscape_ctl_SOURCES = sscape_ctl.c
 
-EXTRA_DIST = depcomp
+EXTRA_DIST = gitcompile depcomp
 
 alsa-dist: distdir
 	@rm -rf ../distdir/sscape_ctl

@@ -9,7 +9,7 @@ bin_PROGRAMS = usx2yloader
 
 usx2yloader_SOURCES = usx2yloader.c
 
-EXTRA_DIST = depcomp tascam_fw.usermap tascam_fw.in tascam_fpga.in
+EXTRA_DIST = gitcompile depcomp tascam_fw.usermap tascam_fw.in tascam_fpga.in
 
 hotplug_files = tascam_fw.usermap tascam_fw tascam_fpga
 hotplugdir = /etc/hotplug/usb

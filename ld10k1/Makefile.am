@@ -16,8 +16,8 @@ CLEANFILES = ld10k1d
 
 noinst_HEADERS =
 
-EXTRA_DIST = ld10k1.m4 AUTHORS COPYING COPYING.LIB ChangeLog INSTALL \
-	README TODO ld10k1d.in
+EXTRA_DIST = gitcompile ld10k1.m4 AUTHORS COPYING COPYING.LIB ChangeLog \
+	     INSTALL README TODO ld10k1d.in
 
 alsa-dist: distdir
 	@rm -rf ../distdir/ld10k1

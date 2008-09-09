@@ -1,4 +1,4 @@
-EXTRA_DIST = hdspmixer.desktop depcomp
+EXTRA_DIST = gitcompile hdspmixer.desktop depcomp
 SUBDIRS = src pixmaps
 
 desktopdir = $(DESKTOP_DIR)

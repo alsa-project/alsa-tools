@@ -7,7 +7,7 @@ AM_CFLAGS = -DDATAPATH=\"$(datadir)/alsa/firmware/$(MYNAME)\"
 
 hdsploader_SOURCES = hdsploader.c
 
-EXTRA_DIST = depcomp
+EXTRA_DIST = gitcompile depcomp
 
 alsa-dist: distdir
 	@rm -rf ../distdir/$(MYNAME)
