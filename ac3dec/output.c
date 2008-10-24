@@ -41,6 +41,7 @@ int output_open(output_t *output)
 {
 	const char *pcm_name = output->pcm_name;
 	char devstr[128];
+	const char *basedev;
 	snd_pcm_hw_params_t *params;
 	unsigned int rate, buffer_time, period_time, tmp;
 	snd_pcm_format_t format = output->bits == 16 ? SND_PCM_FORMAT_S16 : SND_PCM_FORMAT_U8;
@@ -76,9 +77,18 @@ int output_open(output_t *output)
 					s[2] = 0;
 					s[3] = IEC958_AES3_CON_FS_48000;
 				}
-				sprintf(devstr, "plug:iec958:{AES0 0x%x AES1 0x%x AES2 0x%x AES3 0x%x", s[0], s[1], s[2], s[3]);
+				if (output->hdmi)
+					basedev = "hdmi";
+				else
+					basedev = "iec958";
+				sprintf(devstr, "plug:%s:{"
+					"AES0 0x%x AES1 0x%x "
+					"AES2 0x%x AES3 0x%x",
+					basedev,
+					s[0], s[1], s[2], s[3]);
 				if (out_config.card)
-					sprintf(devstr + strlen(devstr), " CARD %s", out_config.card);
+					sprintf(devstr + strlen(devstr),
+						" CARD %s", out_config.card);
 				strcat(devstr, "}");
 				format = SND_PCM_FORMAT_S16_LE;
 			} else {

@@ -30,7 +30,8 @@ typedef struct {
 	int bits;
 	int rate;
 	int channels;
-	int quiet: 1;
+	unsigned int quiet: 1;
+	unsigned int hdmi: 1;
 	enum {SPDIF_NONE = 0, SPDIF_CON, SPDIF_PRO, SPDIF_PCM} spdif;
 } output_t;
 

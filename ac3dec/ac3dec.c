@@ -56,6 +56,7 @@ static void help(void)
 	printf("  -C,--iec958c      raw IEC958 (S/PDIF) consumer mode\n");
 	printf("  -P,--iec958p      raw IEC958 (S/PDIF) professional mode\n");
 	printf("  -R,--iec958r      raw IEC958 (S/PDIF) PCM\n");
+	printf("  -H,--hdmi         output to HDMI device\n");
 	printf("  -Z,--zero=#       add # zero-AC3-frames before stream\n");
 	printf("  -q,--quit         quit mode\n");
 }
@@ -106,6 +107,7 @@ int main(int argc,char *argv[])
 		{"spdif", 0, NULL, 'C'},
 		{"iec958p", 0, NULL, 'P'},
 		{"iec958r", 0, NULL, 'R'},
+		{"hdmi", 0, NULL, 'H'},
 		{"zero", 1, NULL, 'Z'},
 		{"quit", 0, NULL, 'q'},
 		{NULL, 0, NULL, 0},
@@ -126,6 +128,7 @@ int main(int argc,char *argv[])
 	out_config.rate = 48000;
 	out_config.channels = 2;
 	out_config.spdif = SPDIF_NONE;
+	out_config.hdmi = 0;
 
 	morehelp = 0;
 	while (1) {
@@ -165,6 +168,9 @@ int main(int argc,char *argv[])
 		case 'R':
 			ac3_config.num_output_ch = 2;
 			out_config.spdif = SPDIF_PCM;
+			break;
+		case 'H':
+			out_config.hdmi = 1;
 			break;
 		case 'Z':
 			zero = atoi(optarg);
