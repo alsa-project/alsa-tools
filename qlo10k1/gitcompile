@@ -1,9 +1,11 @@
 #!/bin/bash
 
-autoreconf -fi
+autoreconf -fi || exit 1
 export CFLAGS='-O2 -Wall -pipe -g'
 echo "CFLAGS=$CFLAGS"
 echo "./configure $@"
-./configure $@
+./configure $@ || exit 1
 unset CFLAGS
-make
+if [ -z "$GITCOMPILE_NO_MAKE" ]; then
+  make || exit 1
+fi

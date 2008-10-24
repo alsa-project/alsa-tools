@@ -11,7 +11,7 @@ sbiload_SOURCES = sbiload.c
 patchdir = $(datadir)/sounds/opl3
 patch_DATA = std.o3 drums.o3 std.sb drums.sb
 
-EXTRA_DIST = README COPYING depcomp std.o3 drums.o3 std.sb drums.sb
+EXTRA_DIST = gitcompile README COPYING depcomp std.o3 drums.o3 std.sb drums.sb
 
 alsa-dist: distdir
 	@rm -rf ../../distdir/seq/sbiload

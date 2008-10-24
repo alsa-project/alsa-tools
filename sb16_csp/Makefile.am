@@ -6,7 +6,7 @@ man_MANS = cspctl.1
 
 cspctl_SOURCES = cspctl.c
 
-EXTRA_DIST = README COPYING cspctl.1 depcomp
+EXTRA_DIST = gitcompile README COPYING cspctl.1 depcomp
 
 alsa-dist: distdir
 	@rm -rf ../distdir/sb16_csp

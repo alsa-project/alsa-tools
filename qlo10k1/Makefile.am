@@ -1,6 +1,7 @@
 SUBDIRS = src
 
-EXTRA_DIST = COPYING configure.in README NEWS AUTHORS TODO INSTALL ChangeLog
+EXTRA_DIST = gitcompile COPYING configure.in README NEWS AUTHORS TODO \
+             INSTALL ChangeLog
 
 alsa-dist: distdir
 	@rm -rf ../distdir/qlo10k1

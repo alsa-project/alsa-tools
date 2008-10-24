@@ -9,7 +9,7 @@ bin_PROGRAMS = vxloader
 
 vxloader_SOURCES = vxloader.c
 
-EXTRA_DIST = depcomp
+EXTRA_DIST = gitcompile depcomp
 
 alsa-dist: distdir
 	@rm -rf ../distdir/$(MYNAME)

@@ -9,7 +9,7 @@ bin_PROGRAMS = pcxhrloader
 
 pcxhrloader_SOURCES = pcxhrloader.c
 
-EXTRA_DIST = depcomp
+EXTRA_DIST = gitcompile depcomp
 
 alsa-dist: distdir
 	@rm -rf ../distdir/$(MYNAME)

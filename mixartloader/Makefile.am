@@ -9,7 +9,7 @@ bin_PROGRAMS = mixartloader
 
 mixartloader_SOURCES = mixartloader.c
 
-EXTRA_DIST = depcomp
+EXTRA_DIST = gitcompile depcomp
 
 alsa-dist: distdir
 	@rm -rf ../distdir/$(MYNAME)
