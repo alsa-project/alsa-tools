@@ -2,7 +2,7 @@ AM_CFLAGS = @ECHOMIXER_CFLAGS@
 bin_PROGRAMS = echomixer
 man_MANS = 
 echomixer_SOURCES = echomixer.c 
-echomixer_LDFLAGS = @ECHOMIXER_LIBS@
+echomixer_LDADD = @ECHOMIXER_LIBS@
 EXTRA_DIST = gitcompile configure.in-gtk1 configure.in-gtk2
 AUTOMAKE_OPTIONS = foreign
 

@@ -2,7 +2,7 @@ AM_CFLAGS = @RMEDIGICONTROL_CFLAGS@
 bin_PROGRAMS = rmedigicontrol
 rmedigicontrol_SOURCES = rmedigicontrol.c rmedigicontrol.h level.c loopback.c
 
-rmedigicontrol_LDFLAGS = @RMEDIGICONTROL_LIBS@
+rmedigicontrol_LDADD = @RMEDIGICONTROL_LIBS@
 
 EXTRA_DIST = gitcompile depcomp configure.in-gtk1 configure.in-gtk2
 AUTOMAKE_OPTIONS = foreign
