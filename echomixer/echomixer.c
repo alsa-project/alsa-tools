@@ -1178,6 +1178,29 @@ void UpdateMixerVolume(int outchannel) {
 
 
 
+// Changes the vmixer volume according to the current Line-out volume for vmixer cards.
+void UpdateVMixerVolume(int outchannel) {
+  snd_ctl_elem_id_t *id;
+  snd_ctl_elem_value_t *control;
+  int err, val, ch;
+
+  snd_ctl_elem_id_alloca(&id);
+  snd_ctl_elem_value_alloca(&control);
+  snd_ctl_elem_id_set_interface(id, SND_CTL_ELEM_IFACE_MIXER);
+
+  for (ch=0; ch<nPOut; ch++) {
+    val=Add_dB(vmixerControl.mixer[outchannel][ch].Gain, lineoutControl.Gain[outchannel]);
+    ClampOutputVolume(&val);
+    snd_ctl_elem_id_set_numid(id, vmixerControl.mixer[outchannel][ch].id);
+    snd_ctl_elem_value_set_id(control, id);
+    snd_ctl_elem_value_set_integer(control, 0, val);
+    if ((err = snd_ctl_elem_write(ctlhandle, control)) < 0)
+      printf("Control %s element write error: %s\n", card, snd_strerror(err));
+  }
+}
+
+
+
 void LineOut_volume_changed(GtkWidget *widget, gpointer ch) {
   char str[16];
   int err, channel, val;
@@ -1204,6 +1227,9 @@ void LineOut_volume_changed(GtkWidget *widget, gpointer ch) {
      snd_ctl_elem_value_set_integer(control, channel, val);
      if ((err=snd_ctl_elem_write(ctlhandle, control))<0)
        printf("Control %s element write error: %s\n", card, snd_strerror(err));
+  } else if (vmixerId) {
+    UpdateVMixerVolume(channel);
+    UpdateMixerVolume(channel);
   } else {		// Otherwise we have to emulate it.
     UpdatePCMVolume(channel);
     UpdateMixerVolume(channel);
@@ -1217,10 +1243,11 @@ void LineOut_volume_changed(GtkWidget *widget, gpointer ch) {
 
 void Vmixer_volume_changed(GtkWidget *widget, gpointer ch) {
   char str[16];
-  int val, channel;
+  int val, rval, channel;
   int o, v;
 
   channel=(int)(long)ch;
+  val=INVERT((int)GTK_ADJUSTMENT(widget)->value);
 
 #ifdef REVERSE
   v=channel;
@@ -1230,13 +1257,17 @@ void Vmixer_volume_changed(GtkWidget *widget, gpointer ch) {
   o=channel;
 #endif
 
-  val=INVERT((int)GTK_ADJUSTMENT(widget)->value);
+  // Emulate the line-out volume if this card can't do it in hw.
+  if (!lineoutId) {
+    rval=Add_dB(val, lineoutControl.Gain[o]);
+    ClampOutputVolume(&rval);
+  }
 
-  SetMixerGain(&vmixerControl.mixer[o][v], val);
+  SetMixerGain(&vmixerControl.mixer[o][v], rval);
   vmixerControl.mixer[o][v].Gain=val;
 
   if (Gang) {
-    SetMixerGain(&vmixerControl.mixer[o^1][v^1], val);
+    SetMixerGain(&vmixerControl.mixer[o^1][v^1], rval);
     vmixerControl.mixer[o^1][v^1].Gain=val;
   }
   
