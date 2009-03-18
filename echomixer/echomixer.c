@@ -1247,7 +1247,7 @@ void Vmixer_volume_changed(GtkWidget *widget, gpointer ch) {
   int o, v;
 
   channel=(int)(long)ch;
-  val=INVERT((int)GTK_ADJUSTMENT(widget)->value);
+  val=rval=INVERT((int)GTK_ADJUSTMENT(widget)->value);
 
 #ifdef REVERSE
   v=channel;
