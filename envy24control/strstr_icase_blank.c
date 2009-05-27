@@ -48,7 +48,6 @@ int strstr_icase_blank(const char * const string1, const char * const string2)
 	char search_string[MAX_SEARCH_FIELD_LENGTH];
 	char *pstr;
 	int pos_first_non_blank;
-	int isblank(int c);
 
 	strncpy(search_string, string2, MAX_SEARCH_FIELD_LENGTH);
 	search_string[MAX_SEARCH_FIELD_LENGTH - 1] = '\0';
