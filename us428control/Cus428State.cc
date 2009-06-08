@@ -253,7 +253,7 @@ void Cus428State::KnobChangedTo(eKnobs K, bool V)
 			LightSend();
 			if (StateInputMonitor()) {
 				if (LightIs(eL_Solo)) {
-					for (int i = 0; i < 8; ++i) {
+					for (int i = 0; i < 5; ++i) {
 						usX2Y_volume V = Volume[i];
 						if (!LightIs(eL_Mute0 + i) || (MuteInputMonitor & (1 << i)))
 							V.LH = V.LL = V.RL = V.RH = 0;
