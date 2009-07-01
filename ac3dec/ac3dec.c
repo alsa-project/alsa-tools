@@ -58,7 +58,7 @@ static void help(void)
 	printf("  -R,--iec958r      raw IEC958 (S/PDIF) PCM\n");
 	printf("  -H,--hdmi         output to HDMI device\n");
 	printf("  -Z,--zero=#       add # zero-AC3-frames before stream\n");
-	printf("  -q,--quit         quit mode\n");
+	printf("  -q,--quiet        quiet mode\n");
 }
 
 #define CHUNK_SIZE 2047
@@ -109,7 +109,7 @@ int main(int argc,char *argv[])
 		{"iec958r", 0, NULL, 'R'},
 		{"hdmi", 0, NULL, 'H'},
 		{"zero", 1, NULL, 'Z'},
-		{"quit", 0, NULL, 'q'},
+		{"quiet", 0, NULL, 'q'},
 		{NULL, 0, NULL, 0},
 	};
 	ac3_config_t ac3_config;
