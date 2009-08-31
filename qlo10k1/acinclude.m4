@@ -134,18 +134,23 @@ AC_MSG_RESULT([$QT_IS_EMBEDDED])
 
 QT_GUILINK=""
 QASSISTANTCLIENT_LDADD="-lqassistantclient"
+if test -z "$x_libraries"; then
+  X_PATH=""
+else
+  X_PATH="-L$x_libraries"
+fi
 case "${host}" in
     *irix*)
         QT_LIBS="$QT_LIB"
         if test $QT_IS_STATIC = yes ; then
-            QT_LIBS="$QT_LIBS -L$x_libraries -lXext -lX11 -lm -lSM -lICE"
+            QT_LIBS="$QT_LIBS $X_PATH -lXext -lX11 -lm -lSM -lICE"
         fi
         ;;
 
     *linux*)
         QT_LIBS="$QT_LIB"
         if test $QT_IS_STATIC = yes && test $QT_IS_EMBEDDED = no; then
-            QT_LIBS="$QT_LIBS -L$x_libraries -lXext -lX11 -lm -lSM -lICE -ldl -ljpeg"
+            QT_LIBS="$QT_LIBS $X_PATH -lXext -lX11 -lm -lSM -lICE -ldl -ljpeg"
         fi
         ;;
 
@@ -154,14 +159,14 @@ case "${host}" in
         # Digital Unix (aka DGUX aka Tru64)
         QT_LIBS="$QT_LIB"
         if test $QT_IS_STATIC = yes ; then
-            QT_LIBS="$QT_LIBS -L$x_libraries -lXext -lX11 -lm -lSM -lICE"
+            QT_LIBS="$QT_LIBS $X_PATH -lXext -lX11 -lm -lSM -lICE"
         fi
         ;;
 
     *solaris*)
         QT_LIBS="$QT_LIB"
         if test $QT_IS_STATIC = yes ; then
-            QT_LIBS="$QT_LIBS -L$x_libraries -lXext -lX11 -lm -lSM -lICE -lresolv -lsocket -lnsl"
+            QT_LIBS="$QT_LIBS $X_PATH -lXext -lX11 -lm -lSM -lICE -lresolv -lsocket -lnsl"
         fi
         ;;
 
