@@ -261,9 +261,15 @@ void level_meters_reset_peaks(GtkButton *button, gpointer data)
 
 void level_meters_init(void)
 {
+	int err;
+
 	snd_ctl_elem_value_malloc(&peaks);
-	snd_ctl_elem_value_set_interface(peaks, SND_CTL_ELEM_IFACE_MIXER);
+	snd_ctl_elem_value_set_interface(peaks, SND_CTL_ELEM_IFACE_PCM);
 	snd_ctl_elem_value_set_name(peaks, "Multi Track Peak");
+	if ((err = snd_ctl_elem_read(ctl, peaks)) < 0)
+		/* older ALSA driver, using MIXER type */
+		snd_ctl_elem_value_set_interface(peaks,
+			SND_CTL_ELEM_IFACE_MIXER);
 }
 
 void level_meters_postinit(void)
