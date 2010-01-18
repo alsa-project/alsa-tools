@@ -53,6 +53,8 @@ hdspmixer/src/hdspmixer
 hdspmixer/configure
 hdsploader/Makefile
 hdsploader/configure
+hwmixvolume/Makefile
+hwmixvolume/configure
 ld10k1/Makefile
 ld10k1/compile
 ld10k1/ld10k1d

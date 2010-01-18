@@ -1,0 +1,10 @@
+#!/bin/bash
+
+aclocal $ACLOCAL_FLAGS || exit 1
+automake --foreign --add-missing || exit 1
+autoconf || exit 1
+echo "./configure $@"
+./configure $@ || exit 1
+if [ -z "$GITCOMPILE_NO_MAKE" ]; then
+  make || exit 1
+fi
