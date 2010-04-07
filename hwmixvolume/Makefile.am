@@ -1,7 +1,7 @@
 # # Process this file with automake to procude Makefile.in.
 bin_SCRIPTS = hwmixvolume
 #man_MANS =
-EXTRA_DIST = gitcompile
+EXTRA_DIST = gitcompile hwmixvolume
 AUTOMAKE_OPTIONS = foreign
 
 alsa-dist: distdir
