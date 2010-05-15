@@ -36,6 +36,7 @@
 #include "HDSPMixerStripData.h"
 #include "HDSPMixerMeter.h"
 #include "pixmaps.h"
+#include <sstream>
 
 class HDSPMixerWindow;
 class HDSPMixerSelector;
@@ -52,7 +53,7 @@ class HDSPMixerIOMixer:public Fl_Group
 private:
     char **p_iomixer_xpm;
     int channel_num, relative_num, mixer_type;
-    char channel_name[6];
+	std::stringstream channel_name;
     void update_child(Fl_Widget &widget);
 public:
     HDSPMixerStripData *data[3][3][8]; /* data[card][mode(ss/ds/qs)][preset number] */

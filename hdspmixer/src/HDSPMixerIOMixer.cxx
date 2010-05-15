@@ -25,9 +25,9 @@ HDSPMixerIOMixer::HDSPMixerIOMixer(int x, int y, int w, int h, int ch, int type)
 {
     mixer_type = type;
     if (type) {
-	sprintf(channel_name, "Out %d", ch);
+	channel_name << "Out " << ch;
     } else {
-	sprintf(channel_name, "In %d", ch);
+	channel_name << "In " << ch;
     }
     channel_num = ch;
     if (channel_num%2) {
@@ -73,7 +73,7 @@ void HDSPMixerIOMixer::draw()
 	draw_background();
 	fl_color(FL_BLACK);
 	fl_font(FL_HELVETICA, 8);
-	fl_draw(channel_name, x()+4, y()+225, 27, 9, FL_ALIGN_CENTER);
+	fl_draw(channel_name.str().c_str(), x()+4, y()+225, 27, 9, FL_ALIGN_CENTER);
 	for (int i=children(); i--;) {
 	    Fl_Widget& o = **a++;
 	    draw_child(o);
