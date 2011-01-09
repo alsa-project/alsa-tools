@@ -22,14 +22,16 @@
 #ifndef HDSPMixerStripData_H
 #define HDSPMixerStripData_H
 
+#include "defines.h"
+
 
 class HDSPMixerStripData
 {
 public:
     int mute;
     int solo;
-    int pan_pos[14];
-    int fader_pos[14];
+    int pan_pos[HDSP_MAX_DEST];
+    int fader_pos[HDSP_MAX_DEST];
     int dest;
     HDSPMixerStripData();
 };

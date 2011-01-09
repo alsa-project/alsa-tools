@@ -31,7 +31,7 @@ HDSPMixerFader::HDSPMixerFader(int x, int y, double r, int id, int src):Fl_Widge
     ref = r;
     basew = (HDSPMixerWindow *)window();
     anchor = lastpos = lasty = drag = shift_orig = y_orig = 0;
-    for (int i = 0; i < 14; i++) {
+    for (int i = 0; i < HDSP_MAX_DEST; i++) {
 	pos[i] = 0;
     }
 }

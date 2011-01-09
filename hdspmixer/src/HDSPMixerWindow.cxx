@@ -16,6 +16,10 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
+ * @version 04-12-2009 [FF]
+ *          - updated deprecated fl_ask calls
+ * 
  */
 
 #pragma implementation
@@ -25,7 +29,8 @@ static void readregisters_cb(void *arg)
 {
     int err;
     snd_hwdep_t *hw;
-    hdsp_peak_rms_t peak_rms;
+    hdsp_peak_rms_t hdsp_peak_rms;
+    struct hdspm_peak_rms hdspm_peak_rms;
     
     HDSPMixerWindow *w = (HDSPMixerWindow *)arg;
 
@@ -39,49 +44,52 @@ static void readregisters_cb(void *arg)
 	return;
     }
 
-    if ((err = snd_hwdep_ioctl(hw, SNDRV_HDSP_IOCTL_GET_PEAK_RMS, (void *)&peak_rms)) < 0) {
+    if ((HDSPeMADI == w->cards[w->current_card]->type) ||
+	(HDSPeAIO == w->cards[w->current_card]->type) ||
+	(HDSPeRayDAT == w->cards[w->current_card]->type)) {
+      if ((err = snd_hwdep_ioctl(hw, SNDRV_HDSPM_IOCTL_GET_PEAK_RMS, (void *)&hdspm_peak_rms)) < 0) {
 	fprintf(stderr, "HwDep ioctl failed. Metering stopped\n");
 	snd_hwdep_close(hw);
 	return;
+      }      
+    } else {
+      if ((err = snd_hwdep_ioctl(hw, SNDRV_HDSP_IOCTL_GET_PEAK_RMS, (void *)&hdsp_peak_rms)) < 0) {
+	fprintf(stderr, "HwDep ioctl failed. Metering stopped\n");
+	snd_hwdep_close(hw);
+	return;
+      }
+    }
+    snd_hwdep_close(hw);
+
+    // check for speed change
+    if (hdspm_peak_rms.speed != w->cards[w->current_card]->speed_mode) {
+      w->cards[w->current_card]->setMode(hdspm_peak_rms.speed);
     }
 
-    snd_hwdep_close(hw);
-    
     if (w->inputs->buttons->input) {
-	for (int i = 0; i < w->cards[w->current_card]->channels; ++i) {
-	    w->inputs->strips[i]->meter->update(peak_rms.input_peaks[(w->cards[w->current_card]->meter_map[i])] & 0xffffff00,
-						peak_rms.input_peaks[(w->cards[w->current_card]->meter_map[i])] & 0xf,
-						peak_rms.input_rms[(w->cards[w->current_card]->meter_map[i])]);
-	}
+      for (int i = 0; i < w->cards[w->current_card]->channels_input; ++i) {
+	w->inputs->strips[i]->meter->update(hdspm_peak_rms.input_peaks[(w->cards[w->current_card]->meter_map_input[i])] & 0xffffff00,
+					    hdspm_peak_rms.input_peaks[(w->cards[w->current_card]->meter_map_input[i])] & 0xf,
+					    hdspm_peak_rms.input_rms[(w->cards[w->current_card]->meter_map_input[i])]);
+      }
     }
+     
     if (w->inputs->buttons->playback) {
-	for (int i = 0; i < w->cards[w->current_card]->channels; ++i) {
-	    w->playbacks->strips[i]->meter->update(peak_rms.playback_peaks[(w->cards[w->current_card]->meter_map[i])] & 0xffffff00,
-						   peak_rms.playback_peaks[(w->cards[w->current_card]->meter_map[i])] & 0xf,
-						   peak_rms.playback_rms[(w->cards[w->current_card]->meter_map[i])]);
-	}
+      for (int i = 0; i < w->cards[w->current_card]->channels_playback; ++i) {
+	w->playbacks->strips[i]->meter->update(hdspm_peak_rms.playback_peaks[(w->cards[w->current_card]->meter_map_playback[i])] & 0xffffff00,
+					       hdspm_peak_rms.playback_peaks[(w->cards[w->current_card]->meter_map_playback[i])] & 0xf,
+					       hdspm_peak_rms.playback_rms[(w->cards[w->current_card]->meter_map_playback[i])]);
+      }
     }
+
     if (w->inputs->buttons->output) {
-	if (w->cards[w->current_card]->type != H9652) {
-	    for (int i = 0; i < w->cards[w->current_card]->channels; ++i) {
-		w->outputs->strips[i]->meter->update(peak_rms.output_peaks[(w->cards[w->current_card]->meter_map[i])] & 0xffffff00,
-						     peak_rms.output_peaks[(w->cards[w->current_card]->meter_map[i])] & 0xf,
-						     0 );
-	    }
-	    for (int i = 0; i < w->cards[w->current_card]->lineouts; ++i) {
-		w->outputs->strips[w->cards[w->current_card]->channels+i]->meter->update(peak_rms.output_peaks[26+i] & 0xffffff00,
-										         peak_rms.output_peaks[26+i] & 0xf,
-										         0 );
-	    } 
-	} else {
-	    for (int i = 0; i < w->cards[w->current_card]->channels; ++i) {
-		w->outputs->strips[i]->meter->update(peak_rms.output_peaks[(w->cards[w->current_card]->meter_map[i])] & 0xffffff00,
-						     peak_rms.output_peaks[(w->cards[w->current_card]->meter_map[i])] & 0xf,
-						     peak_rms.output_rms[(w->cards[w->current_card]->meter_map[i])] );
-	    }
-	}
+      for (int i = 0; i < w->cards[w->current_card]->channels_playback; ++i) {
+	w->outputs->strips[i]->meter->update(hdspm_peak_rms.output_peaks[(w->cards[w->current_card]->meter_map_playback[i])] & 0xffffff00,
+					     hdspm_peak_rms.output_peaks[(w->cards[w->current_card]->meter_map_playback[i])] & 0xf,
+					     hdspm_peak_rms.output_rms[(w->cards[w->current_card]->meter_map_playback[i])]);
+      }
     }
-    
+
     Fl::add_timeout(0.03, readregisters_cb, w);
 }
 
@@ -90,7 +98,7 @@ static void exit_cb(Fl_Widget *widget, void *arg)
 {
     HDSPMixerWindow *w = (HDSPMixerWindow *)arg;
     if (w->dirty) {
-	if (!fl_ask("There are unsaved changes, quit anyway ?")) return;
+      if (!fl_choice("There are unsaved changes, quit anyway ?", "Return", "Quit", NULL)) return;
     }
     exit(EXIT_SUCCESS);
 }
@@ -202,7 +210,7 @@ static void restore_defaults_cb(Fl_Widget *widget, void *arg)
     HDSPMixerWindow *w = (HDSPMixerWindow *)arg;
     int i = 0;
     if (w->dirty) {
-	if (!fl_ask("There are unsaved changes, restore factory settings anyway ?")) return;
+      if (!fl_choice("There are unsaved changes, restore factory settings anyway ?", "Don't restore", "Restore them", NULL)) return;
     }
     w->prefs->deleteEntry("default_file");
     w->prefs->flush();
@@ -228,7 +236,7 @@ static void atclose_cb(Fl_Window *w, void *arg)
 {
     if (strncmp("HDSPMixer", w->label(), 9) == 0) {
 	if (((HDSPMixerWindow *)w)->dirty) {
-	    if (!fl_ask("There are unsaved changes, quit anyway ?")) return;
+	  if (!fl_choice("There are unsaved changes, quit anyway ?", "Don't quit", "Quit", NULL)) return;
 	}
 	exit(EXIT_SUCCESS);
     } 
@@ -254,7 +262,7 @@ static int handler_cb(int event)
     case FL_SHORTCUT:
 	if (key == FL_Escape) {
 	    if (w->dirty) {
-		if (!fl_ask("There are unsaved changes, quit anyway ?")) return 1;
+	      if (!fl_choice("There are unsaved changes, quit anyway ?", "Don't quit", "Quit", NULL)) return 1;
 	    }
 	    exit(EXIT_SUCCESS);
 	}
@@ -495,7 +503,6 @@ load_error:
 
 void HDSPMixerWindow::restoreDefaults(int card)
 {
-    int phones;
     int chnls[3];
     int maxdest[3];
     int h9632_spdif_submix[3];
@@ -508,21 +515,18 @@ void HDSPMixerWindow::restoreDefaults(int card)
 	chnls[1] = 14;
 	maxdest[0] = 10;
 	maxdest[1] = 8;
-	phones = 1;
 	break;
     case Digiface:
 	chnls[0] = 26;
 	chnls[1] = 14;
 	maxdest[0] = 14;
 	maxdest[1] = 8;
-	phones = 1;
 	break;
     case H9652:
 	chnls[0] = 26;
 	chnls[1] = 14;
 	maxdest[0] = 13;
 	maxdest[1] = 7;
-	phones = 0;
 	break;
     case H9632:
 	chnls[0] = 16;
@@ -538,8 +542,35 @@ void HDSPMixerWindow::restoreDefaults(int card)
 	h9632_an12_submix[1] = 3;
 	h9632_an12_submix[2] = 1;
 	num_modes = 3;
-	phones = 0;
 	break;
+    case HDSPeMADI:
+      chnls[0] = 64;
+      chnls[1] = 32;
+      chnls[2] = 16;
+      maxdest[0] = 32;
+      maxdest[1] = 16;
+      maxdest[2] = 8;
+      num_modes = 3;
+      break;
+     case HDSPeAIO:
+      chnls[0] = 14;
+      chnls[1] = 10;
+      chnls[2] = 8;
+      maxdest[0] = 8;
+      maxdest[1] = 6;
+      maxdest[2] = 5;
+      num_modes = 3;
+      break;
+    case HDSPeRayDAT:
+      chnls[0] = 36;
+      chnls[1] = 20;
+      chnls[2] = 12;
+      maxdest[0] = 18;
+      maxdest[1] = 10;
+      maxdest[2] = 6;
+      num_modes = 3;
+      break;
+
     default:
 	/* should never happen */
 	return;
@@ -560,13 +591,13 @@ void HDSPMixerWindow::restoreDefaults(int card)
 			((preset == 1 && z == h9632_an12_submix[speed]) || i == z*2 || (preset == 5 && z == h9632_spdif_submix[speed])) ? ndb : 0;
 		    } else {
 			inputs->strips[i]->data[card][speed][preset]->fader_pos[z] =  
-			((preset == 6 && z == (maxdest[speed]-phones-1)) || (i == z*2 && (preset > 1 && preset < 4)) || (((preset > 0 && preset < 4) || preset == 7) && phones && (z == maxdest[speed]-1))) ? ndb : 0;
+			((preset == 6 && z == (maxdest[speed]-1)) || (i == z*2 && (preset > 1 && preset < 4)) || (((preset > 0 && preset < 4) || preset == 7) && (z == maxdest[speed]-1))) ? ndb : 0;
 			inputs->strips[i+1]->data[card][speed][preset]->fader_pos[z] = 
-			((preset == 6 && z == (maxdest[speed]-phones-1)) || (i == z*2 && (preset > 1 && preset < 4)) || (((preset > 0 && preset < 4) || preset == 7) && phones && (z == maxdest[speed]-1))) ? ndb : 0;
+			((preset == 6 && z == (maxdest[speed]-1)) || (i == z*2 && (preset > 1 && preset < 4)) || (((preset > 0 && preset < 4) || preset == 7) && (z == maxdest[speed]-1))) ? ndb : 0;
 			playbacks->strips[i]->data[card][speed][preset]->fader_pos[z] = 
-			((preset > 4 && preset < 7 && z == (maxdest[speed]-phones-1)) || i == z*2 || (phones && (z == maxdest[speed]-1))) ? ndb : 0;
+			((preset > 4 && preset < 7 && z == (maxdest[speed]-1)) || i == z*2 || ((z == maxdest[speed]-1))) ? ndb : 0;
 			playbacks->strips[i+1]->data[card][speed][preset]->fader_pos[z] = 
-			((preset > 4 && preset < 7 && z == (maxdest[speed]-phones-1)) || i == z*2 || (phones && (z == maxdest[speed]-1))) ? ndb : 0;
+			((preset > 4 && preset < 7 && z == (maxdest[speed]-1)) || i == z*2 || ((z == maxdest[speed]-1))) ? ndb : 0;
 		    }
 		    /* Pan setup */
 		    inputs->strips[i]->data[card][speed][preset]->pan_pos[z] = 0;
@@ -604,7 +635,7 @@ void HDSPMixerWindow::restoreDefaults(int card)
 		    data[card][speed][preset]->submix = 0;
 		}
 	    } else if (preset > 4 && preset < 7) {
-		data[card][speed][preset]->submix_value = maxdest[speed]-phones-1;
+		data[card][speed][preset]->submix_value = maxdest[speed]-1;
 		if (preset == 5) {
 		    outputs->strips[chnls[speed]-2]->data[card][speed][preset]->fader_pos = ndb;
 		    outputs->strips[chnls[speed]-1]->data[card][speed][preset]->fader_pos = ndb;    
@@ -614,10 +645,6 @@ void HDSPMixerWindow::restoreDefaults(int card)
 	    }
 	    if (preset == 3 || preset == 7) {
 		data[card][speed][preset]->mute = 1;
-	    }
-	    if (phones) {
-		outputs->strips[chnls[speed]]->data[card][speed][preset]->fader_pos = (preset != 4) ? ndb : 0;
-		outputs->strips[chnls[speed]+1]->data[card][speed][preset]->fader_pos = (preset != 4) ? ndb : 0;	
 	    }
 	}
     }
@@ -669,13 +696,13 @@ HDSPMixerWindow::HDSPMixerWindow(int x, int y, int w, int h, const char *label, 
     menubar->add("&View/Submix", 's', (Fl_Callback *)submix_cb, (void *)this, FL_MENU_TOGGLE|FL_MENU_VALUE);
     menubar->add("&Options/Level Meter Setup", 'm', (Fl_Callback *)setup_cb, (void *)this);
     menubar->add("&?/About", 0, (Fl_Callback *)about_cb, (void *)this);
-    inputs = new HDSPMixerInputs(0, MENU_HEIGHT, w, FULLSTRIP_HEIGHT, cards[0]->channels);
+    inputs = new HDSPMixerInputs(0, MENU_HEIGHT, w, FULLSTRIP_HEIGHT, cards[0]->channels_input);
     inputs->buttons->input = 1;
     inputs->buttons->output = 1;
     inputs->buttons->submix = 1;
     inputs->buttons->playback = 1;
-    playbacks = new HDSPMixerPlaybacks(0, MENU_HEIGHT+FULLSTRIP_HEIGHT, w, FULLSTRIP_HEIGHT, cards[0]->channels);
-    outputs = new HDSPMixerOutputs(0, MENU_HEIGHT+FULLSTRIP_HEIGHT*2, w, SMALLSTRIP_HEIGHT, cards[0]->channels);
+    playbacks = new HDSPMixerPlaybacks(0, MENU_HEIGHT+FULLSTRIP_HEIGHT, w, FULLSTRIP_HEIGHT, cards[0]->channels_playback);
+    outputs = new HDSPMixerOutputs(0, MENU_HEIGHT+FULLSTRIP_HEIGHT*2, w, SMALLSTRIP_HEIGHT, cards[0]->channels_playback);
     scroll->end();
     end();
     setup = new HDSPMixerSetup(400, 260, "Level Meters Setup", this);
@@ -791,11 +818,7 @@ void HDSPMixerWindow::checkState()
 	if (outputs->strips[i]->data[current_card][speed][p]->fader_pos != outputs->strips[i]->fader->pos[0])
 	    corrupt++;
     }
-    /* Line outs */
-    if (outputs->strips[HDSP_MAX_CHANNELS]->data[current_card][speed][p]->fader_pos != outputs->strips[HDSP_MAX_CHANNELS]->fader->pos[0])
-	corrupt++;
-    if (outputs->strips[HDSP_MAX_CHANNELS+1]->data[current_card][speed][p]->fader_pos != outputs->strips[HDSP_MAX_CHANNELS+1]->fader->pos[0])
-	corrupt++;
+
     /* Global settings */
     if (data[current_card][speed][p]->mute != inputs->buttons->master->mute)
 	corrupt++;
@@ -839,7 +862,7 @@ void HDSPMixerWindow::checkState()
 
 void HDSPMixerWindow::setSubmix(int submix_value)
 {
-    for (int i = 0; i < cards[current_card]->channels; i++) {
+    for (int i = 0; i < cards[current_card]->channels_playback; i++) {
 	inputs->strips[i]->targets->value(submix_value);
 	inputs->strips[i]->targets->redraw();
 	inputs->strips[i]->fader->dest = submix_value;
@@ -859,7 +882,7 @@ void HDSPMixerWindow::setSubmix(int submix_value)
 
 void HDSPMixerWindow::unsetSubmix()
 {
-    for (int i = 0; i < cards[current_card]->channels; i++) {
+    for (int i = 0; i < cards[current_card]->channels_input; i++) {
 	inputs->strips[i]->targets->value(inputs->strips[i]->targets->selected);
 	inputs->strips[i]->targets->redraw();
 	inputs->strips[i]->fader->dest = inputs->strips[i]->targets->selected;
@@ -881,7 +904,7 @@ void HDSPMixerWindow::unsetSubmix()
 void HDSPMixerWindow::refreshMixer()
 {
     int i, j;
-    for (i = 1; i <= cards[current_card]->channels; ++i) {
+    for (i = 1; i <= cards[current_card]->channels_input; ++i) {
 	for (j = 0; j < inputs->strips[0]->targets->max_dest; ++j) {
 	    setMixer(i, 0, j);
 	    setMixer(i, 1, j);
@@ -901,7 +924,7 @@ void HDSPMixerWindow::resetMixer()
 {
     int i, j;
     for (i = 0; i < (cards[current_card]->playbacks_offset*2) ; ++i) {
-	for (j = 0; j < (cards[current_card]->playbacks_offset+cards[current_card]->lineouts); ++j) {
+	for (j = 0; j < (cards[current_card]->playbacks_offset); ++j) {
 	    setGain(i, j, 0);
 	}
     }
@@ -917,6 +940,8 @@ void HDSPMixerWindow::setGain(int in, int out, int value)
     snd_ctl_elem_id_t *id;
     snd_ctl_elem_value_t *ctl;
     snd_ctl_t *handle;
+
+    //printf("setGain(%d, %d, %d)\n", in, out, value);
     
     snd_ctl_elem_value_alloca(&ctl);
     snd_ctl_elem_id_alloca(&id);
@@ -927,7 +952,7 @@ void HDSPMixerWindow::setGain(int in, int out, int value)
     snd_ctl_elem_value_set_id(ctl, id);
 
     if ((err = snd_ctl_open(&handle, cards[current_card]->name, SND_CTL_NONBLOCK)) < 0) {
-        fprintf(stderr, "Alsa error: %s\n", snd_strerror(err));
+        fprintf(stderr, "Alsa error 1: %s\n", snd_strerror(err));
         return;
     }
 
@@ -935,7 +960,7 @@ void HDSPMixerWindow::setGain(int in, int out, int value)
     snd_ctl_elem_value_set_integer(ctl, 1, out);
     snd_ctl_elem_value_set_integer(ctl, 2, value);
     if ((err = snd_ctl_elem_write(handle, ctl)) < 0) {
-        fprintf(stderr, "Alsa error: %s\n", snd_strerror(err));
+        fprintf(stderr, "Alsa error 2: %s\n", snd_strerror(err));
         snd_ctl_close(handle);
         return;
     }
@@ -955,6 +980,17 @@ void HDSPMixerWindow::setMixer(int idx, int src, int dst)
     snd_ctl_elem_value_t *ctl;
     snd_ctl_t *handle;
 
+    char *channel_map;
+    
+    switch (src) {
+    case 0:
+      channel_map = cards[current_card]->channel_map_input;
+      break;
+    case 1:
+    case 2:
+      channel_map = cards[current_card]->channel_map_playback;
+    }
+
     gsolo_active = inputs->buttons->master->solo_active;
     gmute_active = inputs->buttons->master->mute_active;
     gsolo = inputs->buttons->master->solo;
@@ -973,7 +1009,7 @@ void HDSPMixerWindow::setMixer(int idx, int src, int dst)
 	snd_ctl_elem_value_set_id(ctl, id);
     
 	if ((err = snd_ctl_open(&handle, cards[current_card]->name, SND_CTL_NONBLOCK)) < 0) {
-	    fprintf(stderr, "Alsa error: %s\n", snd_strerror(err));
+	    fprintf(stderr, "Alsa error 3: %s\n", snd_strerror(err));
 	    return;
 	}
 
@@ -1003,19 +1039,20 @@ void HDSPMixerWindow::setMixer(int idx, int src, int dst)
 	right_val = attenuation_r* vol * pan;
 
 muted: 	
-	snd_ctl_elem_value_set_integer(ctl, 0, src*cards[current_card]->playbacks_offset+cards[current_card]->channel_map[idx-1]);
+	snd_ctl_elem_value_set_integer(ctl, 0, src*cards[current_card]->playbacks_offset+channel_map[idx-1]);
 	snd_ctl_elem_value_set_integer(ctl, 1, cards[current_card]->dest_map[dst]);
 	snd_ctl_elem_value_set_integer(ctl, 2, (int)left_val);
 	if ((err = snd_ctl_elem_write(handle, ctl)) < 0) {
-	    fprintf(stderr, "Alsa error: %s\n", snd_strerror(err));
+	    fprintf(stderr, "Alsa error 4: %s\n", snd_strerror(err));
 	    snd_ctl_close(handle);
 	    return;
 	}
-	snd_ctl_elem_value_set_integer(ctl, 0, src*cards[current_card]->playbacks_offset+cards[current_card]->channel_map[idx-1]);
+
+	snd_ctl_elem_value_set_integer(ctl, 0, src*cards[current_card]->playbacks_offset+channel_map[idx-1]);
 	snd_ctl_elem_value_set_integer(ctl, 1, cards[current_card]->dest_map[dst]+1);
 	snd_ctl_elem_value_set_integer(ctl, 2, (int)right_val);
 	if ((err = snd_ctl_elem_write(handle, ctl)) < 0) {
-	    fprintf(stderr, "Alsa error: %s\n", snd_strerror(err));
+	    fprintf(stderr, "Alsa error 5: %s\n", snd_strerror(err));
 	    snd_ctl_close(handle);
 	    return;
 	}
@@ -1026,10 +1063,13 @@ muted:
 	
 	dest = (int)floor((idx-1)/2);
 	
-	for (i = 0; i < cards[current_card]->channels; ++i) {
+	for (i = 0; i < cards[current_card]->channels_input; ++i) {
 	    if ((vol = inputs->strips[i]->fader->posToInt(inputs->strips[i]->fader->pos[dest])) != 0) {
 		setMixer(i+1, 0, dest);
 	    }
+	}
+
+	for (i = 0; i < cards[current_card]->channels_playback; ++i) {
 	    if ((vol = playbacks->strips[i]->fader->posToInt(playbacks->strips[i]->fader->pos[dest])) != 0) {
 		setMixer(i+1, 1, dest);
 	    }

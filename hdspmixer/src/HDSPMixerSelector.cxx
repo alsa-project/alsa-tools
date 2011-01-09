@@ -21,6 +21,83 @@
 #pragma implementation
 #include "HDSPMixerSelector.h"
 
+static char *destinations_madi_ss[32] = {
+  "1+2", "3+4", "5+6", "7+8",
+  "9+10", "11+12", "13+14", "15+16",
+  "17+18", "19+20", "21+22", "23+24",
+  "25+26", "27+28", "29+30", "31+32",
+  "33+34", "35+36", "37+38", "39+40",
+  "41+42", "43+44", "45+46", "47+48",
+  "49+50", "51+52", "53+54", "55+56",
+  "57+58", "59+60", "61+62", "63+64"
+};
+
+static char *destinations_madi_ds[16] = {
+  "1+2", "3+4", "5+6", "7+8",
+  "9+10", "11+12", "13+14", "15+16",
+  "17+18", "19+20", "21+22", "23+24",
+  "25+26", "27+28", "29+30", "31+32",
+};
+
+static char *destinations_madi_qs[8] = {
+  "1+2", "3+4", "5+6", "7+8",
+  "9+10", "11+12", "13+14", "15+16",
+};
+
+
+static char *destinations_raydat_ss[18] = {
+
+  "A1 1+2", "A1 3+4", "A1 5+6", "A1 7+8",
+  "A2 1+2", "A2 3+4", "A2 5+6", "A2 7+8",
+  "A3 1+2", "A3 3+4", "A3 5+6", "A3 7+8",
+  "A4 1+2", "A4 3+4", "A4 5+6", "A4 7+8",
+  "AES",
+  "SPDIF"
+};
+
+static char *destinations_raydat_ds[10] = {
+  "A1 1+2", "A1 3+4",
+  "A2 1+2", "A2 3+4",
+  "A3 1+2", "A3 3+4",
+  "A4 1+2", "A4 3+4",
+  "AES",
+  "SPDIF"
+};
+
+static char *destinations_raydat_qs[6] = {
+  "A1 1+2",
+  "A2 1+2",
+  "A3 1+2",
+  "A4 1+2",
+  "AES",
+  "SPDIF"
+};
+
+
+static char *destinations_aio_ss[8] = {
+  "AN 1+2",
+  "AES",
+  "SPDIF", 
+  "A 1+2", "A 3+4", "A 5+6", "A 7+8",
+  "Phones",
+};
+
+static char *destinations_aio_ds[6] = {
+  "AN 1+2", 
+  "AES",
+  "SPDIF", 
+  "A 1+2", "A 3+4"
+  "Phones",
+};
+
+static char *destinations_aio_qs[5] = {
+  "AN 1+2",
+  "AES",
+  "SPDIF", 
+  "A 1+2"
+  "Phones",
+};
+
     static char *destinations_mf_ss[10] = {
 	"AN 1+2", "AN 3+4", "AN 5+6", "AN 7+8",
 	"A 1+2", "A 3+4", "A 5+6", "A 7+8",
@@ -135,7 +212,7 @@ int HDSPMixerSelector::handle(int e) {
 
 void HDSPMixerSelector::setLabels()
 {
-    HDSP_IO_Type type;
+    int type;
     hdsp_9632_aeb_t *aeb;
     int sm;
     clear();
@@ -199,7 +276,54 @@ void HDSPMixerSelector::setLabels()
 	    destinations = destinations_h9632_qs;
 	    break;
 	}
+    } else if (HDSPeMADI == type) {
+	switch (sm) {
+	case 0:
+	  max_dest = 32;
+	  destinations = destinations_madi_ss;
+	  break;
+	case 1:
+	  max_dest = 16;
+	  destinations = destinations_madi_ds;
+	  break;
+	case 2:
+	  max_dest = 8;
+	  destinations = destinations_madi_qs;
+	  break;
+	}
+    } else if (HDSPeAIO == type) {
+	switch (sm) {
+	case 0:
+	  max_dest = 8;
+	  destinations = destinations_aio_ss;
+	  break;
+	case 1:
+	  max_dest = 6;
+	  destinations = destinations_aio_ds;
+	  break;
+	case 2:
+	  max_dest = 5;
+	  destinations = destinations_aio_qs;
+	  break;
+	}
+    } else if (HDSPeRayDAT == type) {
+	switch (sm) {
+	case 0:
+	  max_dest = 18;
+	  destinations = destinations_raydat_ss;
+	  break;
+	case 1:
+	  max_dest = 10;
+	  destinations = destinations_raydat_ds;
+	  break;
+	case 2:
+	  max_dest = 6;
+	  destinations = destinations_raydat_qs;
+	  break;
+	}
+     
     }
+
     
     for (int i = 0; i < max_dest; ++i) {
 	add(destinations[i], 0, 0, 0, FL_MENU_TOGGLE);

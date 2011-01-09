@@ -193,18 +193,21 @@ void HDSPMixerPresets::restore_preset(int prst) {
     basew->outputs->strips[HDSP_MAX_CHANNELS]->fader->pos[0] = basew->outputs->strips[HDSP_MAX_CHANNELS+1]->data[card][speed][p]->fader_pos;
     basew->outputs->strips[HDSP_MAX_CHANNELS+1]->fader->pos[0] = basew->outputs->strips[HDSP_MAX_CHANNELS+1]->data[card][speed][p]->fader_pos;
 
-    for (int i = 0; i < basew->cards[card]->channels; ++i) {
+    for (int i = 0; i < basew->cards[card]->channels_input; ++i) {
 	basew->inputs->strips[i]->fader->sendGain();
 	basew->inputs->strips[i]->redraw();
+    }
+
+    for (int i = 0; i < basew->cards[card]->channels_playback; ++i) {
 	basew->playbacks->strips[i]->fader->sendGain();
 	basew->playbacks->strips[i]->redraw();
 	basew->outputs->strips[i]->fader->sendGain();
 	basew->outputs->strips[i]->redraw();
     }
-    basew->outputs->strips[basew->cards[card]->channels]->fader->sendGain();
-    basew->outputs->strips[basew->cards[card]->channels]->redraw();
-    basew->outputs->strips[basew->cards[card]->channels+1]->fader->sendGain();
-    basew->outputs->strips[basew->cards[card]->channels+1]->redraw();
+    basew->outputs->strips[basew->cards[card]->channels_playback]->fader->sendGain();
+    basew->outputs->strips[basew->cards[card]->channels_playback]->redraw();
+    basew->outputs->strips[basew->cards[card]->channels_playback+1]->fader->sendGain();
+    basew->outputs->strips[basew->cards[card]->channels_playback+1]->redraw();
 
     /* Global settings */
     basew->inputs->buttons->view->input = basew->data[card][speed][p]->input;

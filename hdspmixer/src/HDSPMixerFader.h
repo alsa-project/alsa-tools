@@ -49,7 +49,7 @@ public:
     int posToInt(int p);
     int non_submix_dest;
     int dest;
-    int pos[14];
+    int pos[HDSP_MAX_DEST];
     HDSPMixerWindow *basew;
     HDSPMixerFader *relative;
     HDSPMixerGain *gain;

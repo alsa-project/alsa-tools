@@ -61,8 +61,10 @@ int HDSPMixerMaster::handle(int e)
 		} else {
 		    mute = 1;
 		}
-		for (int i = 0; i < basew->cards[basew->current_card]->channels; i++) {
+		for (int i = 0; i < basew->cards[basew->current_card]->channels_input; i++) {
 		    basew->inputs->strips[i]->mutesolo->redraw();
+		}
+		for (int i = 0; i < basew->cards[basew->current_card]->channels_playback; i++) {
 		    basew->playbacks->strips[i]->mutesolo->redraw();
 		}
 		basew->refreshMixer();
@@ -76,8 +78,10 @@ int HDSPMixerMaster::handle(int e)
 		} else {
 		    solo = 1;
 		}
-		for (int i = 0; i < basew->cards[basew->current_card]->channels; i++) {
+		for (int i = 0; i < basew->cards[basew->current_card]->channels_input; i++) {
 		    basew->inputs->strips[i]->mutesolo->redraw();
+		}
+		for (int i = 0; i < basew->cards[basew->current_card]->channels_playback; i++) {
 		    basew->playbacks->strips[i]->mutesolo->redraw();
 		}
 		basew->refreshMixer();

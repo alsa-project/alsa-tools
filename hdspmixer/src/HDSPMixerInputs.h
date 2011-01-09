@@ -35,7 +35,7 @@ class HDSPMixerInputs:public Fl_Group
 {
 public:
     HDSPMixerButtons *buttons;
-    HDSPMixerIOMixer *strips[26];
+    HDSPMixerIOMixer *strips[HDSP_MAX_CHANNELS];
     HDSPMixerInputs(int x, int y, int w, int h, int nchannels);
     HDSPMixerEmpty *empty_aebi[2];
 };

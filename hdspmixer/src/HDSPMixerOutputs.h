@@ -35,7 +35,7 @@ class HDSPMixerOutputs:public Fl_Group
 public:
     HDSPMixerEmpty *empty_aebo[2];
     HDSPMixerEmpty *empty;
-    HDSPMixerOutput *strips[28];
+    HDSPMixerOutput *strips[HDSP_MAX_CHANNELS+2];
     HDSPMixerOutputs(int x, int y, int w, int h, int nchannels);
 };
 

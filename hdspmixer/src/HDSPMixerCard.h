@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <alsa/asoundlib.h>
 #include <alsa/sound/hdsp.h>
+#include <alsa/sound/hdspm.h>
 #include "defines.h"
 #include "HDSPMixerWindow.h"
 
@@ -36,15 +37,16 @@ class HDSPMixerCard
 private:
     snd_ctl_t *cb_handle;
     snd_async_handler_t *cb_handler;
+
 public:
     HDSPMixerWindow *basew;
     char name[6];
-    HDSPMixerCard(HDSP_IO_Type cardtype, int id);
-    int channels, lineouts, window_width, window_height, card_id;
-    HDSP_IO_Type type;
-    char *channel_map;
+    HDSPMixerCard(int cardtype, int id);
+    int channels_input, channels_playback, window_width, window_height, card_id;
+    int type;
+    char *channel_map_input, *channel_map_playback;
     char *dest_map;
-    char *meter_map;
+    char *meter_map_input, *meter_map_playback;
     int speed_mode;
     int playbacks_offset;
     void setMode(int mode);

@@ -28,6 +28,7 @@
 #include "HDSPMixerIOMixer.h"
 #include "HDSPMixerWindow.h"
 #include "pixmaps.h"
+#include "defines.h"
 
 class HDSPMixerIOMixer;
 class HDSPMixerWindow;
@@ -39,7 +40,7 @@ private:
     void sendText();
     void panToText(char *s);
 public:
-    int pos[14];
+    int pos[HDSP_MAX_DEST];
     int dest;
     int index;
     int source;

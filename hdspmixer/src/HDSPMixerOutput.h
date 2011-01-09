@@ -46,7 +46,7 @@ class HDSPMixerOutput:public Fl_Group
 {
 private:
     int out_num;
-    char **labels;
+    char **labels_input, **labels_playback;
     char **p_output_xpm;
     HDSPMixerPeak *peak;
     HDSPMixerWindow *basew;    

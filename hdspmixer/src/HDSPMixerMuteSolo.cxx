@@ -129,8 +129,11 @@ int HDSPMixerMuteSolo::handle(int e)
 
 void HDSPMixerMuteSolo::redraw_all()
 {
-    for (int i = 0; i < (basew->cards[basew->current_card]->channels); ++i) {
+    for (int i = 0; i < (basew->cards[basew->current_card]->channels_input); ++i) {
 	basew->inputs->strips[i]->mutesolo->redraw();
+    }
+
+    for (int i = 0; i < (basew->cards[basew->current_card]->channels_playback); ++i) {
 	basew->playbacks->strips[i]->mutesolo->redraw();	
     }
 }

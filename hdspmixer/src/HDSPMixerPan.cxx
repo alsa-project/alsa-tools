@@ -27,7 +27,7 @@ HDSPMixerPan::HDSPMixerPan(int x, int y, int id, int src):Fl_Widget(x, y, 30, 13
     index = id;
     basew = (HDSPMixerWindow *)window();
     dest =  x_orig = shift_orig = lastpos = lastx = drag = 0;
-    for (int i = 0; i < 14; i++) {
+    for (int i = 0; i < HDSP_MAX_DEST; i++) {
 	pos[i] = 0;
     }
 }

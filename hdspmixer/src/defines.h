@@ -24,8 +24,12 @@
 /* Uncomment this to make the setup window non-modal */
 //#define NON_MODAL_SETUP 1
 
-#define HDSP_MAX_CHANNELS 26
-#define HDSP_MAX_DEST	  14
+#define HDSPeMADI 10
+#define HDSPeRayDAT 11
+#define HDSPeAIO 12
+
+#define HDSP_MAX_CHANNELS 64
+#define HDSP_MAX_DEST	  32
 
 #define STRIP_WIDTH 	  36
 #define FULLSTRIP_HEIGHT  253
