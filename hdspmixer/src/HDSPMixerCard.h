@@ -28,6 +28,7 @@
 #include <alsa/sound/hdsp.h>
 #include <alsa/sound/hdspm.h>
 #include "defines.h"
+#include "channelmap.h"
 #include "HDSPMixerWindow.h"
 
 class HDSPMixerWindow;
