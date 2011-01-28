@@ -55,4 +55,6 @@ hdspmixer_SOURCES = \
 	HDSPMixerMeter.h \
 	pixmaps.cxx \
 	pixmaps.h \
-	defines.h
+	defines.h \
+	channelmap.h
+	
