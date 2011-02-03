@@ -45,6 +45,7 @@ int main(int argc, char **argv)
     printf("This program comes with ABSOLUTELY NO WARRANTY\n");
     printf("HDSPMixer is free software, see the file COPYING for details\n\n");
     printf("Looking for RME cards :\n");
+
     while (snd_card_next(&card) >= 0) {
         if (card < 0) {
             break;
@@ -88,17 +89,21 @@ int main(int argc, char **argv)
             } 
         }
     }
+
     free(name);
     if (!cards) {
         printf("No RME cards found.\n");
         exit(EXIT_FAILURE);
     }
+
     for (int i = cards; i < 3; ++i) {
         hdsp_cards[i] = NULL;
     }
+
     printf("%d RME cards %s found.\n", cards, (cards > 1) ? "cards" : "card");
     window = new HDSPMixerWindow(0, 0, hdsp_cards[0]->window_width, hdsp_cards[0]->window_height, "HDSPMixer", hdsp_cards[0], hdsp_cards[1], hdsp_cards[2]);
     Fl::visual(FL_DOUBLE|FL_INDEX);
     window->show(argc, argv);
+
     return Fl::run();    
 }
