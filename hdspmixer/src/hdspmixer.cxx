@@ -51,7 +51,23 @@ int main(int argc, char **argv)
 	} else {
 	    snd_card_get_longname(card, &name);
 	    printf("Card %d : %s\n", card, name);
-	    if (!strncmp(name, "RME MADIface", 12)) {
+            if (!strncmp(name, "RME Hammerfall DSP + Multiface", 30)) {
+                printf("Multiface found !\n");
+                hdsp_cards[cards] = new HDSPMixerCard(Multiface, card);
+                cards++;
+            } else if (!strncmp(name, "RME Hammerfall DSP + Digiface", 29)) {
+                printf("Digiface found !\n");
+                hdsp_cards[cards] = new HDSPMixerCard(Digiface, card);
+                cards++;
+            } else if (!strncmp(name, "RME Hammerfall HDSP 9652", 24)) {
+                printf("HDSP 9652 found !\n");
+                hdsp_cards[cards] = new HDSPMixerCard(H9652, card);
+                cards++;
+            } else if (!strncmp(name, "RME Hammerfall HDSP 9632", 24)) {
+                printf("HDSP 9632 found !\n");
+                hdsp_cards[cards] = new HDSPMixerCard(H9632, card);
+                cards++;
+	    } else if (!strncmp(name, "RME MADIface", 12)) {
 		printf("RME MADIface found !\n");
 		hdsp_cards[cards] = new HDSPMixerCard(HDSPeMADI, card);
 		cards++;
