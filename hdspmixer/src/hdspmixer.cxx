@@ -39,18 +39,18 @@ int main(int argc, char **argv)
     char *name;
     int card;
     int cards = 0;
-    
+
     card = -1;
     printf("\nHDSPMixer %s - Copyright (C) 2003 Thomas Charbonnel <thomas@undata.org>\n", VERSION);
     printf("This program comes with ABSOLUTELY NO WARRANTY\n");
     printf("HDSPMixer is free software, see the file COPYING for details\n\n");
     printf("Looking for RME cards :\n");
     while (snd_card_next(&card) >= 0) {
-	if (card < 0) {
-	    break;
-	} else {
-	    snd_card_get_longname(card, &name);
-	    printf("Card %d : %s\n", card, name);
+        if (card < 0) {
+            break;
+        } else {
+            snd_card_get_longname(card, &name);
+            printf("Card %d : %s\n", card, name);
             if (!strncmp(name, "RME Hammerfall DSP + Multiface", 30)) {
                 printf("Multiface found !\n");
                 hdsp_cards[cards] = new HDSPMixerCard(Multiface, card);
@@ -67,34 +67,34 @@ int main(int argc, char **argv)
                 printf("HDSP 9632 found !\n");
                 hdsp_cards[cards] = new HDSPMixerCard(H9632, card);
                 cards++;
-	    } else if (!strncmp(name, "RME MADIface", 12)) {
-		printf("RME MADIface found !\n");
-		hdsp_cards[cards] = new HDSPMixerCard(HDSPeMADI, card);
-		cards++;
-	    } else if (!strncmp(name, "RME MADI", 8)) {
-		printf("RME MADI found !\n");
-		hdsp_cards[cards] = new HDSPMixerCard(HDSPeMADI, card);
-		cards++;
-	    } else if (!strncmp(name, "RME RayDAT", 10)) {
-		printf("RME RayDAT found !\n");
-		hdsp_cards[cards] = new HDSPMixerCard(HDSPeRayDAT, card);
-		cards++;
-	    } else if (!strncmp(name, "RME AIO", 7)) {
-		printf("RME AIO found !\n");
-		hdsp_cards[cards] = new HDSPMixerCard(HDSPeAIO, card);
-		cards++;
-	    } else if (!strncmp(name, "RME Hammerfall DSP", 18)) {
-		printf("Uninitialized HDSP card found.\nUse hdsploader to upload configuration data to the card.\n");
-	    } 
-	}
+            } else if (!strncmp(name, "RME MADIface", 12)) {
+                printf("RME MADIface found !\n");
+                hdsp_cards[cards] = new HDSPMixerCard(HDSPeMADI, card);
+                cards++;
+            } else if (!strncmp(name, "RME MADI", 8)) {
+                printf("RME MADI found !\n");
+                hdsp_cards[cards] = new HDSPMixerCard(HDSPeMADI, card);
+                cards++;
+            } else if (!strncmp(name, "RME RayDAT", 10)) {
+                printf("RME RayDAT found !\n");
+                hdsp_cards[cards] = new HDSPMixerCard(HDSPeRayDAT, card);
+                cards++;
+            } else if (!strncmp(name, "RME AIO", 7)) {
+                printf("RME AIO found !\n");
+                hdsp_cards[cards] = new HDSPMixerCard(HDSPeAIO, card);
+                cards++;
+            } else if (!strncmp(name, "RME Hammerfall DSP", 18)) {
+                printf("Uninitialized HDSP card found.\nUse hdsploader to upload configuration data to the card.\n");
+            } 
+        }
     }
     free(name);
     if (!cards) {
-	printf("No RME cards found.\n");
-	exit(EXIT_FAILURE);
+        printf("No RME cards found.\n");
+        exit(EXIT_FAILURE);
     }
     for (int i = cards; i < 3; ++i) {
-	hdsp_cards[i] = NULL;
+        hdsp_cards[i] = NULL;
     }
     printf("%d RME cards %s found.\n", cards, (cards > 1) ? "cards" : "card");
     window = new HDSPMixerWindow(0, 0, hdsp_cards[0]->window_width, hdsp_cards[0]->window_height, "HDSPMixer", hdsp_cards[0], hdsp_cards[1], hdsp_cards[2]);
