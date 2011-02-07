@@ -27,6 +27,7 @@
 #define HDSPeMADI 10
 #define HDSPeRayDAT 11
 #define HDSPeAIO 12
+#define HDSP_AES 13 /* both AES32 and HDSPeAES? */
 
 #define HDSP_MAX_CHANNELS 64
 #define HDSP_MAX_DEST	  32

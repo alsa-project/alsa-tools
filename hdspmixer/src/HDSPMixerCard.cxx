@@ -52,6 +52,16 @@ static char dest_map_madi_ss[32] = {
  48, 50, 52, 54, 56, 58, 60, 62
 };
 
+static char channel_map_aes[16] = {
+    0, 1, 2, 3, 4, 5, 6, 7,
+    9, 10, 11, 12, 13, 14, 15
+};
+
+
+static char dest_map_aes[8] = {
+  0,  2,  4,  6,  8, 10, 12, 14
+};
+
 
 static char dest_map_raydat_ss[18] = {
    4,  6,  8, 10, 
@@ -465,6 +475,18 @@ void HDSPMixerCard::adjustSettings() {
 	meter_map_playback = channel_map_aio_out_qs;
 	break;
       }
+
+    } else if (HDSP_AES == type) {
+      playbacks_offset = 64; /* FL not sure about this one? */
+
+      /* 16 channels for all modes */
+      channels_input = 16;
+      channels_playback = 16;
+      channel_map_input = channel_map_aes;
+      channel_map_playback = channel_map_aes;
+      dest_map = dest_map_aes;
+      meter_map_input = channel_map_aes;
+      meter_map_playback = channel_map_aes;
 
     } else if (HDSPeRayDAT == type) {
       playbacks_offset = 64;

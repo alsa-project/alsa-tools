@@ -45,6 +45,11 @@ static char *destinations_madi_qs[8] = {
 };
 
 
+static char *destinations_aes[8] = {
+  "AES 1+2", "AES 3+4", "AES 5+6", "AES 7+8",
+  "AES 9+10", "AES 11+12", "AES 13+14", "AES 15+16",
+};
+
 static char *destinations_raydat_ss[18] = {
 
   "A1 1+2", "A1 3+4", "A1 5+6", "A1 7+8",
@@ -291,6 +296,9 @@ void HDSPMixerSelector::setLabels()
 	  destinations = destinations_madi_qs;
 	  break;
 	}
+    } else if (HDSP_AES == type) {
+      max_dest = 8;
+      destinations = destinations_aes;
     } else if (HDSPeAIO == type) {
 	switch (sm) {
 	case 0:

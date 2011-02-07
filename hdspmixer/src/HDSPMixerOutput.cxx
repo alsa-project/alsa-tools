@@ -45,6 +45,11 @@ static char *labels_madi_qs[16] = {
 };
 
 
+static char *labels_aes[16] = {
+  "AES 1", "AES 2", "AES 3", "AES 4", "AES 5", "AES 6", "AES 7", "AES 8",
+  "AES 9", "AES 10", "AES 11", "AES 12", "AES 13", "AES 14", "AES 15", "AES 16"
+};
+
 static char *labels_raydat_ss[36] = {
   "A1.1", "A1.2", "A1.3", "A1.4", "A1.5", "A1.6", "A1.7", "A1.8",
   "A2.1", "A2.2", "A2.3", "A2.4", "A2.5", "A2.6", "A2.7", "A2.8",
@@ -226,6 +231,8 @@ void HDSPMixerOutput::setLabels()
 	    labels_input = labels_playback = labels_madi_qs;
 	    break;
 	}
+    } else if (HDSP_AES == type) {
+      labels_input = labels_playback = labels_aes;
     } else if (HDSPeAIO == type) {
       	switch (sm) {
 	case 0:

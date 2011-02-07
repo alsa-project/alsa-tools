@@ -77,6 +77,10 @@ int main(int argc, char **argv)
             printf("RME MADI found!\n");
             hdsp_cards[cards] = new HDSPMixerCard(HDSPeMADI, card);
             cards++;
+        } else if (!strncmp(name, "RME AES32", 8)) {
+            printf("RME AES32 or HDSPe AES found!\n");
+            hdsp_cards[cards] = new HDSPMixerCard(HDSP_AES, card);
+            cards++;
         } else if (!strncmp(name, "RME RayDAT", 10)) {
             printf("RME RayDAT found!\n");
             hdsp_cards[cards] = new HDSPMixerCard(HDSPeRayDAT, card);

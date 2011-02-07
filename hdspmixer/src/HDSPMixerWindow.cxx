@@ -46,6 +46,7 @@ static void readregisters_cb(void *arg)
 
     if ((HDSPeMADI == w->cards[w->current_card]->type) ||
 	(HDSPeAIO == w->cards[w->current_card]->type) ||
+	(HDSP_AES == w->cards[w->current_card]->type) ||
 	(HDSPeRayDAT == w->cards[w->current_card]->type)) {
       if ((err = snd_hwdep_ioctl(hw, SNDRV_HDSPM_IOCTL_GET_PEAK_RMS, (void *)&hdspm_peak_rms)) < 0) {
 	fprintf(stderr, "HwDep ioctl failed. Metering stopped\n");
@@ -550,6 +551,15 @@ void HDSPMixerWindow::restoreDefaults(int card)
       maxdest[0] = 32;
       maxdest[1] = 16;
       maxdest[2] = 8;
+      num_modes = 3;
+      break;
+    case HDSP_AES: /* these cards support full channel count at all modes */
+      chnls[0] = 16;
+      chnls[1] = 16;
+      chnls[2] = 16;
+      maxdest[0] = 16;
+      maxdest[1] = 16;
+      maxdest[2] = 16;
       num_modes = 3;
       break;
      case HDSPeAIO:
