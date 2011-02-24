@@ -2,6 +2,9 @@
  *   HDSPMixer
  *    
  *   Copyright (C) 2003 Thomas Charbonnel (thomas@undata.org)
+ *
+ *   Copyright (C) 2011 Adrian Knoth (adi@drcomp.erfurt.thur.de)
+ *                      Fredrik Lingvall (fredrik.lingvall@gmail.com)
  *    
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -23,7 +26,10 @@
 
 HDSPMixerAboutText::HDSPMixerAboutText(int x, int y, int w, int h):Fl_Widget(x, y, w, h, "About Text")
 {
-	text = "HDSPMixer " VERSION " (C) 2003 Thomas Charbonnel <thomas@@undata.org>\n (C) 2009 Florian Faber <faber@@faberman.de>\n (C) 2011 Adrian Knoth <adi@@drcomp.erfurt.thur.de>\n\n"
+	text = "HDSPMixer " VERSION " (C) 2003 Thomas Charbonnel <thomas@@undata.org>\n"
+		"(C) 2009 Florian Faber <faber@@faberman.de>\n"
+		"(C) 2011 Adrian Knoth <adi@@drcomp.erfurt.thur.de>\n"
+		"(C) 2011 Fredrik lingvall <fredrik.lingvall@@gmail.com>\n\n"
 	       "Bitmaps by Ralf Brunner\n"
 	       "Many thanks to Martin Björnsen, Matthias Carstens and Paul Davis\n\n"
 	       "This Program is free software; you can redistribute it and/or modify\n"

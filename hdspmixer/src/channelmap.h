@@ -1,5 +1,131 @@
+/*
+ *   HDSPMixer
+ *
+ *   Copyright (C) 2011 Adrian Knoth (adi@drcomp.erfurt.thur.de)
+ *                      Fredrik Lingvall (fredrik.lingvall@gmail.com)
+ *
+ *   This program is free software; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation; either version 2 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program; if not, write to the Free Software
+ *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
+ *
+ */
+
+
 #ifndef channelmap_H
 #define channelmap_H
+
+/***
+ *
+ * hdsp cards
+ *
+ ***/
+
+// Digiface
+
+static char dest_map_df_ss[14] = {
+	0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26
+};
+
+static char channel_map_df_ss[26] = {
+	0, 1, 2, 3, 4, 5, 6, 7,		/* ADAT 1 */
+	8, 9, 10, 11, 12, 13, 14, 15,	/* ADAT 2 */
+	16, 17, 18, 19, 20, 21, 22, 23, /* ADAT 3 */
+	24, 25				/* SPDIF */
+};
+
+// Multiface
+
+static char dest_map_mf_ss[10] = {
+	0, 2, 4, 6, 16, 18, 20, 22, 24, 26
+};
+
+static char channel_map_mf_ss[26] = {
+	0, 1, 2, 3, 4, 5, 6, 7,		/* Line in */
+	16, 17, 18, 19, 20, 21, 22, 23, /* ADAT */
+	24, 25,				/* SPDIF */
+	-1, -1, -1, -1, -1, -1, -1, -1
+};
+
+// Digiface/Multiface
+
+static char meter_map_ds[26] = {
+	0, 1, 2, 3, 8, 9, 10, 11, 16, 17, 18, 19,
+	24, 25,
+	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
+};
+
+static char channel_map_ds[26] = {
+	1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23,
+	24, 25,
+	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
+};
+
+static char dest_map_ds[8] = {
+	0, 2, 8, 10, 16, 18, 24, 26
+};
+
+// HDSP 9652
+
+static char dest_map_h9652_ss[13] = {
+	0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24
+};
+
+static char dest_map_h9652_ds[7] = {
+	0, 2, 8, 10, 16, 18, 24
+};
+
+// HDSP 9632
+
+static char dest_map_h9632_ss[8] = {
+	0, 2, 4, 6, 8, 10, 12, 14
+};
+
+static char dest_map_h9632_ds[6] = {
+	0, 2, 8, 10, 12, 14
+};
+
+static char dest_map_h9632_qs[4] = {
+	8, 10, 12, 14
+};
+
+static char channel_map_h9632_ss[16] = {
+	0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
+};
+
+static char channel_map_h9632_ds[12] = {
+	0, 1, 2, 3, 8, 9, 10, 11, 12, 13, 14, 15
+};
+
+static char channel_map_h9632_qs[8] = {
+	8, 9, 10, 11, 12, 13, 14, 15
+};
+
+
+/***
+ *
+ * hdspm cards
+ *
+ ***/
+
+// HDSPe MADI and MADIface
+
+static char dest_map_unity[32] = {
+	0,  2,  4,  6,  8, 10, 12, 14,
+	16, 18, 20, 22, 24, 26, 28, 30,
+	32, 34, 36, 38, 40, 42, 44, 46,
+	48, 50, 52, 54, 56, 58, 60, 62
+};
 
 static char channel_map_unity_ss[HDSPM_MAX_CHANNELS] = {
 	0, 1, 2, 3, 4, 5, 6, 7,
@@ -32,6 +158,32 @@ static char channel_map_unity_qs[HDSPM_MAX_CHANNELS] = {
 	-1, -1, -1, -1, -1, -1, -1, -1,
 	-1, -1, -1, -1, -1, -1, -1, -1,
 	-1, -1, -1, -1, -1, -1, -1, -1,
+};
+
+// HDSPe RayDAT
+
+static char dest_map_raydat_ss[18] = {
+	4,  6,  8, 10,
+	12, 14, 16, 18,
+	20, 22, 24, 26,
+	28, 30, 32, 34,
+	0,  2
+};
+
+static char dest_map_raydat_ds[10] = {
+	4,  6,
+	8, 10,
+	12, 14,
+	16, 18,
+	0,  2
+};
+
+static char dest_map_raydat_qs[6] = {
+	4,
+	6,
+	8,
+	10,
+	0,  2
 };
 
 static char channel_map_raydat_ss[HDSPM_MAX_CHANNELS] = {
@@ -78,10 +230,37 @@ static char channel_map_raydat_qs[HDSPM_MAX_CHANNELS] = {
 	-1, -1, -1, -1, -1, -1, -1, -1,
 };
 
+// HDSPe AIO
+
+static char dest_map_aio_ss[8] = {
+   0, // Analogue
+   8, // AES
+  10, // SPDIF
+  12, 14, 16, 18, // ADAT
+   6  // Phones
+};
+
+
+static char dest_map_aio_ds[6] = {
+   0, // Analogue
+   8, // AES
+  10, // SPDIF
+  12, 16, // ADAT
+   6  // Phones
+};
+
+static char dest_map_aio_qs[5] = {
+   0, // Analogue
+   8, // AES
+  10, // SPDIF
+  12, // ADAT
+   6  // Phone
+};
+
 static char channel_map_aio_in_ss[HDSPM_MAX_CHANNELS] = {
 	0, 1,			/* line in */
-	8, 9,			/* aes in, */
-	10, 11,			/* spdif in */
+	8, 9,			/* AES in, */
+	10, 11,			/* SPDIF in */
 	12, 13, 14, 15, 16, 17, 18, 19,	/* ADAT in */
 	-1, -1,
 	-1, -1, -1, -1, -1, -1, -1, -1,
@@ -94,8 +273,8 @@ static char channel_map_aio_in_ss[HDSPM_MAX_CHANNELS] = {
 
 static char channel_map_aio_out_ss[HDSPM_MAX_CHANNELS] = {
 	0, 1,			/* line out */
-	8, 9,			/* aes out */
-	10, 11,			/* spdif out */
+	8, 9,			/* AES out */
+	10, 11,			/* SPDIF out */
 	12, 13, 14, 15, 16, 17, 18, 19,	/* ADAT out */
 	6, 7,			/* phone out */
 	-1, -1, -1, -1, -1, -1, -1, -1,
@@ -108,9 +287,9 @@ static char channel_map_aio_out_ss[HDSPM_MAX_CHANNELS] = {
 
 static char channel_map_aio_in_ds[HDSPM_MAX_CHANNELS] = {
 	0, 1,			/* line in */
-	8, 9,			/* aes in */
-	10, 11,			/* spdif in */
-	12, 14, 16, 18,		/* adat in */
+	8, 9,			/* AES in */
+	10, 11,			/* SPDIF in */
+	12, 14, 16, 18,		/* ADAT in */
 	-1, -1, -1, -1, -1, -1,
 	-1, -1, -1, -1, -1, -1, -1, -1,
 	-1, -1, -1, -1, -1, -1, -1, -1,
@@ -122,9 +301,9 @@ static char channel_map_aio_in_ds[HDSPM_MAX_CHANNELS] = {
 
 static char channel_map_aio_out_ds[HDSPM_MAX_CHANNELS] = {
 	0, 1,			/* line out */
-	8, 9,			/* aes out */
-	10, 11,			/* spdif out */
-	12, 14, 16, 18,		/* adat out */
+	8, 9,			/* AES out */
+	10, 11,			/* SPDIF out */
+	12, 14, 16, 18,		/* ADAT out */
 	6, 7,			/* phone out */
 	-1, -1, -1, -1,
 	-1, -1, -1, -1, -1, -1, -1, -1,
@@ -137,9 +316,9 @@ static char channel_map_aio_out_ds[HDSPM_MAX_CHANNELS] = {
 
 static char channel_map_aio_in_qs[HDSPM_MAX_CHANNELS] = {
 	0, 1,			/* line in */
-	8, 9,			/* aes in */
-	10, 11,			/* spdif in */
-	12, 16,			/* adat in */
+	8, 9,			/* AES in */
+	10, 11,			/* SPDIF in */
+	12, 16,			/* ADAT in */
 	-1, -1, -1, -1, -1, -1, -1, -1,
 	-1, -1, -1, -1, -1, -1, -1, -1,
 	-1, -1, -1, -1, -1, -1, -1, -1,
@@ -151,11 +330,34 @@ static char channel_map_aio_in_qs[HDSPM_MAX_CHANNELS] = {
 
 static char channel_map_aio_out_qs[HDSPM_MAX_CHANNELS] = {
 	0, 1,			/* line out */
-	8, 9,			/* aes out */
-	10, 11,			/* spdif out */
-	12, 16,			/* adat out */
+	8, 9,			/* AES out */
+	10, 11,			/* SPDIF out */
+	12, 16,			/* ADAT out */
 	6, 7,			/* phone out */
 	-1, -1, -1, -1, -1, -1,
+	-1, -1, -1, -1, -1, -1, -1, -1,
+	-1, -1, -1, -1, -1, -1, -1, -1,
+	-1, -1, -1, -1, -1, -1, -1, -1,
+	-1, -1, -1, -1, -1, -1, -1, -1,
+	-1, -1, -1, -1, -1, -1, -1, -1,
+	-1, -1, -1, -1, -1, -1, -1, -1
+};
+
+// HDSP AES32 and HDSPe AES
+
+static char dest_map_aes32[8] = {
+  0,  2,  4,  6,  8, 10, 12, 14
+};
+
+static char channel_map_aes32[HDSPM_MAX_CHANNELS] = {
+	0, 1,			/* AES 1 */
+	2, 3,			/* AES 2 */
+	4, 5,			/* AES 3 */
+	6, 7,			/* AES 4 */
+	8, 9,			/* AES 5 */
+	10, 11,			/* AES 6 */
+	12, 13,			/* AES 7 */
+	14, 15,			/* AES 8 */
 	-1, -1, -1, -1, -1, -1, -1, -1,
 	-1, -1, -1, -1, -1, -1, -1, -1,
 	-1, -1, -1, -1, -1, -1, -1, -1,

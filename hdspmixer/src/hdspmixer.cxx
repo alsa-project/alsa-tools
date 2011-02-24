@@ -3,6 +3,9 @@
  *    
  *   Copyright (C) 2003 Thomas Charbonnel (thomas@undata.org)
  *    
+ *   Copyright (C) 2011 Adrian Knoth (adi@drcomp.erfurt.thur.de)
+ *                      Fredrik Lingvall (fredrik.lingvall@gmail.com)
+ *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
  *   the Free Software Foundation; either version 2 of the License, or

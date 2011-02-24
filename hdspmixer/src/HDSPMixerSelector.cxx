@@ -3,6 +3,9 @@
  *    
  *   Copyright (C) 2003 Thomas Charbonnel (thomas@undata.org)
  *    
+ *   Copyright (C) 2011 Adrian Knoth (adi@drcomp.erfurt.thur.de)
+ *                      Fredrik Lingvall (fredrik.lingvall@gmail.com)
+ *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
  *   the Free Software Foundation; either version 2 of the License, or
@@ -44,7 +47,7 @@ static char *destinations_madi_qs[8] = {
   "9+10", "11+12", "13+14", "15+16"
 };
 
-static char *destinations_aes[8] = {
+static char *destinations_aes32[8] = {
   "AES 1+2", "AES 3+4", "AES 5+6", "AES 7+8",
   "AES 9+10", "AES 11+12", "AES 13+14", "AES 15+16",
 };
@@ -304,7 +307,7 @@ void HDSPMixerSelector::setLabels()
 	}
     } else if (HDSP_AES == type) {
       max_dest = 8;
-      destinations = destinations_aes;
+      destinations = destinations_aes32;
     } else if (HDSPeAIO == type) {
 	switch (sm) {
 	case 0:

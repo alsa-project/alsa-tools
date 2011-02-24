@@ -45,7 +45,7 @@ static char *labels_madi_qs[16] = {
 };
 
 
-static char *labels_aes[16] = {
+static char *labels_aes32[16] = {
   "AES 1", "AES 2", "AES 3", "AES 4", "AES 5", "AES 6", "AES 7", "AES 8",
   "AES 9", "AES 10", "AES 11", "AES 12", "AES 13", "AES 14", "AES 15", "AES 16"
 };
@@ -232,7 +232,7 @@ void HDSPMixerOutput::setLabels()
 	    break;
 	}
     } else if (HDSP_AES == type) {
-      labels_input = labels_playback = labels_aes;
+      labels_input = labels_playback = labels_aes32;
     } else if (HDSPeAIO == type) {
       	switch (sm) {
 	case 0:

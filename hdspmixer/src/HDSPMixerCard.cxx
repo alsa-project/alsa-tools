@@ -2,6 +2,9 @@
  *   HDSPMixer
  *    
  *   Copyright (C) 2003 Thomas Charbonnel (thomas@undata.org)
+ *
+ *   Copyright (C) 2011 Adrian Knoth (adi@drcomp.erfurt.thur.de)
+ *                      Fredrik Lingvall (fredrik.lingvall@gmail.com)
  *    
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -20,144 +23,6 @@
 
 #pragma implementation
 #include "HDSPMixerCard.h"
-
-static char channel_map_df_ss[26] = {
-    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17,
-    18, 19, 20, 21, 22, 23, 24, 25
-};
-
-static char channel_map_mf_ss[26] = {
-    0, 1, 2, 3, 4, 5, 6, 7,
-    16, 17, 18, 19, 20, 21, 22, 23, 
-    24, 25,
-    -1, -1, -1, -1, -1, -1, -1, -1
-};
-
-static char meter_map_ds[26] = {
-    0, 1, 2, 3, 8, 9, 10, 11, 16, 17, 18, 19, 
-    24, 25,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
-};
-
-static char channel_map_ds[26] = {
-    1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 
-    24, 25,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
-};
-
-static char dest_map_madi_ss[32] = {
-  0,  2,  4,  6,  8, 10, 12, 14,
- 16, 18, 20, 22, 24, 26, 28, 30,
- 32, 34, 36, 38, 40, 42, 44, 46,
- 48, 50, 52, 54, 56, 58, 60, 62
-};
-
-static char channel_map_aes[16] = {
-    0, 1, 2, 3, 4, 5, 6, 7,
-    9, 10, 11, 12, 13, 14, 15
-};
-
-
-static char dest_map_aes[8] = {
-  0,  2,  4,  6,  8, 10, 12, 14
-};
-
-
-static char dest_map_raydat_ss[18] = {
-   4,  6,  8, 10, 
-  12, 14, 16, 18, 
-  20, 22, 24, 26, 
-  28, 30, 32, 34,
-   0,  2
-};
-
-static char dest_map_raydat_ds[10] = {
-   4,  6, 
-   8, 10, 
-  12, 14, 
-  16, 18,
-   0,  2
-};
-
-static char dest_map_raydat_qs[6] = {
-   4,  
-   6,
-   8,
-  10,
-   0,  2
-};
-
-
-
-static char dest_map_aio_ss[8] = {
-   0, // Analogue
-   8, // AES 
-  10, // SPDIF
-  12, 14, 16, 18, // ADAT
-   6  // Phones 
-};
-
-
-static char dest_map_aio_ds[6] = {
-   0, // Analogue 
-   8, // AES
-  10, // SPDIF
-  12, 16, // ADAT
-   6  // Phones
-};
-
-static char dest_map_aio_qs[5] = {
-   0, // Analogue 
-   8, // AES
-  10, // SPDIF
-  12, // ADAT
-   6  // Phone
-};
-
-
-static char dest_map_mf_ss[10] = {
-    0, 2, 4, 6, 16, 18, 20, 22, 24, 26 
-};
-
-static char dest_map_ds[8] = {
-    0, 2, 8, 10, 16, 18, 24, 26 
-};
-
-static char dest_map_df_ss[14] = {
-    0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26 
-};
-
-static char dest_map_h9652_ss[13] = {
-    0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24 
-};
-
-static char dest_map_h9652_ds[7] = {
-    0, 2, 8, 10, 16, 18, 24 
-};
-
-static char dest_map_h9632_ss[8] = {
-    0, 2, 4, 6, 8, 10, 12, 14
-};
-
-static char dest_map_h9632_ds[6] = {
-    0, 2, 8, 10, 12, 14
-};
-
-static char dest_map_h9632_qs[4] = {
-    8, 10, 12, 14
-};
-
-static char channel_map_h9632_ss[16] = {
-    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
-};
-
-static char channel_map_h9632_ds[12] = {
-    0, 1, 2, 3, 8, 9, 10, 11, 12, 13, 14, 15
-};
-
-static char channel_map_h9632_qs[8] = {
-    8, 9, 10, 11, 12, 13, 14, 15
-};
 
 static void alsactl_cb(snd_async_handler_t *handler)
 {
@@ -426,19 +291,19 @@ void HDSPMixerCard::adjustSettings() {
       case 0: // SS
 	channels_input = channels_playback = 64;
 	channel_map_input = channel_map_playback = channel_map_unity_ss;
-	dest_map = dest_map_madi_ss;
+	dest_map = dest_map_unity;
 	meter_map_input = meter_map_playback = channel_map_unity_ss;
 	break;
       case 1: // DS
 	channels_input = channels_playback = 32;
 	channel_map_input = channel_map_playback = channel_map_unity_ss;
-	dest_map = dest_map_madi_ss;
+	dest_map = dest_map_unity;
 	meter_map_input = meter_map_playback = channel_map_unity_ss;
 	break;
       case 2: // QS
 	channels_input = channels_playback = 16;
 	channel_map_input = channel_map_playback = channel_map_unity_ss;
-	dest_map = dest_map_madi_ss;
+	dest_map = dest_map_unity;
 	meter_map_input = meter_map_playback = channel_map_unity_ss;
 	break;
       }
@@ -467,7 +332,7 @@ void HDSPMixerCard::adjustSettings() {
 	break;
       case 2: // QS
 	channels_input = 8;
-	channels_playback =10;
+	channels_playback = 10;
 	channel_map_input = channel_map_aio_in_qs;
 	channel_map_playback = channel_map_aio_out_qs;
 	dest_map = dest_map_aio_qs;
@@ -477,16 +342,16 @@ void HDSPMixerCard::adjustSettings() {
       }
 
     } else if (HDSP_AES == type) {
-      playbacks_offset = 64; /* FL not sure about this one? */
+      playbacks_offset = 64; /* not sure about this one? */
 
       /* 16 channels for all modes */
       channels_input = 16;
       channels_playback = 16;
-      channel_map_input = channel_map_aes;
-      channel_map_playback = channel_map_aes;
-      dest_map = dest_map_aes;
-      meter_map_input = channel_map_aes;
-      meter_map_playback = channel_map_aes;
+      channel_map_input = channel_map_aes32;
+      channel_map_playback = channel_map_aes32;
+      dest_map = dest_map_aes32;
+      meter_map_input = channel_map_aes32;
+      meter_map_playback = channel_map_aes32;
 
     } else if (HDSPeRayDAT == type) {
       playbacks_offset = 64;
@@ -508,7 +373,7 @@ void HDSPMixerCard::adjustSettings() {
 	break;
       case 2: // QS
 	channels_input = 12;
-	channels_playback =12;
+	channels_playback = 12;
 	channel_map_input = channel_map_playback = channel_map_raydat_qs;
 	dest_map = dest_map_raydat_qs;
 	meter_map_input = meter_map_playback = channel_map_raydat_qs;
