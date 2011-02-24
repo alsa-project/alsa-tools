@@ -41,8 +41,9 @@ HDSPMixerAboutText::HDSPMixerAboutText(int x, int y, int w, int h):Fl_Widget(x, 
 	       "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n"
 	       "See the GNU General Public License for more details.\n\n"
 	       "You should have received a copy of the GNU General Public License\n"
-	       "along with this program; if not, write to the Free Software\n"
-	       "Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.\n";
+	       "along with this program; if not, write to the\n"
+	       "Free Software Foundation, Inc., 51 Franklin Street, Suite 500,\n"
+	       "Boston, MA 02110-1335, USA.\n";
 }
 
 void HDSPMixerAboutText::draw()
