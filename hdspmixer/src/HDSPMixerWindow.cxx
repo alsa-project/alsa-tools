@@ -219,7 +219,7 @@ static void restore_defaults_cb(Fl_Widget *widget, void *arg)
     snprintf(w->window_title, FL_PATH_MAX, "HDSPMixer");
     w->label(w->window_title);
     w->resetMixer();
-    while (w->cards[i] != NULL) {
+    while (i < MAX_CARDS && w->cards[i] != NULL) {
 	w->restoreDefaults(i++);
     }
     w->inputs->buttons->presets->preset_change(1);
@@ -408,7 +408,7 @@ void HDSPMixerWindow::load()
     if ((file = fopen(file_name, "r")) == NULL) {
 	int i = 0;
 	fl_alert("Error opening file %s for reading", file_name);
-	while (cards[i] != NULL) {
+	while (i < MAX_CARDS && cards[i] != NULL) {
 	    restoreDefaults(i++);
 	}
 	inputs->buttons->presets->preset_change(1);	
@@ -718,7 +718,7 @@ HDSPMixerWindow::HDSPMixerWindow(int x, int y, int w, int h, const char *label, 
     setup = new HDSPMixerSetup(400, 260, "Level Meters Setup", this);
     about = new HDSPMixerAbout(360, 300, "About HDSPMixer", this);
     i = 0;
-    while (cards[i] != NULL) {
+    while (i < MAX_CARDS && cards[i] != NULL) {
 	cards[i++]->initializeCard(this);
     }
     size_range(MIN_WIDTH, MIN_HEIGHT, cards[current_card]->window_width, cards[current_card]->window_height);
@@ -729,7 +729,7 @@ HDSPMixerWindow::HDSPMixerWindow(int x, int y, int w, int h, const char *label, 
     } else {
 	printf("Initializing default presets\n");
 	i = 0;
-	while (cards[i] != NULL) {
+	while (i < MAX_CARDS && cards[i] != NULL) {
 	    restoreDefaults(i++);
 	}
 	inputs->buttons->presets->preset_change(1);
@@ -738,7 +738,7 @@ HDSPMixerWindow::HDSPMixerWindow(int x, int y, int w, int h, const char *label, 
     Fl::add_handler(handler_cb);
     Fl::add_timeout(0.030, readregisters_cb, this);
     i = 0;
-    while (cards[i] != NULL)
+    while (i < MAX_CARDS && cards[i] != NULL)
       inputs->buttons->cardselector->ActivateCard (i++);
 }
 

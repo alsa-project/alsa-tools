@@ -47,6 +47,8 @@
 
 #define PAN_WIDTH 28
 
+#define MAX_CARDS	3
+
 typedef unsigned long long int int64;
 
 #endif
