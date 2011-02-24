@@ -716,7 +716,7 @@ HDSPMixerWindow::HDSPMixerWindow(int x, int y, int w, int h, const char *label, 
     scroll->end();
     end();
     setup = new HDSPMixerSetup(400, 260, "Level Meters Setup", this);
-    about = new HDSPMixerAbout(360, 260, "About HDSPMixer", this);
+    about = new HDSPMixerAbout(360, 300, "About HDSPMixer", this);
     i = 0;
     while (cards[i] != NULL) {
 	cards[i++]->initializeCard(this);
