@@ -1,5 +1,5 @@
 /* XPM */
-char * matrix_grey_xpm[] = {
+char const * matrix_grey_xpm[] = {
 "32 12 22 1",
 " 	c None",
 ".	c #A0A0A0",

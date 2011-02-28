@@ -1,5 +1,5 @@
 /* XPM */
-char * iomixer_r_xpm[] = {
+char const * iomixer_r_xpm[] = {
 "36 253 257 2",
 "  	c None",
 ". 	c #000000",

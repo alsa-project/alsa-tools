@@ -22,7 +22,7 @@
 #include "HDSPMixerAbout.h"
 
 
-HDSPMixerAbout::HDSPMixerAbout(int w, int h, char *label, HDSPMixerWindow *win):Fl_Double_Window(w, h, label)
+HDSPMixerAbout::HDSPMixerAbout(int w, int h, char const *label, HDSPMixerWindow *win):Fl_Double_Window(w, h, label)
 {
     basew = win;
     text = new HDSPMixerAboutText(10,10,w-20,h-20);

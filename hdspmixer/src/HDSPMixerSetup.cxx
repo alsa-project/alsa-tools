@@ -91,7 +91,7 @@ static void rmsplus3_cb(Fl_Widget *widget, void *arg)
 }
 
 
-HDSPMixerSetup::HDSPMixerSetup(int w, int h, char *label, HDSPMixerWindow *win):Fl_Double_Window(w, h, label)
+HDSPMixerSetup::HDSPMixerSetup(int w, int h, char const *label, HDSPMixerWindow *win):Fl_Double_Window(w, h, label)
 {
     basew = win;
     plm = new Fl_Group(10, 25, 380, 60, "Peak Level Meters");    

@@ -1,5 +1,5 @@
 /* XPM */
-char * peak_xpm[] = {
+char const * peak_xpm[] = {
 "8 5 257 2",
 "  	c None",
 ". 	c #61FF48",

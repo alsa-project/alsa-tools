@@ -1,5 +1,5 @@
 /* XPM */
-char * level_xpm[] = {
+char const * level_xpm[] = {
 "8 139 257 2",
 "  	c None",
 ". 	c #149003",

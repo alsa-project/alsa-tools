@@ -21,7 +21,7 @@
 #pragma implementation
 #include "HDSPMixerOutput.h"
 
-static char *labels_madi_ss[64] = {
+static char const *labels_madi_ss[64] = {
    "1",  "2",  "3",  "4",  "5",  "6",  "7",  "8",
    "9", "10", "11", "12", "13", "14", "15", "16", 
   "17", "18", "19", "20", "21", "22", "23", "24", 
@@ -32,25 +32,25 @@ static char *labels_madi_ss[64] = {
   "57", "58", "59", "60", "61", "62", "63", "64"
 };
 
-static char *labels_madi_ds[64] = {
+static char const *labels_madi_ds[64] = {
    "1",  "2",  "3",  "4",  "5",  "6",  "7",  "8",
    "9", "10", "11", "12", "13", "14", "15", "16", 
   "17", "18", "19", "20", "21", "22", "23", "24", 
   "25", "26", "27", "28", "29", "30", "31", "32", 
 };
 
-static char *labels_madi_qs[16] = {
+static char const *labels_madi_qs[16] = {
    "1",  "2",  "3",  "4",  "5",  "6",  "7",  "8",
    "9", "10", "11", "12", "13", "14", "15", "16", 
 };
 
 
-static char *labels_aes32[16] = {
+static char const *labels_aes32[16] = {
   "AES 1", "AES 2", "AES 3", "AES 4", "AES 5", "AES 6", "AES 7", "AES 8",
   "AES 9", "AES 10", "AES 11", "AES 12", "AES 13", "AES 14", "AES 15", "AES 16"
 };
 
-static char *labels_raydat_ss[36] = {
+static char const *labels_raydat_ss[36] = {
   "A1.1", "A1.2", "A1.3", "A1.4", "A1.5", "A1.6", "A1.7", "A1.8",
   "A2.1", "A2.2", "A2.3", "A2.4", "A2.5", "A2.6", "A2.7", "A2.8",
   "A3.1", "A3.2", "A3.3", "A3.4", "A3.5", "A3.6", "A3.7", "A3.8",
@@ -59,7 +59,7 @@ static char *labels_raydat_ss[36] = {
   "SP.L", "SP.R"
 };
 
-static char *labels_raydat_ds[20] = {
+static char const *labels_raydat_ds[20] = {
   "A1.1", "A1.2", "A1.3", "A1.4",
   "A2.1", "A2.2", "A2.3", "A2.4",
   "A3.1", "A3.2", "A3.3", "A3.4",
@@ -68,7 +68,7 @@ static char *labels_raydat_ds[20] = {
   "SP.L", "SP.R"
 };
 
-static char *labels_raydat_qs[12] = {
+static char const *labels_raydat_qs[12] = {
   "A1.1", "A1.2",
   "A2.1", "A2.2",
   "A3.1", "A3.2",
@@ -78,7 +78,7 @@ static char *labels_raydat_qs[12] = {
 };
 
 
-static char *labels_aio_ss_input[14] = {
+static char const *labels_aio_ss_input[14] = {
   "AN 1",  "AN 2",
   "SP.L", "SP.R",
   "AES.L",  "AES.R",
@@ -86,7 +86,7 @@ static char *labels_aio_ss_input[14] = {
   "A 5", "A 6", "A 7", "A 8"
 };
 
-static char *labels_aio_ss_playback[16] = {
+static char const *labels_aio_ss_playback[16] = {
   "AN 1",  "AN 2",
   "SP.L", "SP.R",
   "AES.L",  "AES.R",
@@ -95,14 +95,14 @@ static char *labels_aio_ss_playback[16] = {
   "PH.L", "PH.R"
 };
 
-static char *labels_aio_ds_input[10] = {
+static char const *labels_aio_ds_input[10] = {
   "AN 1",  "AN 2",  
   "SP.L", "SP.R",
   "AES.L",  "AES.R",
   "A 1", "A 2", "A 3", "A 4"
 };
 
-static char *labels_aio_ds_playback[12] = {
+static char const *labels_aio_ds_playback[12] = {
   "AN 1",  "AN 2",  
   "SP.L", "SP.R",
   "AES.L",  "AES.R",
@@ -110,14 +110,14 @@ static char *labels_aio_ds_playback[12] = {
   "PH.L", "PH.R"
  };
 
-static char *labels_aio_qs_input[8] = {
+static char const *labels_aio_qs_input[8] = {
   "AN 1",  "AN 2",
   "SP.L", "SP.R",
   "AES.L",  "AES.R",
   "A 1", "A 2"
 };
 
-static char *labels_aio_qs_playback[10] = {
+static char const *labels_aio_qs_playback[10] = {
   "AN 1",  "AN 2",
   "SP.L", "SP.R",
   "AES.L",  "AES.R",
@@ -126,44 +126,44 @@ static char *labels_aio_qs_playback[10] = {
 };
 
 
-static char *labels_mf_ss[20] = {
+static char const *labels_mf_ss[20] = {
     "AN 1", "AN 2", "AN 3", "AN 4", "AN 5", "AN 6", "AN 7", "AN 8",
     "A 1", "A 2", "A 3", "A 4", "A 5", "A 6", "A 7", "A 8",
     "SP.L", "SP.R", "AN.L", "AN.R"
 };
 
-static char *labels_mf_ds[16] = {
+static char const *labels_mf_ds[16] = {
     "AN 1", "AN 2", "AN 3", "AN 4", "AN 5", "AN 6", "AN 7", "AN 8",
     "A 1", "A 2", "A 3", "A 4",
     "SP.L", "SP.R", "AN.L", "AN.R"
 };
 
 
-static char *labels_df_ss[28] = {
+static char const *labels_df_ss[28] = {
     "A1 1", "A1 2", "A1 3", "A1 4", "A1 5", "A1 6", "A1 7", "A1 8",
     "A2 1", "A2 2", "A2 3", "A2 4", "A2 5", "A2 6", "A2 7", "A2 8",
     "A3 1", "A3 2", "A3 3", "A3 4", "A3 5", "A3 6", "A3 7", "A3 8",
     "SP.L", "SP.R", "AN.L", "AN.R"
 };
 
-static char *labels_df_ds[16] = {
+static char const *labels_df_ds[16] = {
     "A1 1", "A1 2", "A1 3", "A1 4",
     "A2 1", "A2 2", "A2 3", "A2 4",
     "A3 1", "A3 2", "A3 3", "A3 4",
     "SP.L", "SP.R", "AN.L", "AN.R"
 };
 
-static char *labels_9632_ss[16] = {
+static char const *labels_9632_ss[16] = {
     "A 1", "A 2", "A 3", "A 4", "A 5", "A 6", "A 7", "A 8",
     "SP.L", "SP.R", "AN 1", "AN 2", "AN 3", "AN 4", "AN 5", "AN 6"
 };
 
-static char *labels_9632_ds[12] = {
+static char const *labels_9632_ds[12] = {
     "A 1", "A 2", "A 3", "A 4",
     "SP.L", "SP.R", "AN 1", "AN 2", "AN 3", "AN 4", "AN 5", "AN 6"
 };
 
-static char *labels_9632_qs[8] = {
+static char const *labels_9632_qs[8] = {
     "SP.L", "SP.R", "AN 1", "AN 2", "AN 3", "AN 4", "AN 5", "AN 6"
 };
 

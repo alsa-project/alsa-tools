@@ -1,5 +1,5 @@
 /* XPM */
-char * matrix_mute_xpm[] = {
+char const * matrix_mute_xpm[] = {
 "32 12 25 1",
 " 	c None",
 ".	c #C5C5BD",

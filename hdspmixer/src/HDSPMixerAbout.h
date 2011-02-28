@@ -36,7 +36,7 @@ private:
     HDSPMixerAboutText *text;
     HDSPMixerWindow *basew;
 public:
-    HDSPMixerAbout(int w, int h, char *label, HDSPMixerWindow *win);
+    HDSPMixerAbout(int w, int h, char const *label, HDSPMixerWindow *win);
     int handle(int e);
 };
 

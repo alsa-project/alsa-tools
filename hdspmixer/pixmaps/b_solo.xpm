@@ -1,5 +1,5 @@
 /* XPM */
-char * b_solo_xpm[] = {
+char const * b_solo_xpm[] = {
 "30 22 53 1",
 " 	c None",
 ".	c #7C2000",

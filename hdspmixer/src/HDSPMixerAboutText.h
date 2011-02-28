@@ -32,7 +32,7 @@ public:
     HDSPMixerAboutText(int x, int y, int w, int h);
     void draw();
 private:
-    char *text;
+    char const *text;
 };
 
 #endif

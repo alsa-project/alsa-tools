@@ -1,5 +1,5 @@
 /* XPM */
-char * b_mute_xpm[] = {
+char const * b_mute_xpm[] = {
 "30 22 52 1",
 " 	c None",
 ".	c #DE8C00",

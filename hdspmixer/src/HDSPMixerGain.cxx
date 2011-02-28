@@ -33,7 +33,7 @@ void HDSPMixerGain::draw()
     fl_draw(text, x(), y(), w(), h(), FL_ALIGN_CENTER);
 }
 
-void HDSPMixerGain::setText(char *txt)
+void HDSPMixerGain::setText(char const *txt)
 {
     strncpy(text, txt, 10);
     redraw();

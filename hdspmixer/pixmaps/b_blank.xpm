@@ -1,5 +1,5 @@
 /* XPM */
-char * b_blank_xpm[] = {
+char const * b_blank_xpm[] = {
 "13 13 13 1",
 " 	c None",
 ".	c #1AA00D",

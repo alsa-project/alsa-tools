@@ -1,5 +1,5 @@
 /* XPM */
-char * monitor_xpm[] = {
+char const * monitor_xpm[] = {
 "76 253 257 2",
 "  	c None",
 ". 	c #D1E0E5",

@@ -1,5 +1,5 @@
 /* XPM */
-char * b_card1_xpm[] = {
+char const * b_card1_xpm[] = {
 "13 13 14 1",
 " 	c None",
 ".	c #8D8F0F",

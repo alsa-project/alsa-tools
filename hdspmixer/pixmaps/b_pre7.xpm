@@ -1,5 +1,5 @@
 /* XPM */
-char * b_pre7_xpm[] = {
+char const * b_pre7_xpm[] = {
 "13 13 14 1",
 " 	c None",
 ".	c #1AA00D",

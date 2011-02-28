@@ -1,5 +1,5 @@
 /* XPM */
-char * buttons_xpm[] = {
+char const * buttons_xpm[] = {
 "76 253 257 2",
 "  	c None",
 ". 	c #C08480",

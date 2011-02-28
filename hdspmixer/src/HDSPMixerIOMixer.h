@@ -51,7 +51,7 @@ class HDSPMixerMeter;
 class HDSPMixerIOMixer:public Fl_Group
 {
 private:
-    char **p_iomixer_xpm;
+    char const **p_iomixer_xpm;
     int channel_num, relative_num, mixer_type;
 	std::stringstream channel_name;
     void update_child(Fl_Widget &widget);

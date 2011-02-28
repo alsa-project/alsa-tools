@@ -39,7 +39,7 @@ class HDSPMixerIOMixer;
 class HDSPMixerSelector:public Fl_Menu_
 {
 private:
-    char **destinations;
+    char const **destinations;
     HDSPMixerWindow *basew;
 public:
     int max_dest;

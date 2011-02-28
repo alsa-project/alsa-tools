@@ -39,7 +39,7 @@ public:
     char text[10];
     HDSPMixerGain(int x, int y, int parenttype);
     void draw();
-    void setText(char *txt);
+    void setText(char const *txt);
 };
 
 #endif

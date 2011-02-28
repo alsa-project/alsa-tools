@@ -1,5 +1,5 @@
 /* XPM */
-char * Slider2_xpm[] = {
+char const * Slider2_xpm[] = {
 "2 13 257 2",
 "  	c None",
 ". 	c #7DF846",

@@ -1,5 +1,5 @@
 /* XPM */
-char * b_zlm_xpm[] = {
+char const * b_zlm_xpm[] = {
 "13 13 11 1",
 " 	c None",
 ".	c #000D00",

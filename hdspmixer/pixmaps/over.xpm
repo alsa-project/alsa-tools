@@ -1,5 +1,5 @@
 /* XPM */
-char * over_xpm[] = {
+char const * over_xpm[] = {
 "30 13 257 2",
 "  	c None",
 ". 	c #000000",

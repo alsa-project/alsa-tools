@@ -1,5 +1,5 @@
 /* XPM */
-char * empty_linux_xpm[] = {
+char const * empty_linux_xpm[] = {
 "76 253 1535 2",
 "  	c None",
 ". 	c #404840",

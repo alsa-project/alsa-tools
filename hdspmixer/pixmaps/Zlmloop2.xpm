@@ -1,5 +1,5 @@
 /* XPM */
-char * Zlmloop2_xpm[] = {
+char const * Zlmloop2_xpm[] = {
 "76 253 257 2",
 "  	c None",
 ". 	c #D1E0E5",

@@ -1,5 +1,5 @@
 /* XPM */
-char * b_save_xpm[] = {
+char const * b_save_xpm[] = {
 "13 13 14 1",
 " 	c None",
 ".	c #5C7B1B",
