@@ -220,7 +220,7 @@ void HDSPMixerOutput::setLabels()
         return;
     };
     
-    if (type == Digiface) {
+    if (type == Digiface || type == H9652) {
         if (sm)
             labels_input = labels_playback = labels_df_ds;
         else
