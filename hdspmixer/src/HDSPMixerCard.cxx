@@ -211,14 +211,14 @@ void HDSPMixerCard::adjustSettings() {
 	switch (speed_mode) {
 	case 0:
 	    channels_input = 18;
-	    channels_playback = 20;
+	    channels_playback = 18;
 	    channel_map_input = channel_map_playback = channel_map_mf_ss;
 	    dest_map = dest_map_mf_ss;
 	    meter_map_input = meter_map_playback = channel_map_mf_ss;
 	    break;
 	case 1:
 	    channels_input = 14;
-	    channels_playback = 16;
+	    channels_playback = 14;
 	    channel_map_input = channel_map_playback = meter_map_ds;
 	    dest_map = dest_map_ds;
 	    meter_map_input = meter_map_playback = meter_map_ds;
