@@ -344,7 +344,7 @@ void HDSPMixerWindow::save()
 	inputs->buttons->presets->save_preset(current_preset+1);
     }
     for (int speed = 0; speed < 3; ++speed) {
-	for (int card = 0; card < 3; ++card) {
+	for (int card = 0; card < MAX_CARDS; ++card) {
 	    for (int preset = 0; preset < 8; ++preset) {
 		for (int channel = 0; channel < HDSP_MAX_CHANNELS; ++channel) {
 		    /* inputs pans and volumes */
@@ -440,7 +440,7 @@ void HDSPMixerWindow::load()
 	return;
     }
     for (int speed = 0; speed < 3; ++speed) {
-	for (int card = 0; card < 3; ++card) {
+	for (int card = 0; card < MAX_CARDS; ++card) {
 	    for (int preset = 0; preset < 8; ++preset) {
 		for (int channel = 0; channel < HDSP_MAX_CHANNELS; ++channel) {
 		    /* inputs pans and volumes */
@@ -705,7 +705,7 @@ HDSPMixerWindow::HDSPMixerWindow(int x, int y, int w, int h, const char *label, 
 	    prefs->flush();
 	}	
     }
-    for (int j = 0; j < 3; ++j) {
+    for (int j = 0; j < MAX_CARDS; j++) {
 	for (int i = 0; i < 8; ++i) {
 	    data[j][0][i] = new HDSPMixerPresetData();
 	    data[j][1][i] = new HDSPMixerPresetData();
