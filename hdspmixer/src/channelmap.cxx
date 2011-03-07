@@ -54,15 +54,18 @@ char channel_map_mf_ss[26] = {
 	0, 1, 2, 3, 4, 5, 6, 7,		/* Line in */
 	16, 17, 18, 19, 20, 21, 22, 23, /* ADAT */
 	24, 25,				/* SPDIF */
-	-1, -1, -1, -1, -1, -1, -1, -1
+	26, 27,             /* Phones L+R, only a destination channel */
+	-1, -1, -1, -1, -1, -1
 };
 
 // Digiface/Multiface
 
 char meter_map_ds[26] = {
-	0, 1, 2, 3, 8, 9, 10, 11, 16, 17, 18, 19,
-	24, 25,
-	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
+	0, 1, 2, 3, 8, 9, 10, 11, /* analog 1-8 on Multiface, ADAT1+2 on Digiface*/
+	16, 17, 18, 19, /* ADAT on Multiface, ADAT3 on Digiface */
+	24, 25, /* SPDIF */
+	26, 27, /* Headphones */
+	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1
 };
 
 char channel_map_ds[26] = {
