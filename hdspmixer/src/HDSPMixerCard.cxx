@@ -229,7 +229,9 @@ void HDSPMixerCard::adjustSettings() {
             /* should never happen */
             break;
         }
-    } else if (type == Digiface) {
+    }
+    
+    if (type == Digiface) {
         switch (speed_mode) {
         case 0:
             channels_input = channels_playback = 26;
@@ -249,7 +251,9 @@ void HDSPMixerCard::adjustSettings() {
             /* should never happen */
             break;
         }
-    } else if (type == H9652) {
+    }
+
+    if (type == H9652) {
         switch (speed_mode) {
         case 0:
             channels_input = channels_playback = 26;
@@ -269,7 +273,9 @@ void HDSPMixerCard::adjustSettings() {
             /* should never happen */
             break;
         }
-    } else if (type == H9632) {
+    }
+
+    if (type == H9632) {
         switch (speed_mode) {
         case 0:
             channels_input = channels_playback = 12 + ((h9632_aeb.aebi || h9632_aeb.aebo) ? 4 : 0);
@@ -293,7 +299,9 @@ void HDSPMixerCard::adjustSettings() {
             meter_map_input = meter_map_playback = channel_map_h9632_qs;
             break;
         }
-    } else if (HDSPeMADI == type) {
+    }
+
+    if (HDSPeMADI == type) {
         playbacks_offset = 64;
 
         switch (speed_mode) {
@@ -320,7 +328,9 @@ void HDSPMixerCard::adjustSettings() {
             break;
         }
 
-    } else if (HDSPeAIO == type) {
+    }
+
+    if (HDSPeAIO == type) {
         playbacks_offset = 64;
 
         switch (speed_mode) {
@@ -356,7 +366,9 @@ void HDSPMixerCard::adjustSettings() {
             break;
         }
 
-    } else if (HDSP_AES == type) {
+    }
+
+    if (HDSP_AES == type) {
         playbacks_offset = 64; /* not sure about this one? */
 
         /* 16 channels for all modes */
@@ -369,7 +381,9 @@ void HDSPMixerCard::adjustSettings() {
         meter_map_input = channel_map_aes32;
         meter_map_playback = channel_map_aes32;
 
-    } else if (HDSPeRayDAT == type) {
+    }
+
+    if (HDSPeRayDAT == type) {
         playbacks_offset = 64;
 
         switch (speed_mode) {
