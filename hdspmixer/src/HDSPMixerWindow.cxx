@@ -109,7 +109,7 @@ static void readregisters_cb(void *arg)
     }
 
     if (w->inputs->buttons->output) {
-        for (int i = 0; i < w->cards[w->current_card]->channels_playback; ++i) {
+        for (int i = 0; i < w->cards[w->current_card]->channels_output; ++i) {
             w->outputs->strips[i]->meter->update(output_peaks[(w->cards[w->current_card]->meter_map_playback[i])] & 0xffffff00,
                     output_peaks[(w->cards[w->current_card]->meter_map_playback[i])] & 0xf,
                     output_rms[(w->cards[w->current_card]->meter_map_playback[i])]);
@@ -738,7 +738,7 @@ HDSPMixerWindow::HDSPMixerWindow(int x, int y, int w, int h, const char *label, 
     inputs->buttons->submix = 1;
     inputs->buttons->playback = 1;
     playbacks = new HDSPMixerPlaybacks(0, MENU_HEIGHT+FULLSTRIP_HEIGHT, w, FULLSTRIP_HEIGHT, cards[0]->channels_playback);
-    outputs = new HDSPMixerOutputs(0, MENU_HEIGHT+FULLSTRIP_HEIGHT*2, w, SMALLSTRIP_HEIGHT, cards[0]->channels_playback);
+    outputs = new HDSPMixerOutputs(0, MENU_HEIGHT+FULLSTRIP_HEIGHT*2, w, SMALLSTRIP_HEIGHT, cards[0]->channels_output);
     scroll->end();
     end();
     setup = new HDSPMixerSetup(400, 260, "Level Meters Setup", this);

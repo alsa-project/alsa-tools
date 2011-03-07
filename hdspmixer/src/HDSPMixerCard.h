@@ -44,6 +44,7 @@ public:
     char name[6];
     HDSPMixerCard(int cardtype, int id);
     int channels_input, channels_playback, window_width, window_height, card_id;
+    int channels_output;
     int type;
     char *channel_map_input, *channel_map_playback;
     char *dest_map;
