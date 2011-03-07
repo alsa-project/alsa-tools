@@ -582,9 +582,9 @@ void HDSPMixerWindow::restoreDefaults(int card)
       chnls[0] = 16;
       chnls[1] = 16;
       chnls[2] = 16;
-      maxdest[0] = 16;
-      maxdest[1] = 16;
-      maxdest[2] = 16;
+      maxdest[0] = 8;
+      maxdest[1] = 8;
+      maxdest[2] = 8;
       num_modes = 3;
       break;
      case HDSPeAIO:
@@ -610,6 +610,7 @@ void HDSPMixerWindow::restoreDefaults(int card)
 	/* should never happen */
 	return;
     }
+
     for (int preset = 0; preset < 8; ++preset) {
 	for (int speed = 0; speed < num_modes; ++speed) {
 	    for (int i = 0; i < chnls[speed]; i+=2) {
