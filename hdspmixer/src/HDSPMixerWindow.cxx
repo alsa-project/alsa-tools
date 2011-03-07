@@ -216,8 +216,7 @@ static void save_cb(Fl_Widget *widget, void *arg)
 	if (!(w->file_name = fl_file_chooser("Choose a file to save presets to :", "HDSPMixer preset file (*.mix)", NULL, 0))) return;
     }
     w->save();
-    snprintf(w->window_title, FL_PATH_MAX, "HDSPMixer - %s",  fl_filename_name(w->file_name));
-    w->label(w->window_title);
+    w->setTitleWithFilename();
 }
 
 static void make_default_cb(Fl_Widget *widget, void *arg)
@@ -241,8 +240,7 @@ static void restore_defaults_cb(Fl_Widget *widget, void *arg)
     w->prefs->deleteEntry("default_file");
     w->prefs->flush();
     w->file_name = NULL;
-    snprintf(w->window_title, FL_PATH_MAX, "HDSPMixer");
-    w->label(w->window_title);
+    w->setTitleWithFilename();
     w->resetMixer();
     while (i < MAX_CARDS && w->cards[i] != NULL) {
 	w->restoreDefaults(i++);
@@ -516,8 +514,7 @@ void HDSPMixerWindow::load()
 	}
     }
     fclose(file);
-    snprintf(window_title, FL_PATH_MAX, "HDSPMixer - %s",  fl_filename_name(file_name));
-    label(window_title);
+    setTitleWithFilename();
     resetMixer();
     inputs->buttons->presets->preset_change(1);
     return;
@@ -526,6 +523,29 @@ load_error:
     fl_alert("Error loading presets from file %s", file_name);
     return;
 }
+
+void HDSPMixerWindow::setTitle(std::string suffix)
+{
+    std::string title = "HDSPMixer (";
+
+    title = title + cards[current_card]->cardname + ") "; /*cardname */
+    title = title + suffix;
+    snprintf(window_title, FL_PATH_MAX, "%s", title.c_str());
+    label(window_title);
+}
+
+void HDSPMixerWindow::setTitleWithFilename(void)
+{
+    const char *filename = fl_filename_name(file_name);
+
+    if (NULL == file_name) {
+        filename = "(unsaved)";
+    }
+
+    setTitle(filename);
+}
+
+
 
 void HDSPMixerWindow::restoreDefaults(int card)
 {
@@ -883,16 +903,14 @@ void HDSPMixerWindow::checkState()
 	corrupt++;
 
     if (corrupt) {
-	if (!dirty) {
-	    dirty = 1;
-	    snprintf(window_title, FL_PATH_MAX, "HDSPMixer - %s *",  fl_filename_name(file_name));
-	    label(window_title);
-	    Fl::add_timeout(0.3, dirty_cb, (void *)this); 
-	}
+        if (!dirty) {
+            dirty = 1;
+            setTitleWithFilename();
+            Fl::add_timeout(0.3, dirty_cb, (void *)this); 
+        }
     } else {
-	snprintf(window_title, FL_PATH_MAX, "HDSPMixer - %s",  fl_filename_name(file_name));
-	label(window_title);
-	dirty = 0;
+        setTitleWithFilename();
+        dirty = 0;
     }
 }
 

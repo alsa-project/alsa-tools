@@ -163,11 +163,12 @@ int HDSPMixerCard::getSpeed()
     return 0;    
 }
 
-HDSPMixerCard::HDSPMixerCard(int cardtype, int id)
+HDSPMixerCard::HDSPMixerCard(int cardtype, int id, char *shortname)
 {
     type = cardtype;
     card_id = id;
     snprintf(name, 6, "hw:%i", card_id);
+    cardname = shortname;
     h9632_aeb.aebi = 0;
     h9632_aeb.aebo = 0;
     if (type == H9632) {

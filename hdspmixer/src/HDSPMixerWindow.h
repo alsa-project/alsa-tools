@@ -93,6 +93,8 @@ public:
     void refreshMixerStrip(int idx, int src);
     void save();
     void load();
+    void setTitle(std::string suffix);
+    void setTitleWithFilename();
 };
 
 #endif

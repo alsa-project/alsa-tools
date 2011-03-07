@@ -24,6 +24,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string>
 #include <alsa/asoundlib.h>
 #include <alsa/sound/hdsp.h>
 #include <alsa/sound/hdspm.h>
@@ -42,7 +43,8 @@ private:
 public:
     HDSPMixerWindow *basew;
     char name[6];
-    HDSPMixerCard(int cardtype, int id);
+    std::string cardname;
+    HDSPMixerCard(int cardtype, int id, char *shortname);
     int channels_input, channels_playback, window_width, window_height, card_id;
     int channels_output;
     int type;

@@ -50,6 +50,7 @@ void HDSPMixerCardSelector::ActivateCard (int i)
   card = i + 1;
   basew->current_card = i;
   basew->cards[i]->setMode (basew->cards[i]->getSpeed ());
+  basew->setTitleWithFilename();
   redraw ();
 }
 
