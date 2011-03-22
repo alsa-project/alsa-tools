@@ -1,3 +1,17 @@
+Version 1.11 (2011-03-22):
+    * Fix ALSA snd_ctl_open error when running with three cards.
+    * Fix metering for non-MADI cards
+    * Fix labels on H9652
+    * Fix preset activation segfault on AES(32)
+    * Adjust playback channel count on Multiface
+    * Provide headphones out on Multiface/Digiface
+    * Update pixmaps
+    * Save and restore level meter settings
+      WARNING: New mix files cannot be read by older versions of hdspmixers
+
+Version 1.10 (2011-02-24):
+    * Add support for RME MADI, RayDAT, AES, AES32 and AIO
+
 Version 1.6 (24/11/2003):
     * Fixes compilation warnings
     * AutoSync sample rate detection scheme changed
