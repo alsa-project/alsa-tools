@@ -31,21 +31,21 @@ HDSPMixerMaster::HDSPMixerMaster(int x, int y, int w, int h):Fl_Widget(x, y, 62,
 void HDSPMixerMaster::draw() 
 {
     if (mute && mute_active) {
-	fl_push_clip(x(), y(), 29, 10);
+	fl_push_clip(x(), y(), 30, 11);
 	fl_draw_pixmap(b_mute_xpm, x(), y());
 	fl_pop_clip();
     } else if (mute) {
-	fl_push_clip(x(), y(), 29, 10);
-	fl_draw_pixmap(b_mute_xpm, x(), y()-10);
+	fl_push_clip(x(), y(), 30, 11);
+	fl_draw_pixmap(b_mute_xpm, x(), y()-11);
 	fl_pop_clip();
     }	
     if (solo && solo_active) {
-	fl_push_clip(x()+32, y(), 29, 10);
+	fl_push_clip(x()+32, y(), 30, 11);
 	fl_draw_pixmap(b_solo_xpm, x()+32, y());
 	fl_pop_clip();
     } else if (solo) {
-	fl_push_clip(x()+32, y(), 29, 10);
-	fl_draw_pixmap(b_solo_xpm, x()+32, y()-10);
+	fl_push_clip(x()+32, y(), 30, 11);
+	fl_draw_pixmap(b_solo_xpm, x()+32, y()-11);
 	fl_pop_clip();
     }	
 }
@@ -55,7 +55,7 @@ int HDSPMixerMaster::handle(int e)
     int xpos = Fl::event_x()-x();
     switch (e) {
 	case FL_PUSH:
-	    if (xpos >= 0 && xpos <= 29) {
+	    if (xpos >= 0 && xpos <= 30) {
 		if (mute) {
 		    mute = 0;
 		} else {
