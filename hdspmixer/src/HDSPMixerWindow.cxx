@@ -25,6 +25,9 @@
 #pragma implementation
 #include "HDSPMixerWindow.h"
     
+/* header used in .mix file */
+const char header[] = "HDSPMixer v1";
+
 static void readregisters_cb(void *arg)
 {
     int err;
@@ -341,6 +344,13 @@ void HDSPMixerWindow::save()
     if (dirty) {
 	inputs->buttons->presets->save_preset(current_preset+1);
     }
+    /* since hdspmixer 1.11, we also store the meter level settings. Indicate
+     * the new on-disk structure via a small header */
+    if (fwrite((void *)&header, sizeof(char), sizeof(header), file) !=
+            sizeof(header)) {
+        goto save_error;
+    }
+
     for (int speed = 0; speed < 3; ++speed) {
 	for (int card = 0; card < MAX_CARDS; ++card) {
 	    for (int preset = 0; preset < 8; ++preset) {
@@ -414,6 +424,24 @@ void HDSPMixerWindow::save()
 		if (fwrite((void *)&(data[card][speed][preset]->mute), sizeof(int), 1, file) != 1) {
 		    goto save_error;
 		}		
+		if (fwrite((void *)&(data[card][speed][preset]->last_destination), sizeof(int), 1, file) != 1) {
+		    goto save_error;
+		}
+		if (fwrite((void *)&(data[card][speed][preset]->rmsplus3), sizeof(int), 1, file) != 1) {
+		    goto save_error;
+		}
+		if (fwrite((void *)&(data[card][speed][preset]->numbers), sizeof(int), 1, file) != 1) {
+		    goto save_error;
+		}
+		if (fwrite((void *)&(data[card][speed][preset]->over), sizeof(int), 1, file) != 1) {
+		    goto save_error;
+		}
+		if (fwrite((void *)&(data[card][speed][preset]->level), sizeof(int), 1, file) != 1) {
+		    goto save_error;
+		}
+		if (fwrite((void *)&(data[card][speed][preset]->rate), sizeof(int), 1, file) != 1) {
+		    goto save_error;
+		}
 	    }
 	}
     }
@@ -437,6 +465,21 @@ void HDSPMixerWindow::load()
 	inputs->buttons->presets->preset_change(1);	
 	return;
     }
+
+    /* check for new ondisk format */
+    char buffer[sizeof(header)];
+    bool ondisk_v1 = false;
+    if (fread(&buffer, sizeof(char), sizeof(buffer), file) != sizeof(buffer)) {
+            goto load_error;
+    }
+    if (0 == strncmp(buffer, header, sizeof(buffer))) {
+        /* new ondisk format found */
+        ondisk_v1 = true;
+    } else {
+        /* old format, rewind to the start and simply read all data */
+        rewind(file);
+    }
+
     for (int speed = 0; speed < 3; ++speed) {
 	for (int card = 0; card < MAX_CARDS; ++card) {
 	    for (int preset = 0; preset < 8; ++preset) {
@@ -510,6 +553,27 @@ void HDSPMixerWindow::load()
 		if (fread((void *)&(data[card][speed][preset]->mute), sizeof(int), 1, file) != 1) {
 		    goto load_error;
 		}		
+        /* read additional meter settings only present in newer mix files */
+        if (ondisk_v1) {
+            if (fread((void *)&(data[card][speed][preset]->last_destination), sizeof(int), 1, file) != 1) {
+                goto load_error;
+            }
+            if (fread((void *)&(data[card][speed][preset]->rmsplus3), sizeof(int), 1, file) != 1) {
+                goto load_error;
+            }
+            if (fread((void *)&(data[card][speed][preset]->numbers), sizeof(int), 1, file) != 1) {
+                goto load_error;
+            }
+            if (fread((void *)&(data[card][speed][preset]->over), sizeof(int), 1, file) != 1) {
+                goto load_error;
+            }
+            if (fread((void *)&(data[card][speed][preset]->level), sizeof(int), 1, file) != 1) {
+                goto load_error;
+            }
+            if (fread((void *)&(data[card][speed][preset]->rate), sizeof(int), 1, file) != 1) {
+                goto load_error;
+            }
+        }
 	    }
 	}
     }
