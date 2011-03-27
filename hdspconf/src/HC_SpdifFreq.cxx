@@ -1,8 +1,8 @@
 /*
  *   HDSPConf
- *    
+ *
  *   Copyright (C) 2003 Thomas Charbonnel (thomas@undata.org)
- *    
+ *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
  *   the Free Software Foundation; either version 2 of the License, or
@@ -21,7 +21,7 @@
 #pragma implementation
 #include "HC_SpdifFreq.h"
 
-extern char *freqs[10];
+extern const char *freqs[10];
 
 HC_SpdifFreq::HC_SpdifFreq(int x, int y, int w, int h):Fl_Widget(x, y, w, h, "SPDIF Freq.")
 {

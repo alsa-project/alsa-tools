@@ -1,8 +1,8 @@
 /*
  *   HDSPConf
- *    
+ *
  *   Copyright (C) 2003 Thomas Charbonnel (thomas@undata.org)
- *    
+ *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
  *   the Free Software Foundation; either version 2 of the License, or
@@ -20,7 +20,7 @@
 
 #include "labels.h"
 
-char *card_names[5] = {
+const char *card_names[5] = {
     "Digiface",
     "Multiface",
     "HDSP9652",
@@ -28,7 +28,7 @@ char *card_names[5] = {
     "Undefined",
 };
 
-char *freqs[10] = {
+const char *freqs[10] = {
     "32.0 kHz",
     "44.1 kHz",
     "48.0 kHz",
@@ -41,7 +41,7 @@ char *freqs[10] = {
     "192.0 kHz",
 };
 
-char *ref[7] = {
+const char *ref[7] = {
     "Word Clock",
     "ADAT Sync",
     "SPDIF",
@@ -51,7 +51,7 @@ char *ref[7] = {
     "ADAT3"
 };
 
-char *lock_status[3] = {
+const char *lock_status[3] = {
     "No Lock",
     "Lock",
     "Sync"

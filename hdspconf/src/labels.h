@@ -1,8 +1,8 @@
 /*
  *   HDSPConf
- *    
+ *
  *   Copyright (C) 2003 Thomas Charbonnel (thomas@undata.org)
- *    
+ *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
  *   the Free Software Foundation; either version 2 of the License, or
@@ -21,10 +21,10 @@
 #ifndef LABELS_H
 #define LABELS_H
 
-extern char *card_names[5];
-extern char *freqs[10];
-extern char *ref[7];
-extern char *lock_status[3];
+extern const char *card_names[5];
+extern const char *freqs[10];
+extern const char *ref[7];
+extern const char *lock_status[3];
 
 #endif
 

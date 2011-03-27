@@ -1,8 +1,8 @@
 /*
  *   HDSPConf
- *    
+ *
  *   Copyright (C) 2003 Thomas Charbonnel (thomas@undata.org)
- *    
+ *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
  *   the Free Software Foundation; either version 2 of the License, or
@@ -21,7 +21,7 @@
 #pragma implementation
 #include "HC_SyncCheck.h"
 
-extern char *lock_status[3];
+extern const char *lock_status[3];
 
 HC_SyncCheck::HC_SyncCheck(int x, int y, int w, int h):Fl_Widget(x, y, w, h, "SyncCheck")
 {
@@ -35,7 +35,7 @@ HC_SyncCheck::HC_SyncCheck(int x, int y, int w, int h):Fl_Widget(x, y, w, h, "Sy
 		adat_name = "ADAT In";
 	} else {
 		adat_name = "ADAT1 In";
-	} 
+	}
 	h_step = (int)(w/2.0f);
 	draw_box = Fl::get_boxtype(FL_ENGRAVED_FRAME);
 	label("SyncCheck");

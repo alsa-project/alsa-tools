@@ -1,8 +1,8 @@
 /*
  *   HDSPConf
- *    
+ *
  *   Copyright (C) 2003 Thomas Charbonnel (thomas@undata.org)
- *    
+ *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
  *   the Free Software Foundation; either version 2 of the License, or
@@ -21,7 +21,7 @@
 #pragma implementation
 #include "HC_BreakoutCable.h"
 
-static void setXlrStatus(char *ctl_name, int val, int card_index)
+static void setXlrStatus(const char *ctl_name, int val, int card_index)
 {
     int err;
     char card_name[6];
@@ -67,7 +67,7 @@ HC_BreakoutCable::HC_BreakoutCable(int x, int y, int w, int h):Fl_Group(x, y, w,
 	xlr = new Fl_Check_Button(x+15, y, w-30, 20, "XLR");
 	xlr->labelsize(10);
 	xlr->callback(xlr_cb, (void *)parent());
-	end();	
+	end();
 }
 
 void HC_BreakoutCable::setXlr(unsigned char val)

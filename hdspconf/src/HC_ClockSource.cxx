@@ -1,8 +1,8 @@
 /*
  *   HDSPConf
- *    
+ *
  *   Copyright (C) 2003 Thomas Charbonnel (thomas@undata.org)
- *    
+ *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
  *   the Free Software Foundation; either version 2 of the License, or
@@ -21,7 +21,7 @@
 #pragma implementation
 #include "HC_ClockSource.h"
 
-extern char *freqs[10];
+extern const char *freqs[10];
 
 void clock_source_cb(Fl_Widget *w, void *arg)
 {
@@ -55,7 +55,7 @@ void clock_source_cb(Fl_Widget *w, void *arg)
 	} else if (source == cs->khz192) {
 		src = 9;
 	}
-	
+
 	snprintf(card_name, 6, "hw:%i", pane->alsa_index);
 	snd_ctl_elem_value_alloca(&ctl);
 	snd_ctl_elem_id_alloca(&id);
@@ -67,7 +67,7 @@ void clock_source_cb(Fl_Widget *w, void *arg)
 	if ((err = snd_ctl_open(&handle, card_name, SND_CTL_NONBLOCK)) < 0) {
 		fprintf(stderr, "Error opening ctl interface on card %s\n", card_name);
 		return;
-	} 
+	}
 	if ((err = snd_ctl_elem_write(handle, ctl)) < 0) {
 		snd_ctl_elem_id_set_interface(id, SND_CTL_ELEM_IFACE_PCM);
 		snd_ctl_elem_value_set_id(ctl, id);
@@ -111,7 +111,7 @@ HC_ClockSource::HC_ClockSource(int x, int y, int w, int h):Fl_Group(x, y, w, h, 
 	    khz176_4->labelsize(10);
 	    khz176_4->type(FL_RADIO_BUTTON);
 	    khz192 = new Fl_Round_Button(x+10, y+V_STEP*i++, w-20, V_STEP, freqs[9]);
-	    khz192->callback(clock_source_cb, (void *)this);	
+	    khz192->callback(clock_source_cb, (void *)this);
 	    khz192->labelsize(10);
 	    khz192->type(FL_RADIO_BUTTON);
 	}
@@ -129,7 +129,7 @@ HC_ClockSource::HC_ClockSource(int x, int y, int w, int h):Fl_Group(x, y, w, h, 
 	khz88_2->type(FL_RADIO_BUTTON);
 	khz96->labelsize(10);
 	khz96->type(FL_RADIO_BUTTON);
-	end();	
+	end();
 }
 
 void HC_ClockSource::setSource(unsigned char s)
