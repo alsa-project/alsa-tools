@@ -1,5 +1,5 @@
 /* XPM */
-char * rme_xpm[] = {
+const char * rme_xpm[] = {
 "113 35 2300 2",
 "  	c None",
 ". 	c #030505",

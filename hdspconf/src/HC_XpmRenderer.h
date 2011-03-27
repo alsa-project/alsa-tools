@@ -1,8 +1,8 @@
 /*
  *   HDSPConf
- *    
+ *
  *   Copyright (C) 2003 Thomas Charbonnel (thomas@undata.org)
- *    
+ *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
  *   the Free Software Foundation; either version 2 of the License, or
@@ -30,10 +30,10 @@
 class HC_XpmRenderer:public Fl_Widget
 {
 public:
-    HC_XpmRenderer(int x, int y, int w, int h, char * const *xpm);
+    HC_XpmRenderer(int x, int y, int w, int h, const char * const *xpm);
     void draw();
 private:
-    char * const *pixmap;
+    const char * const *pixmap;
 };
 
 #endif

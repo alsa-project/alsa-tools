@@ -1,5 +1,5 @@
 /* XPM */
-char * lad_banner_xpm[] = {
+const char * lad_banner_xpm[] = {
 "113 39 1833 2",
 "  	c None",
 ". 	c #C0C0C0",
