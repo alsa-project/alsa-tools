@@ -37,7 +37,7 @@ void HC_SpdifFreq::draw()
 	fl_color(FL_BACKGROUND_COLOR);
 	fl_rectf(x(), y(), w(), h());
 	draw_box(x(), y(), w(), h(), FL_WHITE);
-	fl_color(FL_BLACK);
+	fl_color(FL_FOREGROUND_COLOR);
 	fl_font(FL_HELVETICA, 10);
 	fl_draw(freqs[spdif_freq], x(), y(), w(), h(), FL_ALIGN_CENTER);
 }

@@ -37,7 +37,7 @@ void HC_AutoSyncRef::draw()
 	fl_color(FL_BACKGROUND_COLOR);
 	fl_rectf(x(), y(), w(), h());
 	draw_box(x(), y(), w(), h(), FL_WHITE);
-	fl_color(FL_BLACK);
+	fl_color(FL_FOREGROUND_COLOR);
 	fl_font(FL_HELVETICA, 10);
 	fl_draw("Input", x()+4, y(), w()/2, h()/2, FL_ALIGN_LEFT);
 	fl_draw(ref[external_ref], x()+w()/2-4, y(), w()/2, h()/2, FL_ALIGN_CENTER);

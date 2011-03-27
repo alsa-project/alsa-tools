@@ -39,7 +39,7 @@ HC_AboutText::HC_AboutText(int x, int y, int w, int h):Fl_Widget(x, y, w, h, "Ab
 
 void HC_AboutText::draw()
 {
-	fl_color(FL_BLACK);
+	fl_color(FL_FOREGROUND_COLOR);
 	fl_font(FL_HELVETICA, 10);
 	fl_draw(text, x(), y(), w(), h(), FL_ALIGN_LEFT);
 }

@@ -50,7 +50,7 @@ void HC_SyncCheck::draw()
 	fl_color(FL_BACKGROUND_COLOR);
 	fl_rectf(x(), y(), w(), h());
 	draw_box(x(), y(), w(), h(), FL_WHITE);
-	fl_color(FL_BLACK);
+	fl_color(FL_FOREGROUND_COLOR);
 	fl_font(FL_HELVETICA, 10);
 	fl_draw(adat_name, x()+h_pos, y()+V_STEP*i, h_step, V_STEP, FL_ALIGN_LEFT);
 	fl_draw(lock_status[adat1_lock_status], x()+h_pos+h_step, y()+V_STEP*i++, h_step-h_pos, V_STEP, FL_ALIGN_CENTER);
