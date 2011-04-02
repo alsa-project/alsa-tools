@@ -164,10 +164,10 @@ HDSPMixerSelector::HDSPMixerSelector(int x, int y, int w, int h):Fl_Menu_(x, y, 
     max_dest = 0;
     selected = 0;
     basew = (HDSPMixerWindow *)window();
-    setLabels();
     textfont(FL_HELVETICA);
     textsize(8);
-    textcolor(FL_BLACK);
+    textcolor(FL_FOREGROUND_COLOR);
+    setLabels();
 }
 
 void HDSPMixerSelector::draw() {

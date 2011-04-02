@@ -71,7 +71,7 @@ void HDSPMixerIOMixer::draw()
     Fl_Widget *const* a = array();
     if (damage() & ~FL_DAMAGE_CHILD) {
 	draw_background();
-	fl_color(FL_BLACK);
+	fl_color(FL_FOREGROUND_COLOR);
 	fl_font(FL_HELVETICA, 8);
 	fl_draw(channel_name.str().c_str(), x()+4, y()+225, 27, 9, FL_ALIGN_CENTER);
 	for (int i=children(); i--;) {
