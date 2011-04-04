@@ -734,7 +734,7 @@ void HDSPMixerWindow::restoreDefaults(int card)
 
     for (int preset = 0; preset < 8; ++preset) {
 	for (int speed = 0; speed < num_modes; ++speed) {
-	    for (int i = 0; i < chnls[speed]; i+=2) {
+	    for (int i = 0; i < 2*maxdest[speed]; i+=2) {
     		for (int z = 0; z < maxdest[speed]; ++z) {
 		    /* Gain setup */
 		    if (cards[card]->type == H9632) {
