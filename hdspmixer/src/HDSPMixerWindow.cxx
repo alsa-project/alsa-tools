@@ -609,7 +609,44 @@ void HDSPMixerWindow::setTitleWithFilename(void)
     setTitle(filename);
 }
 
+void HDSPMixerWindow::stashPreset(void)
+{
+    cards[current_card]->last_preset = current_preset;
+    cards[current_card]->last_dirty = dirty;
+    /* save the current mixer state to the virtual 9th preset */
+    inputs->buttons->presets->save_preset(9);
+}
 
+void HDSPMixerWindow::unstashPreset(void)
+{
+    /* load temporary data from virtual 9th preset */
+    inputs->buttons->presets->restore_preset(9);
+    
+    current_preset = cards[current_card]->last_preset;
+    /* Internal notion of playback in use. Relevant for blinking buttons */
+    inputs->buttons->presets->preset = current_preset + 1;
+    dirty = cards[current_card]->last_dirty;
+    /* Preset masks (which preset button is green) */
+    inputs->buttons->presets->presetmask = (int)pow(2, current_preset);
+    if (dirty) {
+        /* make the buttons blink if it's unsaved. We need to remove any
+         * existing triggers to dirty_cb, because dirty_cb is called
+         * every 0.3 seconds and enabling/disabling (highlight/unlight) the
+         * buttons, so if we have too many callbacks, the buttons would
+         * remain in one state --> no blinking. We need exactly one.
+         */
+        Fl::remove_timeout(dirty_cb, (void *)this);
+        Fl::add_timeout(0.3, dirty_cb, (void *)this);
+    } else {
+        /* Hack. I don't know why this is necessary, but if we're clean,
+         * we need to recall the preset again to correctly reflect
+         * the dirty/undirty state.
+         *
+         * Though it's a little bit redundant, it at least won't do any harm.
+         */
+        inputs->buttons->presets->preset_change(current_preset+1);
+    }
+}
 
 void HDSPMixerWindow::restoreDefaults(int card)
 {
@@ -848,8 +885,10 @@ HDSPMixerWindow::HDSPMixerWindow(int x, int y, int w, int h, const char *label, 
     Fl::add_handler(handler_cb);
     Fl::add_timeout(0.030, readregisters_cb, this);
     i = 0;
-    while (i < MAX_CARDS && cards[i] != NULL)
+    while (i < MAX_CARDS && cards[i] != NULL) {
+      current_card = i;
       inputs->buttons->cardselector->ActivateCard (i++);
+    }
 }
 
 int HDSPMixerWindow::handle(int e) 

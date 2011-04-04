@@ -186,6 +186,7 @@ HDSPMixerCard::HDSPMixerCard(int cardtype, int id, char *shortname)
     
     /* Set channels and mappings */
     adjustSettings();
+    last_preset = last_dirty = 0;
         
     basew = NULL;
 }

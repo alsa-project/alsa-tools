@@ -95,6 +95,8 @@ public:
     void load();
     void setTitle(std::string suffix);
     void setTitleWithFilename();
+    void stashPreset();
+    void unstashPreset();
 };
 
 #endif

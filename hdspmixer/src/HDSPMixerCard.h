@@ -48,6 +48,8 @@ public:
     int channels_input, channels_playback, window_width, window_height, card_id;
     int channels_output;
     int type;
+    int last_preset; /* Last activated preset before switching to another card */
+    int last_dirty; /* Last dirty flag before switching to another card */
     char *channel_map_input, *channel_map_playback;
     char *dest_map;
     char *meter_map_input, *meter_map_playback;
