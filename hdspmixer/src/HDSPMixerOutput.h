@@ -52,7 +52,7 @@ private:
     HDSPMixerWindow *basew;    
     void update_child(Fl_Widget& widget);
 public:
-    HDSPMixerOutputData *data[MAX_CARDS][3][8]; /* data[card][mode(ss/ds/qs)][preset number] */
+    HDSPMixerOutputData *data[MAX_CARDS][3][NUM_PRESETS]; /* data[card][mode(ss/ds/qs)][preset number] */
     HDSPMixerFader *fader;
     HDSPMixerGain *gain;
     HDSPMixerMeter *meter;

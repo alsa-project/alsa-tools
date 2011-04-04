@@ -56,7 +56,7 @@ private:
 	std::stringstream channel_name;
     void update_child(Fl_Widget &widget);
 public:
-    HDSPMixerStripData *data[MAX_CARDS][3][8]; /* data[card][mode(ss/ds/qs)][preset number] */
+    HDSPMixerStripData *data[MAX_CARDS][3][NUM_PRESETS]; /* data[card][mode(ss/ds/qs)][preset number] */
     HDSPMixerPan *pan;
     HDSPMixerFader *fader;
     HDSPMixerPeak *peak;

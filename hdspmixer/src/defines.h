@@ -49,6 +49,12 @@
 
 #define MAX_CARDS	3
 
+/* Number of presets. 8 presets visible to the user, the 9th is used for
+ * holding temporary mixer data when switching cards, so it's not a real
+ * preset but more like a scratch pad.
+ */
+#define NUM_PRESETS	9
+
 typedef unsigned long long int int64;
 
 #endif

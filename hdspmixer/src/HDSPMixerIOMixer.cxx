@@ -38,7 +38,7 @@ HDSPMixerIOMixer::HDSPMixerIOMixer(int x, int y, int w, int h, int ch, int type)
 	p_iomixer_xpm = iomixer_r_xpm;
     }
     for (int j = 0; j < MAX_CARDS; ++j) {
-	for (int i = 0; i < 8; ++i) {
+	for (int i = 0; i < NUM_PRESETS; ++i) {
 	    data[j][0][i] = new HDSPMixerStripData();
 	    data[j][1][i] = new HDSPMixerStripData();
 	    data[j][2][i] = new HDSPMixerStripData();

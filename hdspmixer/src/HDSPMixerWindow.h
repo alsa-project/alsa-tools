@@ -73,7 +73,7 @@ public:
     Fl_Scroll *scroll;
     HDSPMixerSetup *setup;
     HDSPMixerAbout *about;
-    HDSPMixerPresetData *data[MAX_CARDS][3][8]; /* data[card number][mode(ss/ds/qs)][preset number] */
+    HDSPMixerPresetData *data[MAX_CARDS][3][NUM_PRESETS]; /* data[card number][mode(ss/ds/qs)][preset number] */
     HDSPMixerCard *cards[MAX_CARDS];
     HDSPMixerInputs *inputs;
     HDSPMixerPlaybacks *playbacks;

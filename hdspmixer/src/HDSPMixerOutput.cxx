@@ -170,8 +170,8 @@ static char const *labels_9632_qs[8] = {
 HDSPMixerOutput::HDSPMixerOutput(int x, int y, int w, int h, int num):Fl_Group(x, y, w, h)
 {
 
-    for (int j = 0; j < 3; ++j) {
-	for (int i = 0; i < 8; ++i) {
+    for (int j = 0; j < MAX_CARDS; ++j) {
+	for (int i = 0; i < NUM_PRESETS; ++i) {
 	    data[j][0][i] = new HDSPMixerOutputData();
 	    data[j][1][i] = new HDSPMixerOutputData();
 	    data[j][2][i] = new HDSPMixerOutputData();
