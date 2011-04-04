@@ -877,9 +877,10 @@ HDSPMixerWindow::HDSPMixerWindow(int x, int y, int w, int h, const char *label, 
 	printf("Initializing default presets\n");
 	i = 0;
 	while (i < MAX_CARDS && cards[i] != NULL) {
+	    current_card = i;
 	    restoreDefaults(i++);
+	    inputs->buttons->presets->preset_change(1);
 	}
-	inputs->buttons->presets->preset_change(1);
     }
     Fl::atclose = atclose_cb;
     Fl::add_handler(handler_cb);
