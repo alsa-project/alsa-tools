@@ -499,7 +499,24 @@ void HDSPMixerWindow::load()
         pan_array_size = HDSP_MAX_DEST;
         channels_per_card = HDSP_MAX_CHANNELS;
     } else {
-        /* old format, rewind to the start and simply read all data */
+        /* There are two different kinds of old format: pre 1.0.24 and
+         * the one used for 1.0.24/1.0.24.1. We can distinguish between
+         * these two by checking the file size, becase HDSP_MAX_CHANNELS
+         * was bumped right before the 1.0.24 release.
+         */
+        fseek (file, 0, SEEK_END);
+        long filesize = ftell (file);
+        
+        if (1163808 == filesize) {
+            /* file written by hdspmixer v1.0.24 or v1.0.24.1 with
+             * HDSP_MAX_CHANNELS set to 64, but pan_array_size still at
+             * 14, so setting channels_per_card should get the correct
+             * mapping.
+             */
+            channels_per_card = 64; /* HDSP_MAX_CHANNELS */
+        }
+
+        /* rewind to the start and simply read all data */
         rewind(file);
     }
 
