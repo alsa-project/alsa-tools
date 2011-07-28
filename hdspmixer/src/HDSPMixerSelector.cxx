@@ -131,6 +131,10 @@ static char const *destinations_df_ds[8] = {
   "SPDIF", "Analog"
 };
 
+static char const *destinations_rpm[3] = {
+  "Main", "Mon", "Phones"
+};
+
 static char const *destinations_h9652_ss[13] = {
   "A1 1+2", "A1 3+4", "A1 5+6", "A1 7+8",
   "A2 1+2", "A2 3+4", "A2 5+6", "A2 7+8",
@@ -261,6 +265,9 @@ void HDSPMixerSelector::setLabels()
 	    /* should never happen */
 	    break;
 	}
+    } else if (type == RPM) {
+        max_dest = 3;
+        destinations = destinations_rpm;
     } else if (type == H9652) {
 	switch (sm) {
 	case 0:

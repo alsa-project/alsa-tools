@@ -255,6 +255,17 @@ void HDSPMixerCard::adjustSettings() {
         }
     }
 
+    if (type == RPM) {
+        /* RPM has no digital audio connectors, hence channel mappings don't
+         * depend on speedmode */
+        channels_input = 5;
+        channels_playback = channels_output = 6; /* 2xMain,2xMon,2xPH */
+        channel_map_input = channel_map_playback = channel_map_rpm;
+        dest_map = dest_map_rpm;
+        meter_map_input = meter_map_playback = channel_map_rpm;
+    }
+
+
     if (type == H9652) {
         switch (speed_mode) {
         case 0:

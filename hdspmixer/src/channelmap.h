@@ -54,6 +54,11 @@ extern char channel_map_ds[26];
 
 extern char dest_map_ds[8];
 
+// RPM
+
+extern char dest_map_rpm[3];
+extern char channel_map_rpm[26];
+
 // HDSP 9652
 
 extern char dest_map_h9652_ss[13];

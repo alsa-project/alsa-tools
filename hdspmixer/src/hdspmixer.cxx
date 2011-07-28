@@ -65,6 +65,10 @@ int main(int argc, char **argv)
             printf("Digiface found!\n");
             hdsp_cards[cards] = new HDSPMixerCard(Digiface, card, shortname);
             cards++;
+        } else if (!strncmp(name, "RME Hammerfall DSP + RPM", 24)) {
+            printf("RPM found!\n");
+            hdsp_cards[cards] = new HDSPMixerCard(RPM, card, shortname);
+            cards++;
         } else if (!strncmp(name, "RME Hammerfall HDSP 9652", 24)) {
             printf("HDSP 9652 found!\n");
             hdsp_cards[cards] = new HDSPMixerCard(H9652, card, shortname);

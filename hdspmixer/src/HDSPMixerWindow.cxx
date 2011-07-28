@@ -709,6 +709,10 @@ void HDSPMixerWindow::restoreDefaults(int card)
 	maxdest[0] = 14;
 	maxdest[1] = 8;
 	break;
+    case RPM:
+    chnls[0] = chnls[1] = 6;
+    maxdest[0] = maxdest[1] = 3;
+    break;
     case H9652:
 	chnls[0] = 26;
 	chnls[1] = 14;

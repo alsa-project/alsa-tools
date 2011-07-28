@@ -77,6 +77,15 @@ static char const *labels_raydat_qs[12] = {
   "SP.L", "SP.R"
 };
 
+static char const *labels_rpm_output[6] = {
+  "Main L", "Main R", "Mon L", "Mon R", "PH L", "PH R"
+};
+
+static char const *labels_rpm_input[5] = {
+  "Phono 1.L", "Phono 1.R",
+  "Phono 2.L", "Phono 2.R",
+  "Mic"
+};
 
 static char const *labels_aio_ss_input[14] = {
   "AN 1",  "AN 2",
@@ -217,6 +226,12 @@ void HDSPMixerOutput::setLabels()
             labels_input = labels_playback = labels_mf_ds;
         else 
             labels_input = labels_playback = labels_mf_ss;
+        return;
+    };
+
+    if (type == RPM) {
+        labels_input = labels_rpm_input;
+        labels_playback = labels_rpm_output;
         return;
     };
     

@@ -32,6 +32,11 @@
 #include "channelmap.h"
 #include "HDSPMixerWindow.h"
 
+/* temporary workaround until hdsp.h (HDSP_IO_Type gets fixed */
+#ifndef RPM
+# define RPM	5
+#endif
+
 class HDSPMixerWindow;
 
 class HDSPMixerCard
