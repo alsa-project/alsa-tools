@@ -86,6 +86,9 @@ void upload_firmware(int card)
 	    err = read_bin_file(code, DATAPATH "/digiface_firmware_rev11.bin");
 	}
 	break;
+    case RPM:
+	err = read_bin_file(code, DATAPATH "/rpm_firmware.bin");
+	break;
     default:
 	fprintf(stderr, "Unknown iobox or firmware revision\n");
 	snd_hwdep_close(hw);
