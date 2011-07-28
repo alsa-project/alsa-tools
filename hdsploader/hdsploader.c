@@ -27,6 +27,10 @@
 
 static u_int32_t code[24413];
 
+#ifndef RPM
+# define RPM	5
+#endif
+
 int read_bin_file(u_int32_t *array, const char *filename)
 {
 	FILE *out;
