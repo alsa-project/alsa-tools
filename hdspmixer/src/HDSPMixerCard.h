@@ -34,7 +34,7 @@
 
 /* temporary workaround until hdsp.h (HDSP_IO_Type gets fixed */
 #ifndef RPM
-# define RPM	5
+# define RPM	4
 #endif
 
 class HDSPMixerWindow;
