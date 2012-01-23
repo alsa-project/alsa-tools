@@ -4,7 +4,7 @@ rmedigicontrol_SOURCES = rmedigicontrol.c rmedigicontrol.h level.c loopback.c
 
 rmedigicontrol_LDADD = @RMEDIGICONTROL_LIBS@
 
-EXTRA_DIST = gitcompile depcomp configure.in-gtk1 configure.in-gtk2
+EXTRA_DIST = gitcompile depcomp configure.in-gtk1
 AUTOMAKE_OPTIONS = foreign
 
 alsa-dist: distdir
