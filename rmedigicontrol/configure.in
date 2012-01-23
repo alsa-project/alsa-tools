@@ -3,24 +3,6 @@ AM_INIT_AUTOMAKE(rmedigicontrol, 0.3.5a)
 AC_PROG_CC
 AC_PROG_INSTALL
 AC_HEADER_STDC
-
-AC_ARG_WITH(gtk2,
-  [  --with-gtk2=yes,no   Build with GTK+2 (default = yes)],
-  with_gtk2="$withval", with_gtk2="yes")
-
-if test "$with_gtk2" = "yes"; then
-
 PKG_CHECK_MODULES(RMEDIGICONTROL, gtk+-2.0 alsa >= 1.0.0)
-
-else
-
-AM_PATH_GTK(1.0.1)
-AM_PATH_ALSA(1.0.0)
-RMEDIGICONTROL_CFLAGS="$CFLAGS $ALSA_CFLAGS $GTK_CFLAGS"
-RMEDIGICONTROL_LIBS="$LIBS $ALSA_LIBS $GTK_LIBS"
-AC_SUBST(RMEDIGICONTROL_CFLAGS)
-AC_SUBST(RMEDIGICONTROL_LIBS)
-
-fi
 
 AC_OUTPUT(Makefile)

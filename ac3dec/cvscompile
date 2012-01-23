@@ -1,9 +1,0 @@
-#!/bin/sh
-
-aclocal $ACLOCAL_FLAGS
-autoheader
-automake --add-missing --copy --foreign
-touch depcomp
-autoconf
-./configure $*
-make

@@ -1,27 +1,9 @@
-dnl Process this file with autoconf to produce a configure script.
 AC_INIT(echomixer.c)
 AM_INIT_AUTOMAKE(echomixer, 1.0.5)
 AC_PROG_CC
 AC_PROG_INSTALL
 AC_HEADER_STDC
 
-AC_ARG_WITH(gtk2,
-  [  --with-gtk2=yes,no   Build with GTK+2 (default = yes)],
-  with_gtk2="$withval", with_gtk2="yes")
-
-if test "$with_gtk2" = "yes"; then
-
 PKG_CHECK_MODULES(ECHOMIXER, gtk+-2.0 alsa >= 1.0.0)
-
-else
-
-AM_PATH_GTK(1.2.0)
-AM_PATH_ALSA(1.0.0)
-ECHOMIXER_CFLAGS="$CFLAGS $ALSA_CFLAGS $GTK_CFLAGS"
-ECHOMIXER_LIBS="$LIBS $ALSA_LIBS $GTK_LIBS"
-AC_SUBST(ECHOMIXER_CFLAGS)
-AC_SUBST(ECHOMIXER_LIBS)
-
-fi
 
 AC_OUTPUT(Makefile)
