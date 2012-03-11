@@ -13,5 +13,7 @@ This tool requires Python, pygtk, and alsa-pyton 1.0.22 or later.
 It is recommended to use at least Linux kernel 2.6.32 or alsa-driver 1.0.22;
 otherwise, the name of the program that is using a stream cannot be shown.
 
+Need to use alsa-driver kernel 3.4 for Aureal sound cards
+* Aureal Vortex/Vortex2/Advantage (driver: snd-au8820, snd-au8830, snd-au8810)
 
 Author: Clemens Ladisch <clemens@ladisch.de>
