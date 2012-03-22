@@ -3,7 +3,7 @@ TOP = .
 SUBDIRS = ac3dec as10k1 envy24control hdsploader hdspconf hdspmixer \
 	  mixartloader pcxhrloader rmedigicontrol sb16_csp seq sscape_ctl \
 	  us428control usx2yloader vxloader echomixer ld10k1 qlo10k1 \
-	  hwmixvolume
+	  hwmixvolume hdajackretask
 
 all:
 	@for i in $(SUBDIRS); do \
