@@ -119,3 +119,6 @@ vxloader/Makefile
 vxloader/configure
 usx2yloader/tascam_fpga
 usx2yloader/tascam_fw
+hdajackretask/Makefile
+hdajackreteask/configure
+hdajackreteask/hdajackretask
