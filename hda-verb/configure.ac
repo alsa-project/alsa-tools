@@ -1,0 +1,7 @@
+AC_INIT(hda-verb.c)
+AM_INIT_AUTOMAKE(hda-verb, 0.4)
+AC_PROG_CC
+AC_PROG_INSTALL
+AC_HEADER_STDC
+
+AC_OUTPUT(Makefile)
