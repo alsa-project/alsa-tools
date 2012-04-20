@@ -122,3 +122,6 @@ usx2yloader/tascam_fw
 hdajackretask/Makefile
 hdajackreteask/configure
 hdajackreteask/hdajackretask
+hda-verb/Makefile
+hda-verb/configure
+hda-verb/hda-verb
