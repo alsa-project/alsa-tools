@@ -53,8 +53,8 @@ if [ ! -x $LOADER ]; then
 fi
 
 if [ -x /usr/bin/logger ]; then
-	/usr/bin/logger -t $0 "load $FIRMWARE for $PRODUCT to $DEVICE"
+	/usr/bin/logger -t $0 "load $FIRMWARE for $PRODUCT to $DEVNAME"
 fi
-$LOADER $FLAGS -s $LOADERFIRMWARE -I $FIRMWARE
+$LOADER $FLAGS -s $LOADERFIRMWARE -I $FIRMWARE -D $DEVNAME
 
 exit 0
