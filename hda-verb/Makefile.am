@@ -1,3 +1,4 @@
+MYNAME = hda-verb
 AUTOMAKE_OPTIONS = 1.3 foreign
 bin_PROGRAMS = hda-verb
 hda_verb_SOURCES = hda-verb.c
