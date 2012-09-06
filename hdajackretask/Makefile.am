@@ -5,6 +5,8 @@ man_MANS =
 hdajackretask_SOURCES = main-gtk.c sysfs-pin-configs.c apply-changes.c 
 hdajackretask_LDADD = @GTK3_LIBS@
 
+noinst_HEADERS = apply-changes.h sysfs-pin-configs.h
+
 BUILT_SOURCES = README.generated.h
 nodist_hdajackretask_SOURCES = README.generated.h
 CLEANFILES = README.generated.h
