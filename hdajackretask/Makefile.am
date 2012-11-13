@@ -14,6 +14,8 @@ CLEANFILES = README.generated.h
 README.generated.h:
 	sed 's/\\/\\\\/g;s/"/\\"/g;s/^/"/;s/$$/\\n"/;' README >$@
 
+AUTOMAKE_OPTIONS = foreign
+
 alsa-dist: distdir
 	@rm -rf ../distdir/hdajackretask
 	@mkdir -p ../distdir/hdajackretask
