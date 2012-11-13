@@ -130,6 +130,11 @@ int main(int argc,char *argv[])
 	out_config.spdif = SPDIF_NONE;
 	out_config.hdmi = 0;
 
+	if (isatty(fileno(stdin)) && (argc == 1)) {
+		help();
+		return 1;
+	}
+
 	morehelp = 0;
 	while (1) {
 		int c;
