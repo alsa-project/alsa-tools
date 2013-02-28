@@ -183,14 +183,14 @@ static void update_user_pin_config(ui_data_t* ui)
             continue;
 
         if (ui->free_overrides) {
-            int i;
+            int j;
             int index;
             unsigned long val = 0;
-            for (i = 0; i < FREE_OVERRIDES_COUNT; i++) {
-                index = gtk_combo_box_get_active(GTK_COMBO_BOX(pin_ui->jacktype));
-                if (index < 0) 
+            for (j = 0; j < FREE_OVERRIDES_COUNT; j++) {
+                index = gtk_combo_box_get_active(GTK_COMBO_BOX(pin_ui->free_override_cb[j]));
+                if (index < 0)
                     break;
-                val += get_free_override_list(i)[index].value;
+                val += get_free_override_list(j)[index].value;
             }
             if (index < 0)
                 continue;
