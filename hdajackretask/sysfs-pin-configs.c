@@ -460,7 +460,7 @@ static free_override_t channel_arr[] = {
 
 
 static free_override_t* type_order[FREE_OVERRIDES_COUNT] = {
-    pc_arr, location_arr, device_arr, jack_arr, 
+    pc_arr, location_arr, device_arr, jack_arr,
     color_arr, no_presence_arr, group_nr_arr, channel_arr
 };
 
@@ -472,7 +472,7 @@ unsigned long get_free_override_mask(int type)
         AC_DEFCFG_DEVICE,
         AC_DEFCFG_CONN_TYPE,
         AC_DEFCFG_COLOR,
-        AC_DEFCFG_MISC & 1,
+        AC_DEFCFG_MISC & (AC_DEFCFG_MISC_NO_PRESENCE << AC_DEFCFG_MISC_SHIFT),
         AC_DEFCFG_DEF_ASSOC,
         AC_DEFCFG_SEQUENCE,
     };

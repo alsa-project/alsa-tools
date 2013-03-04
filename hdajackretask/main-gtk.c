@@ -5,19 +5,22 @@
 #include <string.h>
 #include <stdlib.h>
 #include <gtk/gtk.h>
+#include <stdbool.h>
 
 #include "sysfs-pin-configs.h"
 #include "apply-changes.h"
+
+typedef struct ui_data_t ui_data_t;
 
 typedef struct pin_ui_data_t {
     pin_configs_t* pin_config;
     typical_pins_t pins_info[32];
     GtkWidget *frame, *override, *jacktype;
-
     GtkWidget* free_override_cb[FREE_OVERRIDES_COUNT];
+    ui_data_t* owner;
 } pin_ui_data_t;
 
-typedef struct ui_data_t {
+struct ui_data_t {
     GList* pin_ui_data;
     GtkWidget *main_window;
     GtkWidget *content_scroll_widget;
@@ -25,22 +28,35 @@ typedef struct ui_data_t {
     GtkWidget *codec_selection_combo;
 
     codec_name_t* current_codec;
-    int sysfs_pincount; 
+    int sysfs_pincount;
     codec_name_t sysfs_codec_names[128];
     pin_configs_t sysfs_pins[32];
     gboolean free_overrides;
     gboolean trust_codec;
     gboolean trust_defcfg;
     gboolean model_auto;
-} ui_data_t;
+};
 
-static void override_toggled(GtkWidget* sender, pin_ui_data_t* data)
+static void update_user_pin_config(ui_data_t* ui, pin_configs_t* cfg);
+
+static void update_override_sensitive(GtkWidget* sender, pin_ui_data_t* data)
 {
     int i;
     gboolean checked = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(sender));
     gtk_widget_set_sensitive(data->jacktype, checked); 
     for (i = 0; i < FREE_OVERRIDES_COUNT; i++)
-        gtk_widget_set_sensitive(data->free_override_cb[i], checked); 
+        gtk_widget_set_sensitive(data->free_override_cb[i], checked);
+}
+
+static void override_toggled(GtkWidget* sender, pin_ui_data_t* data)
+{
+    update_override_sensitive(sender, data);
+    update_user_pin_config(data->owner, data->pin_config);
+}
+
+static void jacktype_changed(GtkWidget* sender, pin_ui_data_t* data)
+{
+    update_user_pin_config(data->owner, data->pin_config);
 }
 
 static GtkWidget* create_pin_ui(ui_data_t* ui, pin_configs_t* pin_cfg)
@@ -56,7 +72,8 @@ static GtkWidget* create_pin_ui(ui_data_t* ui, pin_configs_t* pin_cfg)
 
     data = calloc(1, sizeof(pin_ui_data_t));
     data->pin_config = pin_cfg;
-    
+    data->owner = ui;
+
     { /* Frame */
         gchar* d = get_config_description(pin_cfg->init_pin_config);
         gchar* c = g_strdup_printf("Pin ID: 0x%02x", pin_cfg->nid);
@@ -93,6 +110,7 @@ static GtkWidget* create_pin_ui(ui_data_t* ui, pin_configs_t* pin_cfg)
         gtk_combo_box_set_active(GTK_COMBO_BOX(jacktype), index);
         gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(override), pin_cfg->user_override);
         g_signal_connect(override, "toggled", G_CALLBACK(override_toggled), data);
+        g_signal_connect(jacktype, "changed", G_CALLBACK(jacktype_changed), data);
 
         gtk_container_add(box, override);
         gtk_container_add(GTK_CONTAINER(jacktype_box), jacktype);
@@ -125,6 +143,7 @@ static GtkWidget* create_pin_ui(ui_data_t* ui, pin_configs_t* pin_cfg)
             }
             if (index >= 0)
                 gtk_combo_box_set_active(GTK_COMBO_BOX(data->free_override_cb[i]), index);
+            g_signal_connect(data->free_override_cb[i], "changed", G_CALLBACK(jacktype_changed), data);
         }
 
         gtk_grid_attach(grid, gtk_label_new("Connectivity"), 0, 0, 1, 1);
@@ -148,7 +167,7 @@ static GtkWidget* create_pin_ui(ui_data_t* ui, pin_configs_t* pin_cfg)
         if (ui->free_overrides)
             gtk_container_add(box, GTK_WIDGET(grid));
     }
-    override_toggled(data->override, data);
+    update_override_sensitive(data->override, data);
 
     gtk_container_add(GTK_CONTAINER(result), GTK_WIDGET(box));
     ui->pin_ui_data = g_list_prepend(ui->pin_ui_data, data);
@@ -166,45 +185,48 @@ static void free_pin_ui_data(pin_ui_data_t* data)
 
 static gint pin_config_find(pin_ui_data_t* pin_ui, pin_configs_t* cfg)
 {
-    return pin_ui->pin_config == cfg ? 0 : 1; 
+    return pin_ui->pin_config == cfg ? 0 : 1;
 }
 
-static void update_user_pin_config(ui_data_t* ui)
+static void update_user_pin_config(ui_data_t* ui, pin_configs_t* cfg)
+{
+    pin_ui_data_t* pin_ui;
+    GList *pos = g_list_find_custom(ui->pin_ui_data, cfg, (GCompareFunc) pin_config_find);
+    cfg->user_override = FALSE;
+    if (!pos)
+        return;
+    pin_ui = pos->data;
+    if (!gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(pin_ui->override)))
+        return;
+
+    if (ui->free_overrides) {
+        int j;
+        int index;
+        unsigned long val = 0;
+        for (j = 0; j < FREE_OVERRIDES_COUNT; j++) {
+            index = gtk_combo_box_get_active(GTK_COMBO_BOX(pin_ui->free_override_cb[j]));
+            if (index < 0)
+                break;
+            val += get_free_override_list(j)[index].value;
+        }
+        if (index < 0)
+            return;
+        cfg->user_pin_config = val;
+    } else {
+        int index;
+        index = gtk_combo_box_get_active(GTK_COMBO_BOX(pin_ui->jacktype));
+        if (index < 0)
+            return;
+        cfg->user_pin_config = pin_ui->pins_info[index].pin_set;
+    }
+    cfg->user_override = TRUE;
+}
+
+static void update_all_user_pin_config(ui_data_t* ui)
 {
     int i;
-    for (i = 0; i < ui->sysfs_pincount; i++) {
-        pin_ui_data_t* pin_ui;
-        GList *pos = g_list_find_custom(ui->pin_ui_data, &ui->sysfs_pins[i], (GCompareFunc) pin_config_find);
-        ui->sysfs_pins[i].user_override = FALSE;
-        if (!pos)
-            continue;
-        pin_ui = pos->data;
-        if (!gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(pin_ui->override)))
-            continue;
-
-        if (ui->free_overrides) {
-            int j;
-            int index;
-            unsigned long val = 0;
-            for (j = 0; j < FREE_OVERRIDES_COUNT; j++) {
-                index = gtk_combo_box_get_active(GTK_COMBO_BOX(pin_ui->free_override_cb[j]));
-                if (index < 0)
-                    break;
-                val += get_free_override_list(j)[index].value;
-            }
-            if (index < 0)
-                continue;
-            ui->sysfs_pins[i].user_pin_config = val;
-        } else {
-            int index;
-            index = gtk_combo_box_get_active(GTK_COMBO_BOX(pin_ui->jacktype));
-            if (index < 0)
-                continue;
-            ui->sysfs_pins[i].user_pin_config = pin_ui->pins_info[index].pin_set;
-        }
-        ui->sysfs_pins[i].user_override = TRUE;
-    }
-
+    for (i = 0; i < ui->sysfs_pincount; i++)
+        update_user_pin_config(ui, &ui->sysfs_pins[i]);
 }
 
 static gboolean validate_user_pin_config(ui_data_t* ui, GError** err)
@@ -215,7 +237,7 @@ static gboolean validate_user_pin_config(ui_data_t* ui, GError** err)
         g_set_error(err, 0, 0, "You must first select a codec!");
         return FALSE;
     }
-    update_user_pin_config(ui);
+    update_all_user_pin_config(ui);
     if (ui->free_overrides)
         return TRUE;
 
@@ -325,7 +347,7 @@ static void resize_main_window(ui_data_t* ui)
     }
 }
 
-static void update_codec_ui(ui_data_t* ui) 
+static void update_codec_ui(ui_data_t* ui, bool codec_change)
 {
     int codec_index = gtk_combo_box_get_active(GTK_COMBO_BOX(ui->codec_selection_combo));
     int i;
@@ -337,7 +359,8 @@ static void update_codec_ui(ui_data_t* ui)
     if (codec_index < 0)
         return;
     ui->current_codec = &ui->sysfs_codec_names[codec_index];
-    ui->sysfs_pincount = get_pin_configs_list(ui->sysfs_pins, 32, ui->current_codec->card, ui->current_codec->device);
+    if (codec_change)
+        ui->sysfs_pincount = get_pin_configs_list(ui->sysfs_pins, 32, ui->current_codec->card, ui->current_codec->device);
     for (i = 0; i < ui->sysfs_pincount; i++) {
         GtkWidget *w = create_pin_ui(ui, &ui->sysfs_pins[i]);
         if (w)
@@ -350,14 +373,14 @@ static void update_codec_ui(ui_data_t* ui)
 
 static void codec_selected(GtkComboBox* combo, gpointer user_data) 
 {
-    update_codec_ui(user_data);
+    update_codec_ui(user_data, true);
 }
 
 static void showallpins_toggled(GtkWidget* sender, ui_data_t* ui_data)
 {
     gboolean checked = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(sender));
     ui_data->trust_defcfg = !checked;
-    update_codec_ui(ui_data);
+    update_codec_ui(ui_data, false);
 }
 
 static void automodel_toggled(GtkWidget* sender, ui_data_t* ui_data)
@@ -367,9 +390,8 @@ static void automodel_toggled(GtkWidget* sender, ui_data_t* ui_data)
 
 static void free_override_toggled(GtkWidget* sender, ui_data_t* ui_data)
 {
-    update_user_pin_config(ui_data);
     ui_data->free_overrides = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(sender));
-    update_codec_ui(ui_data);
+    update_codec_ui(ui_data, false);
 }
 
 static const char* readme_text = 
@@ -517,7 +539,7 @@ int main(int argc, char *argv[])
     ui = create_ui();
     gtk_widget_show_all(ui->main_window);
     if (ui->codec_selection_combo)
-        update_codec_ui(ui);
+        update_codec_ui(ui, true);
     gtk_main();
     return 0;
 }
