@@ -868,7 +868,7 @@ err:
 
 void debug_print(char *str)
 {
-	printf(str);
+	printf("%s", str);
 }
 
 static int debug(int deb)

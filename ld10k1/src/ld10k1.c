@@ -62,7 +62,7 @@ static void vlog(const char *label, const char *fmt, va_list va)
 			 localtime(&tp));
 		fprintf(out, "%s %s", timestr, label);
 	} else 
-		fprintf(out, label);
+		fprintf(out, "%s", label);
 	vfprintf(out, fmt, va);
 	fprintf(out, "\n");
 	fflush(out);
