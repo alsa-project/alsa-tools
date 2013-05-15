@@ -13,9 +13,6 @@
 #include <ctype.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
-#ifndef __PPC__
-#include <sys/io.h>
-#endif
 #include <sys/types.h>
 #include <sys/fcntl.h>
 
