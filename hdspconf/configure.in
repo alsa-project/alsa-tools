@@ -1,5 +1,6 @@
 AC_INIT(src/hdspconf.cxx)
 AM_INIT_AUTOMAKE(hdspconf, 1.4)
+AM_MAINTAINER_MODE([enable])
 
 AC_PROG_CXX
 AC_PROG_MAKE_SET

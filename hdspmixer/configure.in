@@ -1,5 +1,6 @@
 AC_INIT(src/hdspmixer.cxx)
 AM_INIT_AUTOMAKE(hdspmixer, 1.11)
+AM_MAINTAINER_MODE([enable])
 
 AC_PROG_CXX
 AC_PROG_MAKE_SET
