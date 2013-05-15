@@ -12,6 +12,8 @@ dsp: $(TARGETS)
 clean:
 	rm -f *~ *.emu10k1
 
+distclean: clean
+
 install:
 
 distdir:
