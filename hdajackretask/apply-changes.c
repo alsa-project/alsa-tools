@@ -97,7 +97,20 @@ gboolean run_sudo_script(const gchar* script_name, GError** err)
 
 static gchar* get_pulseaudio_client_conf()
 {
-    return g_strdup_printf("%s/.pulse/client.conf", g_get_home_dir());
+    /* Reference: See src/pulsecore/core-util.c in pulseaudio */
+    gchar* fname;
+    gchar* dir = g_strdup_printf("%s/.pulse", g_get_home_dir());
+    if (access(dir, F_OK) < 0) {
+	const gchar* xch = g_getenv("XDG_CONFIG_HOME");
+	g_free(dir);
+	if (xch)
+	    dir = g_strdup_printf("%s/pulse", xch);
+	else
+	    dir = g_strdup_printf("%s/.config/pulse", g_get_home_dir());
+    }
+    fname = g_strdup_printf("%s/client.conf", dir);
+    g_free(dir);
+    return fname;
 }
 
 static gboolean kill_pulseaudio(gboolean* was_killed, int card, GError** err)
