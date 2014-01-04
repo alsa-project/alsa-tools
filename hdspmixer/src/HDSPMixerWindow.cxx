@@ -753,12 +753,12 @@ void HDSPMixerWindow::restoreDefaults(int card)
       num_modes = 3;
       break;
      case HDSPeAIO:
-      chnls[0] = 14;
-      chnls[1] = 10;
-      chnls[2] = 8;
-      maxdest[0] = 8;
-      maxdest[1] = 6;
-      maxdest[2] = 5;
+      chnls[0] = 18;
+      chnls[1] = 14;
+      chnls[2] = 12;
+      maxdest[0] = 10;
+      maxdest[1] = 8;
+      maxdest[2] = 7;
       num_modes = 3;
       break;
     case HDSPeRayDAT:

@@ -112,12 +112,12 @@ extern char channel_map_raydat_qs[HDSPM_MAX_CHANNELS];
 
 // HDSPe AIO
 
-extern char dest_map_aio_ss[8];
+extern char dest_map_aio_ss[10];
 
 
-extern char dest_map_aio_ds[6];
+extern char dest_map_aio_ds[8];
 
-extern char dest_map_aio_qs[5];
+extern char dest_map_aio_qs[7];
 
 extern char channel_map_aio_in_ss[HDSPM_MAX_CHANNELS];
 

@@ -81,28 +81,34 @@ static char const *destinations_raydat_qs[6] = {
 };
 
 
-static char const *destinations_aio_ss[8] = {
+static char const *destinations_aio_ss[10] = {
   "AN 1+2",
   "AES",
   "SPDIF",
   "A 1+2", "A 3+4", "A 5+6", "A 7+8",
-  "Phones"
+  "Phones",
+  "AEB 1+2",
+  "AEB 3+4"
 };
 
-static char const *destinations_aio_ds[6] = {
+static char const *destinations_aio_ds[8] = {
   "AN 1+2", 
   "AES",
   "SPDIF",
   "A 1+2", "A 3+4",
-  "Phones"
+  "Phones",
+  "AEB 1+2",
+  "AEB 3+4"
 };
 
-static char const *destinations_aio_qs[5] = {
+static char const *destinations_aio_qs[7] = {
   "AN 1+2",
   "AES",
   "SPDIF",
   "A 1+2",
-  "Phones"
+  "Phones",
+  "AEB 1+2",
+  "AEB 3+4"
 };
 
 static char const *destinations_mf_ss[10] = {
@@ -318,15 +324,15 @@ void HDSPMixerSelector::setLabels()
     } else if (HDSPeAIO == type) {
 	switch (sm) {
 	case 0:
-	  max_dest = 8;
+	  max_dest = 10;
 	  destinations = destinations_aio_ss;
 	  break;
 	case 1:
-	  max_dest = 6;
+	  max_dest = 8;
 	  destinations = destinations_aio_ds;
 	  break;
 	case 2:
-	  max_dest = 5;
+	  max_dest = 7;
 	  destinations = destinations_aio_qs;
 	  break;
 	}

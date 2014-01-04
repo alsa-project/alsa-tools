@@ -247,38 +247,44 @@ char channel_map_raydat_qs[HDSPM_MAX_CHANNELS] = {
 
 // HDSPe AIO
 
-char dest_map_aio_ss[8] = {
+char dest_map_aio_ss[10] = {
    0, // Analogue
    8, // AES
   10, // SPDIF
   12, 14, 16, 18, // ADAT
-   6  // Phones
+   6,  // Phones
+   2,  // AEB 1+2
+   4   // AEB 3+4
 };
 
 
-char dest_map_aio_ds[6] = {
+char dest_map_aio_ds[8] = {
    0, // Analogue
    8, // AES
   10, // SPDIF
   12, 16, // ADAT
-   6  // Phones
+   6,  // Phones
+   2,  // AEB 1+2
+   4   // AEB 3+4
 };
 
-char dest_map_aio_qs[5] = {
+char dest_map_aio_qs[7] = {
    0, // Analogue
    8, // AES
   10, // SPDIF
   12, // ADAT
-   6  // Phone
+   6, // Phone
+   2, // AEB 1+2
+   4  // AEB 3+4
 };
 
 char channel_map_aio_in_ss[HDSPM_MAX_CHANNELS] = {
 	0, 1,			/* line in */
-	8, 9,			/* AES in, */
-	10, 11,			/* SPDIF in */
+	8, 9,			/* aes in, */
+	10, 11,			/* spdif in */
 	12, 13, 14, 15, 16, 17, 18, 19,	/* ADAT in */
-	-1, -1,
-	-1, -1, -1, -1, -1, -1, -1, -1,
+	2, 3, 4, 5,		/* AEB */
+	-1, -1, -1, -1, -1, -1,
 	-1, -1, -1, -1, -1, -1, -1, -1,
 	-1, -1, -1, -1, -1, -1, -1, -1,
 	-1, -1, -1, -1, -1, -1, -1, -1,
@@ -288,11 +294,12 @@ char channel_map_aio_in_ss[HDSPM_MAX_CHANNELS] = {
 
 char channel_map_aio_out_ss[HDSPM_MAX_CHANNELS] = {
 	0, 1,			/* line out */
-	8, 9,			/* AES out */
-	10, 11,			/* SPDIF out */
+	8, 9,			/* aes out */
+	10, 11,			/* spdif out */
 	12, 13, 14, 15, 16, 17, 18, 19,	/* ADAT out */
 	6, 7,			/* phone out */
-	-1, -1, -1, -1, -1, -1, -1, -1,
+	2, 3, 4, 5,		/* AEB */
+	-1, -1, -1, -1,
 	-1, -1, -1, -1, -1, -1, -1, -1,
 	-1, -1, -1, -1, -1, -1, -1, -1,
 	-1, -1, -1, -1, -1, -1, -1, -1,
@@ -302,10 +309,11 @@ char channel_map_aio_out_ss[HDSPM_MAX_CHANNELS] = {
 
 char channel_map_aio_in_ds[HDSPM_MAX_CHANNELS] = {
 	0, 1,			/* line in */
-	8, 9,			/* AES in */
-	10, 11,			/* SPDIF in */
-	12, 14, 16, 18,		/* ADAT in */
-	-1, -1, -1, -1, -1, -1,
+	8, 9,			/* aes in */
+	10, 11,			/* spdif in */
+	12, 14, 16, 18,		/* adat in */
+	2, 3, 4, 5,		/* AEB */
+	-1, -1,
 	-1, -1, -1, -1, -1, -1, -1, -1,
 	-1, -1, -1, -1, -1, -1, -1, -1,
 	-1, -1, -1, -1, -1, -1, -1, -1,
@@ -316,11 +324,11 @@ char channel_map_aio_in_ds[HDSPM_MAX_CHANNELS] = {
 
 char channel_map_aio_out_ds[HDSPM_MAX_CHANNELS] = {
 	0, 1,			/* line out */
-	8, 9,			/* AES out */
-	10, 11,			/* SPDIF out */
-	12, 14, 16, 18,		/* ADAT out */
+	8, 9,			/* aes out */
+	10, 11,			/* spdif out */
+	12, 14, 16, 18,		/* adat out */
 	6, 7,			/* phone out */
-	-1, -1, -1, -1,
+	2, 3, 4, 5,		/* AEB */
 	-1, -1, -1, -1, -1, -1, -1, -1,
 	-1, -1, -1, -1, -1, -1, -1, -1,
 	-1, -1, -1, -1, -1, -1, -1, -1,
@@ -331,10 +339,11 @@ char channel_map_aio_out_ds[HDSPM_MAX_CHANNELS] = {
 
 char channel_map_aio_in_qs[HDSPM_MAX_CHANNELS] = {
 	0, 1,			/* line in */
-	8, 9,			/* AES in */
-	10, 11,			/* SPDIF in */
-	12, 16,			/* ADAT in */
-	-1, -1, -1, -1, -1, -1, -1, -1,
+	8, 9,			/* aes in */
+	10, 11,			/* spdif in */
+	12, 16,			/* adat in */
+	2, 3, 4, 5,		/* AEB */
+	-1, -1, -1, -1,
 	-1, -1, -1, -1, -1, -1, -1, -1,
 	-1, -1, -1, -1, -1, -1, -1, -1,
 	-1, -1, -1, -1, -1, -1, -1, -1,
@@ -345,11 +354,12 @@ char channel_map_aio_in_qs[HDSPM_MAX_CHANNELS] = {
 
 char channel_map_aio_out_qs[HDSPM_MAX_CHANNELS] = {
 	0, 1,			/* line out */
-	8, 9,			/* AES out */
-	10, 11,			/* SPDIF out */
-	12, 16,			/* ADAT out */
+	8, 9,			/* aes out */
+	10, 11,			/* spdif out */
+	12, 16,			/* adat out */
 	6, 7,			/* phone out */
-	-1, -1, -1, -1, -1, -1,
+	2, 3, 4, 5,		/* AEB */
+	-1, -1,
 	-1, -1, -1, -1, -1, -1, -1, -1,
 	-1, -1, -1, -1, -1, -1, -1, -1,
 	-1, -1, -1, -1, -1, -1, -1, -1,

@@ -87,51 +87,57 @@ static char const *labels_rpm_input[5] = {
   "Mic"
 };
 
-static char const *labels_aio_ss_input[14] = {
-  "AN 1",  "AN 2",
-  "SP.L", "SP.R",
-  "AES.L",  "AES.R",
-  "A 1", "A 2", "A 3", "A 4",
-  "A 5", "A 6", "A 7", "A 8"
-};
-
-static char const *labels_aio_ss_playback[16] = {
+static char const *labels_aio_ss_input[18] = {
   "AN 1",  "AN 2",
   "SP.L", "SP.R",
   "AES.L",  "AES.R",
   "A 1", "A 2", "A 3", "A 4",
   "A 5", "A 6", "A 7", "A 8",
-  "PH.L", "PH.R"
+  "AEB 1", "AEB 2", "AEB 3," "AEB 4"
 };
 
-static char const *labels_aio_ds_input[10] = {
-  "AN 1",  "AN 2",  
+static char const *labels_aio_ss_playback[20] = {
+  "AN 1",  "AN 2",
   "SP.L", "SP.R",
   "AES.L",  "AES.R",
-  "A 1", "A 2", "A 3", "A 4"
+  "A 1", "A 2", "A 3", "A 4",
+  "A 5", "A 6", "A 7", "A 8",
+  "PH.L", "PH.R",
+  "AEB 1", "AEB 2", "AEB 3", "AEB 4"
 };
 
-static char const *labels_aio_ds_playback[12] = {
+static char const *labels_aio_ds_input[14] = {
   "AN 1",  "AN 2",  
   "SP.L", "SP.R",
   "AES.L",  "AES.R",
   "A 1", "A 2", "A 3", "A 4",
-  "PH.L", "PH.R"
+  "AEB 1", "AEB 2", "AEB 3", "AEB 4"
+};
+
+static char const *labels_aio_ds_playback[16] = {
+  "AN 1",  "AN 2",  
+  "SP.L", "SP.R",
+  "AES.L",  "AES.R",
+  "A 1", "A 2", "A 3", "A 4",
+  "PH.L", "PH.R",
+  "AEB 1", "AEB 2", "AEB 3", "AEB 4"
  };
 
-static char const *labels_aio_qs_input[8] = {
+static char const *labels_aio_qs_input[12] = {
   "AN 1",  "AN 2",
   "SP.L", "SP.R",
   "AES.L",  "AES.R",
-  "A 1", "A 2"
+  "A 1", "A 2",
+  "AEB 1", "AEB 2", "AEB 3", "AEB 4"
 };
 
-static char const *labels_aio_qs_playback[10] = {
+static char const *labels_aio_qs_playback[14] = {
   "AN 1",  "AN 2",
   "SP.L", "SP.R",
   "AES.L",  "AES.R",
   "A 1", "A 2",
   "PH.L", "PH.R",
+  "AEB 1", "AEB 2", "AEB 3", "AEB 4"
 };
 
 
