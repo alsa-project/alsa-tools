@@ -1,5 +1,5 @@
-AC_INIT(usx2yloader.c)
-AM_INIT_AUTOMAKE(usx2yloader, 0.3)
+AC_INIT(sscape_ctl, 0.1.0)
+AM_INIT_AUTOMAKE
 AM_MAINTAINER_MODE([enable])
 AC_PROG_CC
 AC_PROG_INSTALL
@@ -9,4 +9,4 @@ AM_PATH_ALSA(1.0.0)
 CFLAGS="$CFLAGS $ALSA_CFLAGS"
 LDFLAGS="$LDFLAGS $ALSA_LIBS"
 
-AC_OUTPUT(Makefile tascam_fpga tascam_fw)
+AC_OUTPUT(Makefile)

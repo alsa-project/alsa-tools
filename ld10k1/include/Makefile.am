@@ -9,7 +9,7 @@ CLEANFILES = stamp-vh version.h lo10k1
 version.h: stamp-vh
 	@:
 
-stamp-vh: $(top_builddir)/configure.in
+stamp-vh: $(top_builddir)/configure.ac
 	@echo "/*" > ver.tmp
 	@echo " *  version.h" >> ver.tmp
 	@echo " */" >> ver.tmp

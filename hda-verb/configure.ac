@@ -1,5 +1,5 @@
-AC_INIT(hda-verb.c)
-AM_INIT_AUTOMAKE(hda-verb, 0.4)
+AC_INIT(hda-verb, 0.4)
+AM_INIT_AUTOMAKE
 AM_MAINTAINER_MODE([enable])
 AC_PROG_CC
 AC_PROG_INSTALL

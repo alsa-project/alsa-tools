@@ -1,5 +1,5 @@
-AC_INIT(pcxhrloader.c)
-AM_INIT_AUTOMAKE(pcxhrloader, 1.0)
+AC_INIT(usx2yloader, 0.3)
+AM_INIT_AUTOMAKE
 AM_MAINTAINER_MODE([enable])
 AC_PROG_CC
 AC_PROG_INSTALL
@@ -9,4 +9,4 @@ AM_PATH_ALSA(1.0.0)
 CFLAGS="$CFLAGS $ALSA_CFLAGS"
 LDFLAGS="$LDFLAGS $ALSA_LIBS"
 
-AC_OUTPUT(Makefile)
+AC_OUTPUT(Makefile tascam_fpga tascam_fw)

@@ -1,5 +1,5 @@
-AC_INIT(rmedigicontrol.c)
-AM_INIT_AUTOMAKE(rmedigicontrol, 0.3.5a)
+AC_INIT(rmedigicontrol, 0.3.5a)
+AM_INIT_AUTOMAKE
 AM_MAINTAINER_MODE([enable])
 AC_PROG_CC
 AC_PROG_INSTALL
