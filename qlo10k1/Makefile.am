@@ -1,6 +1,6 @@
 SUBDIRS = src
 
-EXTRA_DIST = gitcompile COPYING configure.in README NEWS AUTHORS TODO \
+EXTRA_DIST = gitcompile COPYING configure.ac README NEWS AUTHORS TODO \
              INSTALL ChangeLog
 
 alsa-dist: distdir
