@@ -46,7 +46,7 @@ std_playback=playback
 std_capture=capture
 #std_capture=capture_noswitch
 
-log
+log ()
 {
     local level=$1
 
@@ -57,7 +57,7 @@ log
     fi
 }
 
-runlo10k1
+runlo10k1 ()
 {
     log 2 $LO10K1 "$@"
 
@@ -71,7 +71,7 @@ runlo10k1
     fi
 }
 
-rename
+rename ()
 {
     port=$1
     name=$2
@@ -81,7 +81,7 @@ rename
     runlo10k1 --renam "$port=$name"
 }
 
-connect
+connect ()
 {
     from=$1
     op=$2
@@ -92,7 +92,7 @@ connect
     runlo10k1 --conadd "$from$op$to"
 }
 
-copy
+copy ()
 {
     local name=$1
     local port=$2
@@ -105,7 +105,7 @@ copy
     connect "PIN($name Copy)" '=' "$port"
 }
 
-volume
+volume ()
 {
     local name=$1
     local port=$2
@@ -120,7 +120,7 @@ volume
     connect "PIN($name Volume)" '=' "$port"
 }
 
-master_volume
+master_volume ()
 {
     local name=$1
     local port=$2
@@ -135,7 +135,7 @@ master_volume
     connect "$port" '=' "PIN($name Volume)"
 }
 
-switch
+switch ()
 {
     local name=$1
     local port=$2
@@ -150,7 +150,7 @@ switch
     connect "PIN($name Switch)" '>' "$port"
 }
 
-switch_2x2
+switch_2x2 ()
 {
     local name=$1
     local port1=$2
@@ -166,7 +166,7 @@ switch_2x2
     connect "PIN($name Switch,2,3)" '>' "$port2"
 }
 
-switch_5x2
+switch_5x2 ()
 {
     local name=$1
     local port1=$2
@@ -182,7 +182,7 @@ switch_5x2
     connect "PIN($name Switch,5,6,7,8,9)" '>' "$port2"
 }
 
-master_switch
+master_switch ()
 {
     local name=$1
     local port=$2
@@ -197,7 +197,7 @@ master_switch
     connect "PIN($name Switch)" '=' "$port"
 }
 
-playback
+playback ()
 {
     name=$1
     port=$2
@@ -211,7 +211,7 @@ playback
     add_output "POUT($name Playback Volume)"
 }
 
-playback_noswitch
+playback_noswitch ()
 {
     name=$1
     port=$2
@@ -224,7 +224,7 @@ playback_noswitch
     add_output "POUT($name Playback Volume)"
 }
 
-capture
+capture ()
 {
     name=$1
     port=$2
@@ -238,7 +238,7 @@ capture
     connect "POUT($name Capture Volume)" '>' "OUT(OUT_PCM_Capture_Left,OUT_PCM_Capture_Right)"
 }
 
-capture_noswitch
+capture_noswitch ()
 {
     name=$1
     port=$2
@@ -251,7 +251,7 @@ capture_noswitch
     connect "POUT($name Capture Volume)" '>' "OUT(OUT_PCM_Capture_Left,OUT_PCM_Capture_Right)"
 }
 
-master
+master ()
 {
     local name=$1
     local port=$2
@@ -264,7 +264,7 @@ master
     master_switch "$name Playback" "POUT($name Playback Volume)" 1 $index
 }
 
-dump_patches
+dump_patches ()
 {
     max=$(( ${1} - 1 ))
     line=$(seq -s ' ' 0 $max)
@@ -277,35 +277,35 @@ dump_patches
     exit
 }
 
-add_output
+add_output ()
 {
     local port=$1
 
     $add_output_func "$port"
 }
 
-add_output_tone_2
+add_output_tone_2 ()
 {
     local port=$1
 
     connect "$port" '>' "PIN(Tone Control,0,1)"
 }
 
-add_output_simple_2
+add_output_simple_2 ()
 {
     local port=$1
 
     connect "$port" '>' "PIN(Wave Simple Stereo To 51,0,1)"
 }
 
-add_output_prologic_2
+add_output_prologic_2 ()
 {
     local port=$1
 
     connect "$port" '>' "PIN(Wave Prologic,0,1)"
 }
 
-add_output_switched_2
+add_output_switched_2 ()
 {
     local port=$1
 
@@ -314,7 +314,7 @@ add_output_switched_2
 }
 
 
-simple_stereo_to_51
+simple_stereo_to_51 ()
 {
     local name=$1
     local control=$2
@@ -330,7 +330,7 @@ simple_stereo_to_51
     fi
 }
 
-prologic
+prologic ()
 {
     local name=$1
     local control=$2
@@ -351,7 +351,7 @@ prologic
     connect "POUT($name Prologic)" '=' "PIN($name Multi Volume,0,1,2,3,4,5)"
 }
 
-tone
+tone ()
 {
     local name=$1
     local port=$2
@@ -364,7 +364,7 @@ tone
     runlo10k1 -n --ctrl "c-bass0,bass1,bass2,bass3,bass4:$name - Bass,t-$name - Bass:2,v-$name - Bass:1,c-treble0,treble1,treble2,treble3,treble4:$name - Treble,t-$name - Treble:3,v-$name - Treble:1,c-toneonoff:$name - Switch,t-$name - Switch:4" --patch_name "${name}" -a tone.emu10k1
 }
 
-multi_playback
+multi_playback ()
 {
     local name=$1
     local port=$2
@@ -383,7 +383,7 @@ multi_playback
     connect "POUT($name Multi Volume)" '>' "PIN(Tone Control)"
 }
 
-fxbus
+fxbus ()
 {
     local name=$1
     local enable_pcm_fx89=$2
