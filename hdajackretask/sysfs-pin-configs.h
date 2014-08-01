@@ -48,6 +48,10 @@ gchar* get_config_description(unsigned long config);
 
 gchar* get_caps_description(unsigned long pin_caps);
 
+const gchar** get_standard_hint_names();
+gchar *get_hint_overrides(int card, int device);
+
+
 /* 0 = Jack, 1 = N/A, 2 = Internal, 3 = Both (?!) */
 int get_port_conn(unsigned long config);
 

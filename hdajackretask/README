@@ -1,12 +1,12 @@
-Documentation for hda-jack-retask
-=================================
+Documentation for hdajackretask
+===============================
 
 Most HDA Intel soundcards are to some degree retaskable, i e can be used for more than one thing. This tool is a GUI to make it easy to retask your jacks - e g, turn your Mic jack into an extra Headphone, or why not make them both line outs and connect them to your surround receiver?
 
 Quickstart
 ==========
 
-Start the application "hda-jack-retask" from the command line.
+Start the application "hdajackretask" from the command line.
 Select a codec in the top bar; some people have only one - if you have more than one, one is the "main" one, and the rest are probably HDMI codecs. 
 
 All jacks (and other inputs/outputs) are shown under "Pin configuration". To override one of your jacks, click the "Override" checkbox for that pin and select the desired function.
@@ -44,9 +44,11 @@ Options
 Your BIOS is responsible for setting up what pins on the codec that are actually connected to something and which ones are not. Sometimes BIOS is buggy, and will not show all your jacks. If you have a jack your BIOS says you haven't, you can try enabling random pins and see if it works.
 
  * Set Model=auto
-Some codecs, especially older ones, are hard-coded to use a specific model, and thus will not care about your overrides. In many cases and with a reasonably new kernel, the auto parser now works well for these codecs as well. You can force the auto parser to be used by checking this box. In some cases, though, the explicit model is there for a reason, if so, you're stuck.
+Some codecs, especially older ones and on kernels 3.8 and below, are hard-coded to use a specific model, and thus will not care about your overrides. In many cases and with a reasonably new kernel, the auto parser now works well for these codecs as well. You can force the auto parser to be used by checking this box. In some cases, though, the explicit model is there for a reason, if so, you're stuck.
 
  * Advanced override
 This is for the experts only. It makes you select each configuration field individually, instead of just a few predefined values that make sense. Note that most combinations here are invalid in one way or the other, so you should probably not mess with this unless you have read and understood the "Configuration Default" section of the HD Audio specification. (Which, at the time of this writing, is available here: 
-http://www.intel.com/content/dam/doc/product-specification/high-definition-audio-specification.pdf )
+http://www.intel.com/content/dam/www/public/us/en/documents/product-specifications/high-definition-audio-specification.pdf )
 
+ * Parser hints
+This enables you to send special "hints" to the driver that causes parsing to behave differently. Leave them at the "default" setting unless you have read the driver documentation. ( Which, at the time of this writing, is available here: https://www.kernel.org/doc/Documentation/sound/alsa/HD-Audio.txt - see the "Hint strings" section. )

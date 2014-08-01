@@ -20,6 +20,13 @@ typedef struct pin_ui_data_t {
     ui_data_t* owner;
 } pin_ui_data_t;
 
+typedef struct hints_ui_data_t {
+    gboolean visible;
+    GtkWidget *frame;
+    GtkListStore *store;
+    gchar *values;
+} hints_ui_data_t;
+
 struct ui_data_t {
     GList* pin_ui_data;
     GtkWidget *main_window;
@@ -35,6 +42,8 @@ struct ui_data_t {
     gboolean trust_codec;
     gboolean trust_defcfg;
     gboolean model_auto;
+
+    hints_ui_data_t hints;
 };
 
 static void update_user_pin_config(ui_data_t* ui, pin_configs_t* cfg);
@@ -229,14 +238,44 @@ static void update_all_user_pin_config(ui_data_t* ui)
         update_user_pin_config(ui, &ui->sysfs_pins[i]);
 }
 
+static gboolean update_one_hint(GtkTreeModel *model, GtkTreePath *path,
+                            GtkTreeIter *iter, gpointer userdata)
+{
+    gchar *name, *value;
+    ui_data_t *ui = userdata;
+    gtk_tree_model_get(GTK_TREE_MODEL(ui->hints.store), iter, 0, &name, 1, &value, -1);
+    if (g_strcmp0(value, "default")) {
+        gchar *s = g_strconcat(name, "=", value, "\n", ui->hints.values, NULL);
+        g_free(ui->hints.values);
+        ui->hints.values = s;
+    }
+    g_free(name);
+    g_free(value);
+    return FALSE;
+}
+
+static void update_hints(ui_data_t* ui)
+{
+    g_free(ui->hints.values);
+    ui->hints.values = NULL;
+    if (ui->hints.visible)
+        gtk_tree_model_foreach(GTK_TREE_MODEL(ui->hints.store), update_one_hint, ui);
+}
+
+static GQuark quark()
+{
+    return g_quark_from_static_string("hda-jack-retask-error");
+}
+
 static gboolean validate_user_pin_config(ui_data_t* ui, GError** err)
 {
     int i;
 
     if (!ui->current_codec) {
-        g_set_error(err, 0, 0, "You must first select a codec!");
+        g_set_error(err, quark(), 0, "You must first select a codec!");
         return FALSE;
     }
+    update_hints(ui);
     update_all_user_pin_config(ui);
     if (ui->free_overrides)
         return TRUE;
@@ -249,19 +288,42 @@ static gboolean validate_user_pin_config(ui_data_t* ui, GError** err)
         if ((v & 0xf0) != 0x10)
             continue;
         if (((v & 0xf) != 0) && !find_pin_channel_match(ui->sysfs_pins, ui->sysfs_pincount, v & 0xf0)) {
-            g_set_error(err, 0, 0, "This surround setup also requires a \"front\" channel override.");
+            g_set_error(err, quark(), 0, "This surround setup also requires a \"front\" channel override.");
             return FALSE;
         }
         if (((v & 0xf) >= 3) && !find_pin_channel_match(ui->sysfs_pins, ui->sysfs_pincount, 2 + (v & 0xf0))) {
-            g_set_error(err, 0, 0, "This surround setup also requires a \"back\" channel override.");
+            g_set_error(err, quark(), 0, "This surround setup also requires a \"back\" channel override.");
             return FALSE;
         }
         if ((v & 0xf) >= 3 && !find_pin_channel_match(ui->sysfs_pins, ui->sysfs_pincount, 1 + (v & 0xf0))) {
-            g_set_error(err, 0, 0, "This surround setup also requires a \"Center/LFE\" channel override.");
+            g_set_error(err, quark(), 0, "This surround setup also requires a \"Center/LFE\" channel override.");
             return FALSE;
         }
     }
     return TRUE;
+}
+
+static gboolean update_tree_one_hint(GtkTreeModel *model, GtkTreePath *path,
+                            GtkTreeIter *iter, gpointer userdata)
+{
+    gchar *name;
+    ui_data_t *ui = userdata;
+    gtk_tree_model_get(GTK_TREE_MODEL(ui->hints.store), iter, 0, &name, -1);
+    gchar *s = strstr(ui->hints.values, name);
+    if (!s) {
+        g_free(name);
+        gtk_list_store_set(ui->hints.store, iter, 1, "default", -1);
+        return FALSE;
+    }
+    s += strlen(name);
+    while (*s == ' ' || *s == '=') s++;
+    gchar *s2 = s;
+    while (*s != '\n' && *s != '\0') s++;
+    s2 = g_strndup(s2, s - s2);
+    gtk_list_store_set(ui->hints.store, iter, 1, s2, -1);
+    g_free(s2);
+    g_free(name);
+    return FALSE;
 }
 
 static void show_action_result(ui_data_t* ui, GError* err, const gchar* ok_msg)
@@ -285,7 +347,7 @@ static void apply_now_clicked(GtkButton* button, gpointer user_data)
     if (ok)
         apply_changes_reconfig(ui->sysfs_pins, ui->sysfs_pincount, 
             ui->current_codec->card, ui->current_codec->device, 
-            ui->model_auto ? "auto" : NULL, &err); 
+            ui->model_auto ? "auto" : NULL, ui->hints.values, &err);
     show_action_result(ui, err, 
         "Ok, now go ahead and test to see if it actually worked!\n"
         "(Remember, this stuff is still experimental.)");
@@ -299,8 +361,8 @@ static void apply_boot_clicked(GtkButton* button, gpointer user_data)
     if (ok) 
         apply_changes_boot(ui->sysfs_pins, ui->sysfs_pincount, 
             ui->current_codec->card, ui->current_codec->device, 
-            ui->model_auto ? "auto" : NULL, &err); 
-    show_action_result(ui, err, 
+            ui->model_auto ? "auto" : NULL, ui->hints.values, &err);
+    show_action_result(ui, err,
         "Ok, now reboot to test to see if it actually worked!\n"
         "(Remember, this stuff is still experimental.)");
 }
@@ -359,15 +421,24 @@ static void update_codec_ui(ui_data_t* ui, bool codec_change)
     if (codec_index < 0)
         return;
     ui->current_codec = &ui->sysfs_codec_names[codec_index];
-    if (codec_change)
+    if (codec_change) {
         ui->sysfs_pincount = get_pin_configs_list(ui->sysfs_pins, 32, ui->current_codec->card, ui->current_codec->device);
+        ui->hints.values = get_hint_overrides(ui->current_codec->card, ui->current_codec->device);
+        gtk_tree_model_foreach(GTK_TREE_MODEL(ui->hints.store), update_tree_one_hint, ui);
+    }
     for (i = 0; i < ui->sysfs_pincount; i++) {
         GtkWidget *w = create_pin_ui(ui, &ui->sysfs_pins[i]);
         if (w)
             gtk_container_add(GTK_CONTAINER(ui->content_inner_box), w);
     }
-    
+
     gtk_widget_show_all(GTK_WIDGET(ui->content_inner_box));
+
+    if (ui->hints.visible)
+        gtk_widget_show_all(ui->hints.frame);
+    else
+        gtk_widget_hide(ui->hints.frame);
+
     resize_main_window(ui);
 }
 
@@ -393,6 +464,32 @@ static void free_override_toggled(GtkWidget* sender, ui_data_t* ui_data)
     ui_data->free_overrides = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(sender));
     update_codec_ui(ui_data, false);
 }
+
+static void hints_toggled(GtkWidget* sender, ui_data_t* ui_data)
+{
+    ui_data->hints.visible = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(sender));
+    update_codec_ui(ui_data, false);
+}
+
+static void hints_row_activated(GtkTreeView *tree_view, GtkTreePath *path,
+                                GtkTreeViewColumn *column, ui_data_t* ui_data)
+{
+    GtkTreeIter iter;
+    gchar *value;
+    const gchar *newvalue = "default";
+
+    gtk_tree_model_get_iter(GTK_TREE_MODEL(ui_data->hints.store), &iter, path);
+    gtk_tree_model_get(GTK_TREE_MODEL(ui_data->hints.store), &iter, 1, &value, -1);
+
+    if (!g_strcmp0(value, "default"))
+        newvalue = "yes";
+    else if (!g_strcmp0(value, "yes"))
+        newvalue = "no";
+    gtk_list_store_set(ui_data->hints.store, &iter, 1, newvalue, -1);
+
+    g_free(value);
+}
+
 
 static const char* readme_text = 
 #include "README.generated.h"
@@ -480,6 +577,31 @@ static ui_data_t* create_ui()
         gtk_box_set_child_packing(GTK_BOX(toplevel_2ndbox), frame, TRUE, TRUE, 2, GTK_PACK_START);
     }
 
+    /* Create hints */
+    {
+        GtkWidget* frame = gtk_frame_new("Hints");
+        ui->hints.frame = frame;
+
+        GtkListStore *store = gtk_list_store_new (2, G_TYPE_STRING, G_TYPE_STRING);
+        ui->hints.store = store;
+        const gchar** names = get_standard_hint_names();
+        for (; *names; names++) {
+            GtkTreeIter iter;
+            gtk_list_store_append(store, &iter);
+            gtk_list_store_set(store, &iter, 0, *names, 1, "default", -1);
+        }
+
+        GtkWidget *tree = gtk_tree_view_new_with_model(GTK_TREE_MODEL(store));
+        gtk_tree_view_append_column(GTK_TREE_VIEW(tree), gtk_tree_view_column_new_with_attributes
+            ("Name", gtk_cell_renderer_text_new(), "text", 0, NULL));
+        gtk_tree_view_append_column(GTK_TREE_VIEW(tree), gtk_tree_view_column_new_with_attributes
+            ("Value", gtk_cell_renderer_text_new(), "text", 1, NULL));
+        g_signal_connect(tree, "row-activated", G_CALLBACK(hints_row_activated), ui);
+
+        gtk_container_add(GTK_CONTAINER(frame), tree);
+        gtk_container_add(toplevel_2ndbox, frame);
+    }
+
     /* Create settings */
     {
         GtkWidget* frame = gtk_frame_new("Options");
@@ -496,6 +618,10 @@ static ui_data_t* create_ui()
 
         check = gtk_check_button_new_with_label("Advanced override");
         g_signal_connect(check, "toggled", G_CALLBACK(free_override_toggled), ui);
+        gtk_container_add(box, check);
+
+        check = gtk_check_button_new_with_label("Parser hints");
+        g_signal_connect(check, "toggled", G_CALLBACK(hints_toggled), ui);
         gtk_container_add(box, check);
 
         gtk_container_add(GTK_CONTAINER(frame), GTK_WIDGET(box));

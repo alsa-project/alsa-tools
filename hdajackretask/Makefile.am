@@ -1,5 +1,5 @@
 EXTRA_DIST = gitcompile README
-AM_CFLAGS = @GTK3_CFLAGS@
+AM_CFLAGS = @GTK3_CFLAGS@ -Wno-deprecated-declarations
 bin_PROGRAMS = hdajackretask
 man_MANS =
 hdajackretask_SOURCES = main-gtk.c sysfs-pin-configs.c apply-changes.c 

@@ -7,6 +7,21 @@
 #include "sysfs-pin-configs.h"
 #include "apply-changes.h"
 
+const gchar *hint_names[25] = {
+"jack_detect",  "inv_jack_detect", "trigger_sense", "inv_eapd",
+"pcm_format_first", "sticky_stream", "spdif_status_reset",
+"pin_amp_workaround", "single_adc_amp", "auto_mute", "auto_mic",
+"line_in_auto_switch", "auto_mute_via_amp", "need_dac_fix", "primary_hp",
+"multi_io", "multi_cap_vol", "inv_dmic_split", "indep_hp",
+"add_stereo_mix_input", "add_jack_modes", "power_down_unused", "add_hp_mic",
+"hp_mic_detect", NULL };
+
+const gchar** get_standard_hint_names()
+{
+    return hint_names;
+}
+
+
 int get_codec_name_list(codec_name_t* names, int entries)
 {
     GDir* sysdir = g_dir_open("/sys/class/sound", 0, NULL);
@@ -117,6 +132,16 @@ static void get_pin_caps(pin_configs_t* pins, int entries, int card, int device)
     g_free(contents);
 }
 
+gchar *get_hint_overrides(int card, int device)
+{
+    gchar* filename = g_strdup_printf("/sys/class/sound/hwC%dD%d/hints", card, device);
+    gchar* contents = NULL;
+    int ok = g_file_get_contents(filename, &contents, NULL, NULL);
+    g_free(filename);
+    if (!ok)
+        return NULL;
+    return contents;
+}
 
 static void read_pin_overrides(pin_configs_t* pins, int entries, int card, int device, gboolean is_user)
 {
@@ -126,7 +151,7 @@ static void read_pin_overrides(pin_configs_t* pins, int entries, int card, int d
     int count = 0;
     int ok = g_file_get_contents(filename, &contents, NULL, NULL);
     g_free(filename);
-    if (!ok) 
+    if (!ok)
         return;
     line_iterator = lines = g_strsplit(contents, "\n", entries);
     while (count < entries && *line_iterator) {
@@ -151,6 +176,7 @@ static void read_pin_overrides(pin_configs_t* pins, int entries, int card, int d
         g_strfreev(line); 
     }    
     g_strfreev(lines);
+    g_free(contents);
 }
 
 int get_pin_configs_list(pin_configs_t* pins, int entries, int card, int device)

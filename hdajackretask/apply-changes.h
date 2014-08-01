@@ -5,10 +5,10 @@
 #include <glib.h>
 
 gboolean apply_changes_reconfig(pin_configs_t* pins, int entries, int card, int device, 
-    const char* model, GError** err);
+    const char* model, const char* hints, GError** err);
 
 gboolean apply_changes_boot(pin_configs_t* pins, int entries, int card, int device, 
-    const char* model, GError** err);
+    const char* model, const char* hints, GError** err);
 gboolean reset_changes_boot();
 
 #endif

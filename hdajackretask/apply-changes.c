@@ -15,6 +15,11 @@ static gchar* tempdir = NULL;
 static gchar* scriptfile = NULL;
 static gchar* errorfile = NULL;
 
+static GQuark quark()
+{
+    return g_quark_from_static_string("hda-jack-retask-error");
+}
+
 static gboolean ensure_tempdir(GError** err)
 {
     if (!tempdir) {
@@ -29,10 +34,10 @@ static gboolean ensure_tempdir(GError** err)
 }
 
 static gboolean create_reconfig_script(pin_configs_t* pins, int entries, int card, int device, 
-    const char* model, GError** err)
+    const char* model, const char* hints, GError** err)
 {
     gchar* hwdir = g_strdup_printf("/sys/class/sound/hwC%dD%d", card, device);
-    gchar destbuf[120*40] = "#!/bin/sh\n";
+    gchar destbuf[150*40] = "#!/bin/sh\n";
     int bufleft = sizeof(destbuf) - strlen(destbuf);
     gboolean ok = FALSE;
     gchar* s = destbuf + strlen(destbuf);
@@ -44,9 +49,16 @@ static gboolean create_reconfig_script(pin_configs_t* pins, int entries, int car
         int l = g_snprintf(s, bufleft, "echo \"%s\" | tee %s/modelname 2>>%s\n",
             model, hwdir, errorfile);
         bufleft-=l;
-        s+=l;           
+        s+=l;
     }
-    
+
+    if (hints) {
+        int l = g_snprintf(s, bufleft, "echo \"%s\" | tee %s/hints 2>>%s\n",
+            hints, hwdir, errorfile);
+        bufleft-=l;
+        s+=l;
+    }
+
     while (entries) {
         int l = g_snprintf(s, bufleft, "echo \"0x%02x 0x%08x\" | tee %s/user_pin_configs 2>>%s\n",
             pins->nid, (unsigned int) actual_pin_config(pins), hwdir, errorfile);
@@ -57,7 +69,7 @@ static gboolean create_reconfig_script(pin_configs_t* pins, int entries, int car
     }    
 
     if (bufleft < g_snprintf(s, bufleft, "echo 1 | tee %s/reconfig 2>>%s", hwdir, errorfile)) {
-        g_set_error(err, 0, 0, "Bug in %s:%d!", __FILE__, __LINE__);
+        g_set_error(err, quark(), 0, "Bug in %s:%d!", __FILE__, __LINE__);
         goto cleanup;
     }
 
@@ -85,7 +97,7 @@ gboolean run_sudo_script(const gchar* script_name, GError** err)
     g_chmod(script_name, 0755);
     g_spawn_command_line_sync(cmdline, NULL, NULL, &exit_status, NULL);
     if (errorfile && g_file_get_contents(errorfile, &errfilecontents, &errlen, NULL) && errlen) {
-        g_set_error(err, 0, 0, "%s", errfilecontents);
+        g_set_error(err, quark(), 0, "%s", errfilecontents);
         ok = FALSE;
     }
     else ok = TRUE;
@@ -130,7 +142,7 @@ static gboolean kill_pulseaudio(gboolean* was_killed, int card, GError** err)
 
     clientconf = get_pulseaudio_client_conf();
     if (!(ok = !g_file_test(clientconf, G_FILE_TEST_EXISTS))) {
-        g_set_error(err, 0, 0, "Cannot block PulseAudio from respawning:\n"
+        g_set_error(err, quark(), 0, "Cannot block PulseAudio from respawning:\n"
             "Please either remove '%s' or kill PulseAudio manually.", clientconf);
         goto cleanup;
     }
@@ -153,7 +165,7 @@ static gboolean restore_pulseaudio(gboolean was_killed, GError** err)
 {
     gchar* clientconf = get_pulseaudio_client_conf();
     if (was_killed && g_unlink(clientconf) != 0) {
-        g_set_error(err, 0, 0, "%s", g_strerror(errno));
+        g_set_error(err, quark(), 0, "%s", g_strerror(errno));
         g_free(clientconf);
         return FALSE;
     }
@@ -162,7 +174,7 @@ static gboolean restore_pulseaudio(gboolean was_killed, GError** err)
 }
 
 gboolean apply_changes_reconfig(pin_configs_t* pins, int entries, int card, int device, 
-    const char* model, GError** err)
+    const char* model, const char* hints, GError** err)
 {
     gboolean result = FALSE;
 //    gchar* script_name = NULL;
@@ -172,7 +184,7 @@ gboolean apply_changes_reconfig(pin_configs_t* pins, int entries, int card, int 
     if (!kill_pulseaudio(&pa_killed, card, err))
         goto cleanup;
     /* Create script */
-    if (!create_reconfig_script(pins, entries, card, device, model, err))
+    if (!create_reconfig_script(pins, entries, card, device, model, hints, err))
         goto cleanup;
     /* Run script as root */
     if (!run_sudo_script(scriptfile, err))
@@ -187,10 +199,10 @@ cleanup:
 }
 
 static gboolean create_firmware_file(pin_configs_t* pins, int entries, int card, int device, 
-    const char* model, GError** err)
+    const char* model, const char* hints, GError** err)
 {
     gboolean ok;
-    gchar destbuf[40*40] = "";
+    gchar destbuf[40*40+40*24] = "";
     gchar* s = destbuf;
     gchar* filename = g_strdup_printf("%s/hda-jack-retask.fw", tempdir);
     unsigned int address, codec_vendorid, codec_ssid;
@@ -212,6 +224,12 @@ static gboolean create_firmware_file(pin_configs_t* pins, int entries, int card,
 
     if (model) {
         int l = g_snprintf(s, bufleft, "\n[model]\n%s\n", model);
+        bufleft-=l;
+        s+=l;
+    }
+
+    if (hints) {
+        int l = g_snprintf(s, bufleft, "\n[hints]\n%s\n", hints);
         bufleft-=l;
         s+=l;
     }
@@ -238,14 +256,14 @@ static const gchar* install_script =
 "mv %s/hda-jack-retask.conf /etc/modprobe.d/hda-jack-retask.conf 2>>%s\n";
 
 gboolean apply_changes_boot(pin_configs_t* pins, int entries, int card, int device, 
-    const char* model, GError** err)
+    const char* model, const char* hints, GError** err)
 {
     gchar *s;
 
     if (!ensure_tempdir(err))
         return FALSE;
 
-    if (!create_firmware_file(pins, entries, card, device, model, err))
+    if (!create_firmware_file(pins, entries, card, device, model, hints, err))
         return FALSE;
 
     /* Create hda-jack-retask.conf */
@@ -277,7 +295,7 @@ gboolean reset_changes_boot(GError** err)
     if ((g_file_test("/etc/modprobe.d/hda-jack-retask.conf", G_FILE_TEST_EXISTS) == 0) &&
         (g_file_test("/lib/firmware/hda-jack-retask.fw", G_FILE_TEST_EXISTS) == 0))
     {
-        g_set_error(err, 0, 0, "No boot override is currently installed, nothing to remove.");
+        g_set_error(err, quark(), 0, "No boot override is currently installed, nothing to remove.");
         return FALSE;
     }
 
