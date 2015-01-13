@@ -289,6 +289,8 @@ unsigned long actual_pin_config(pin_configs_t* pins)
 #define AC_DEFCFG_DEVICE_SHIFT		20
 #define AC_DEFCFG_LOCATION		(0x3f<<24)
 #define AC_DEFCFG_LOCATION_SHIFT	24
+#define AC_DEFCFG_GROSSLOC		(0x3<<28)
+#define AC_DEFCFG_GROSSLOC_SHIFT	28
 #define AC_DEFCFG_PORT_CONN		(0x3<<30)
 #define AC_DEFCFG_PORT_CONN_SHIFT	30
 
@@ -594,21 +596,27 @@ static gboolean disabled_caps(unsigned long pin_caps, unsigned long wid_caps)
     return TRUE;
 }
 
+#define DEFAULT_MASK (AC_DEFCFG_PORT_CONN | AC_DEFCFG_GROSSLOC | AC_DEFCFG_DEVICE)
+
 static typical_pins_t simple_typical_pins[] = {
-    {"Headphone", headphone_caps, 0x0321403f, AC_DEFCFG_PORT_CONN | AC_DEFCFG_DEVICE, },
-    {"Microphone", extmic_caps, 0x03a19020, AC_DEFCFG_PORT_CONN | AC_DEFCFG_DEVICE,},
-    {"Line out (Front)", lineout_caps, 0x01014410, AC_DEFCFG_PORT_CONN | AC_DEFCFG_DEVICE | AC_DEFCFG_SEQUENCE,},
-    {"Line out (Center/LFE)", lineout_caps, 0x01014411, AC_DEFCFG_PORT_CONN | AC_DEFCFG_DEVICE | AC_DEFCFG_SEQUENCE,},
-    {"Line out (Back)", lineout_caps, 0x01014412, AC_DEFCFG_PORT_CONN | AC_DEFCFG_DEVICE | AC_DEFCFG_SEQUENCE,},
-    {"Line out (Side)", lineout_caps, 0x01014413, AC_DEFCFG_PORT_CONN | AC_DEFCFG_DEVICE | AC_DEFCFG_SEQUENCE,},
-    {"Line in", linein_caps, 0x0181344f, AC_DEFCFG_PORT_CONN | AC_DEFCFG_DEVICE,},
-    {"Internal speaker", lineout_caps, 0x90170150, AC_DEFCFG_PORT_CONN | AC_DEFCFG_DEVICE | AC_DEFCFG_SEQUENCE, },
-    {"Internal speaker (LFE)", lineout_caps, 0x90170151, AC_DEFCFG_PORT_CONN | AC_DEFCFG_DEVICE | AC_DEFCFG_SEQUENCE, },
-    {"Internal speaker (Back)", lineout_caps, 0x90170152, AC_DEFCFG_PORT_CONN | AC_DEFCFG_DEVICE | AC_DEFCFG_SEQUENCE, },
-    {"Internal mic", intmic_caps, 0x90a60160, AC_DEFCFG_PORT_CONN | AC_DEFCFG_DEVICE,},
-    {"HDMI", hdmi_caps, 0x18560070, AC_DEFCFG_PORT_CONN | AC_DEFCFG_LOCATION,},
+    {"Headphone", headphone_caps, 0x0321403f, DEFAULT_MASK, },
+    {"Microphone", extmic_caps, 0x03a19020, DEFAULT_MASK,},
+    {"Line out (Front)", lineout_caps, 0x01014010, DEFAULT_MASK | AC_DEFCFG_SEQUENCE,},
+    {"Line out (Center/LFE)", lineout_caps, 0x01014011, DEFAULT_MASK | AC_DEFCFG_SEQUENCE,},
+    {"Line out (Back)", lineout_caps, 0x01014012, DEFAULT_MASK | AC_DEFCFG_SEQUENCE,},
+    {"Line out (Side)", lineout_caps, 0x01014013, DEFAULT_MASK | AC_DEFCFG_SEQUENCE,},
+    {"Line in", linein_caps, 0x0181304f, DEFAULT_MASK,},
+    {"Internal speaker", lineout_caps, 0x90170150, DEFAULT_MASK | AC_DEFCFG_SEQUENCE, },
+    {"Internal speaker (LFE)", lineout_caps, 0x90170151, DEFAULT_MASK | AC_DEFCFG_SEQUENCE, },
+    {"Internal speaker (Back)", lineout_caps, 0x90170152, DEFAULT_MASK | AC_DEFCFG_SEQUENCE, },
+    {"Internal mic", intmic_caps, 0x90a60160, DEFAULT_MASK,},
+    {"HDMI / DisplayPort", hdmi_caps, 0x18560070, AC_DEFCFG_PORT_CONN | AC_DEFCFG_LOCATION,},
     {"SPDIF out", spdifout_caps, 0x014b1180, AC_DEFCFG_PORT_CONN | AC_DEFCFG_DEVICE,},
     {"SPDIF in", spdifin_caps, 0x01cb6190, AC_DEFCFG_PORT_CONN | AC_DEFCFG_DEVICE,},
+    {"Dock Headphone", headphone_caps, 0x222140af, DEFAULT_MASK, },
+    {"Dock Microphone", extmic_caps, 0x22a190a0, DEFAULT_MASK,},
+    {"Dock Line out", lineout_caps, 0x220140b0, DEFAULT_MASK | AC_DEFCFG_SEQUENCE,},
+    {"Dock Line in", linein_caps, 0x228130bf, DEFAULT_MASK,},
     {"Not connected", disabled_caps, 0x40f000f0, AC_DEFCFG_PORT_CONN,},
     {}
 };
