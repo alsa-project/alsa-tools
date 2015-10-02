@@ -123,6 +123,9 @@ hdajackretask/configure
 hdajackretask/Makefile
 hdajackretask/README.generated.h
 hdajackretask/hdajackretask
+hdajacksensetest/Makefile
+hdajacksensetest/configure
+hdajacksensetest/hdajacksensetest
 hda-verb/Makefile
 hda-verb/configure
 hda-verb/hda-verb
