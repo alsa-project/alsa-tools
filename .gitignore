@@ -30,6 +30,7 @@ autom4te.cache
 stamp-h1
 version
 distdir
+*/compile
 
 ac3dec/Makefile
 ac3dec/ac3dec
@@ -62,7 +63,6 @@ hdsploader/configure
 hwmixvolume/Makefile
 hwmixvolume/configure
 ld10k1/Makefile
-ld10k1/compile
 ld10k1/ld10k1d
 ld10k1/configure
 ld10k1/m4/
