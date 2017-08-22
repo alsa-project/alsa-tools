@@ -366,8 +366,8 @@ void as_exit(const char *message)
 	exit(1);
 }
 
-inline void output_tram_line( struct list_head *line_head, int type){
-        
+void output_tram_line(struct list_head *line_head, int type)
+{
         struct tram *tram_sym;
         struct list_head *entry;
 
