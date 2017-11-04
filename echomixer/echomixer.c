@@ -525,6 +525,25 @@ void GetChannels(void) {
     nLOut=snd_ctl_elem_value_get_integer(control, 2);	// Number of output channels
     fdOut=snd_ctl_elem_value_get_integer(control, 3);	// First digital out
     nPOut=snd_ctl_elem_value_get_integer(control, 4);	// Number of virtual output channels (==nLOut on non-vmixer cards)
+
+    mixerControl.outputs = nLOut;
+    mixerControl.inputs = nIn;
+
+    if (vmixerId) {
+      vmixerControl.outputs = nLOut;
+      vmixerControl.inputs = nPOut;
+
+      /* For outputs and inputs. */
+      metersStreams = 2;
+    } else {
+      /* For outputs, inputs and system outputs. */
+      metersStreams = 3;
+    }
+
+    /* For the number of channels. */
+    metersNumber = 16;
+    /* For each of levels and peaks. */
+    metersTypes = 2;
   }
   ClockMask=snd_ctl_elem_value_get_integer(control, 5);	// Bitmask of available input clocks
 }
@@ -1712,15 +1731,11 @@ int OpenControls(const char *card, const char *cardname) {
       if (!mixerId) {
         mixerId=numid;
         CTLID_DEBUG(("First Mixer id=%d\n", mixerId));
-        mixerControl.outputs=snd_ctl_elem_info_get_dimension(info, 0);
-        mixerControl.inputs=snd_ctl_elem_info_get_dimension(info, 1);
       }
     } else if (!strcmp("VMixer Volume", snd_ctl_elem_id_get_name(id))) {
       if (!vmixerId) {
         vmixerId=vmixerControl.id=numid;
         CTLID_DEBUG(("First Vmixer id=%d\n", vmixerId));
-        vmixerControl.outputs=snd_ctl_elem_info_get_dimension(info, 0);
-        vmixerControl.inputs=snd_ctl_elem_info_get_dimension(info, 1);
       }
     } else if (!strcmp("PCM Playback Volume", snd_ctl_elem_id_get_name(id))) {
       pcmoutId=pcmoutControl.id=numid;
@@ -1789,9 +1804,6 @@ int OpenControls(const char *card, const char *cardname) {
       CTLID_DEBUG(("VU-meter switch id=%d\n", numid));
     } else if (!strcmp("VU-meters", snd_ctl_elem_id_get_name(id))) {
       vumetersId=numid;
-      metersStreams=snd_ctl_elem_info_get_dimension(info, 0);	// 2 or 3: output, input and (vmixer cards only) pcm
-      metersNumber=snd_ctl_elem_info_get_dimension(info, 1);	// Number of channels
-      metersTypes=snd_ctl_elem_info_get_dimension(info, 2);	// 2: level and peak
       CTLID_DEBUG(("VU-meters id=%d\n", numid));
     } else if (!strcmp("Channels info", snd_ctl_elem_id_get_name(id))) {
       channelsId=numid;
