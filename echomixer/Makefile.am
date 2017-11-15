@@ -1,3 +1,4 @@
+SUBDIRS = desktop
 AM_CFLAGS = @ECHOMIXER_CFLAGS@
 bin_PROGRAMS = echomixer
 man_MANS = 
