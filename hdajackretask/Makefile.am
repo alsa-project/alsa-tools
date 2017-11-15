@@ -1,3 +1,4 @@
+SUBDIRS = desktop
 EXTRA_DIST = gitcompile README
 AM_CFLAGS = @GTK3_CFLAGS@ -Wno-deprecated-declarations
 bin_PROGRAMS = hdajackretask
@@ -21,4 +22,3 @@ alsa-dist: distdir
 	@mkdir -p ../distdir/hdajackretask
 	@cp -RLpv $(distdir)/* ../distdir/hdajackretask
 	@rm -rf $(distdir)
-

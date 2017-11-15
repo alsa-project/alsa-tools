@@ -123,6 +123,7 @@ hdajackretask/configure
 hdajackretask/Makefile
 hdajackretask/README.generated.h
 hdajackretask/hdajackretask
+hdajackretask/desktop/Makefile
 hdajacksensetest/Makefile
 hdajacksensetest/configure
 hdajacksensetest/hdajacksensetest

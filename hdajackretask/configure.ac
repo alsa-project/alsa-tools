@@ -8,4 +8,4 @@ AC_HEADER_STDC
 
 PKG_CHECK_MODULES(GTK3, gtk+-3.0)
 
-AC_OUTPUT(Makefile)
+AC_OUTPUT(Makefile desktop/Makefile)
