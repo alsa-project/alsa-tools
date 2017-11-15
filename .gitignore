@@ -57,6 +57,7 @@ hdspmixer/Makefile
 hdspmixer/configure
 hdspmixer/src/hdspmixer
 hdspmixer/pixmaps/Makefile
+hdspmixer/desktop/Makefile
 hdspmixer/src/Makefile
 hdsploader/Makefile
 hdsploader/configure

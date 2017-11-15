@@ -9,25 +9,6 @@ AC_PATH_X
 
 AM_PATH_ALSA(1.0.0)
 
-dnl desktop install
-AC_ARG_WITH(desktop-dir,
-  [ --with-desktop-dir  specify the path to install desktop file],
-  [desktopdir="$withval"], [desktopdir=""])
-if test -z "$desktopdir"; then
-  desktopdir=$datadir/applications
-fi
-DESKTOP_DIR="$desktopdir"
-AC_SUBST(DESKTOP_DIR)
-	
-AC_ARG_WITH(pixmap-dir,
-  [ --with-pixmap-dir  specify the path to install desktop pixmap file],
-  [pixmapdir="$withval"], [pixmapdir=""])
-if test -z "$pixmapdir"; then
-  pixmapdir=$datadir/pixmaps
-fi
-PIXMAP_DIR="$pixmapdir"
-AC_SUBST(PIXMAP_DIR)
-
 dnl library check
 AC_PATH_PROG(FLTK_CONFIG, fltk-config, no)
 if test "$FLTK_CONFIG" = "no" && ! test "`hostname -f`" = "alsa.alsa-project.org"; then
@@ -39,4 +20,4 @@ FLTK_LIBS="`$FLTK_CONFIG --ldflags`"
 CXXFLAGS="$CXXFLAGS $ALSA_CFLAGS $FLTK_CXXFLAGS"
 LIBS="$LIBS $ALSA_LIBS $FLTK_LIBS"
 
-AC_OUTPUT(Makefile src/Makefile pixmaps/Makefile)
+AC_OUTPUT(Makefile src/Makefile pixmaps/Makefile desktop/Makefile)

@@ -1,8 +1,5 @@
-EXTRA_DIST = gitcompile hdspmixer.desktop depcomp
-SUBDIRS = src pixmaps
-
-desktopdir = $(DESKTOP_DIR)
-desktop_DATA = hdspmixer.desktop
+EXTRA_DIST = gitcompile depcomp
+SUBDIRS = src pixmaps desktop
 
 alsa-dist: distdir
 	@rm -rf ../distdir/hdspmixer
