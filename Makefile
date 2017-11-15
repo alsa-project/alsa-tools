@@ -29,7 +29,7 @@ install:
 	done
 
 alsa-dist:
-	@echo $(VERSION) >> $(TOP)/version
+	@echo $(VERSION) > $(TOP)/version
 	@mkdir -p $(TOP)/distdir
 	@for i in $(SUBDIRS); do \
 	  cd $(TOP)/$$i; echo $(TOP)/$$i; \
