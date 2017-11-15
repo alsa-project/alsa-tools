@@ -7,4 +7,4 @@ AM_MAINTAINER_MODE([enable])
 
 PKG_CHECK_MODULES(ENVY24CONTROL, gtk+-2.0 alsa >= 0.9.0)
 
-AC_OUTPUT(Makefile)
+AC_OUTPUT(Makefile desktop/Makefile)

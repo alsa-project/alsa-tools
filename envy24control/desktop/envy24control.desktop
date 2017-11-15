@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Envy24 Control
+GenericName=Envy24 Control Utility
+Comment=Mixer and GUI control utility for Envy24-based sound cards
+Exec=envy24control
+Icon=envy24control
+Terminal=false
+Type=Application
+Categories=AudioVideo;
+Version=0.9.4

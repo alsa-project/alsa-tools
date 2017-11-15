@@ -1,3 +1,4 @@
+SUBDIRS = desktop
 AM_CFLAGS = @ENVY24CONTROL_CFLAGS@
 bin_PROGRAMS = envy24control
 man_MANS = envy24control.1

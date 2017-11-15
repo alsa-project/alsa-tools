@@ -46,8 +46,10 @@ as10k1/configure
 echomixer/echomixer
 echomixer/Makefile
 echomixer/configure
+echomixer/desktop/Makefile
 envy24control/Makefile
 envy24control/configure
+envy24control/desktop/Makefile
 hdspconf/Makefile
 hdspconf/configure
 hdspconf/src/hdspconf
