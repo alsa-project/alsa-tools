@@ -53,6 +53,7 @@ hdspconf/configure
 hdspconf/src/hdspconf
 hdspconf/src/Makefile
 hdspconf/pixmaps/Makefile
+hdspconf/desktop/Makefile
 hdspmixer/Makefile
 hdspmixer/configure
 hdspmixer/src/hdspmixer

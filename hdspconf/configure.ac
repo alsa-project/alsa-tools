@@ -39,4 +39,4 @@ FLTK_LIBS=`$FLTK_CONFIG $fltk_config_args --ldflags`
 CXXFLAGS="$CXXFLAGS $ALSA_CFLAGS $FLTK_CXXFLAGS"
 LIBS="$LIBS $ALSA_LIBS $FLTK_LIBS"
 
-AC_OUTPUT(Makefile src/Makefile pixmaps/Makefile)
+AC_OUTPUT(Makefile src/Makefile pixmaps/Makefile desktop/Makefile)
