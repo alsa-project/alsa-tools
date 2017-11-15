@@ -1,4 +1,5 @@
-# # Process this file with automake to procude Makefile.in.
+# Process this file with automake to produce Makefile.in.
+SUBDIRS = desktop
 bin_SCRIPTS = hwmixvolume
 #man_MANS =
 EXTRA_DIST = gitcompile hwmixvolume

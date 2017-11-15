@@ -66,6 +66,7 @@ hdsploader/Makefile
 hdsploader/configure
 hwmixvolume/Makefile
 hwmixvolume/configure
+hwmixvolume/desktop/Makefile
 ld10k1/Makefile
 ld10k1/ld10k1d
 ld10k1/configure
