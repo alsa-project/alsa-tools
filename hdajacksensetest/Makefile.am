@@ -1,3 +1,4 @@
+EXTRA_DIST = gitcompile
 MYNAME = hdajacksensetest
 AUTOMAKE_OPTIONS = foreign
 bin_PROGRAMS = hdajacksensetest
