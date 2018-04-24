@@ -63,7 +63,7 @@ static void usage(void)
 {
 	printf("Tascam US-428 Control\n");
 	printf("version %s\n", VERSION);
-	printf("usage: "PROGNAME" [-v verbosity_level 0..2] [-c card] [-D device] [-u usb-device] [-m mode]\n");
+	printf("usage: " PROGNAME " [-v verbosity_level 0..2] [-c card] [-D device] [-u usb-device] [-m mode]\n");
 	printf("mode is one of (us224, us428, mixxx)\n");
 }
 /*
