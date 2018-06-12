@@ -179,7 +179,7 @@ int main_loop(comm_param *param, int audigy, const char *card_id, int tram_size,
 {
 	fd_set active_fd_set/*, read_fd_set*/;
 	int i, j, res = 0;
-	__sighandler_t old_sig_pipe;
+	sighandler_t old_sig_pipe;
 
 	int main_sock = 0;
 	int data_sock = 0;
