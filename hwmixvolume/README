@@ -8,7 +8,8 @@ that use hardware mixing, i.e., those based on the following chips:
 * Yamaha DS-1 (YMF-724/740/744/754) (driver: snd-ymfpci)
 
 
-This tool requires Python, pygtk, and alsa-pyton 1.0.22 or later.
+This tool requires Python, PyGObject, GTK+ 3.0 or later, and alsa-python 1.0.22
+or later.
 
 It is recommended to use at least Linux kernel 2.6.32 or alsa-driver 1.0.22;
 otherwise, the name of the program that is using a stream cannot be shown.
