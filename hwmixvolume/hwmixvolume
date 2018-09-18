@@ -15,7 +15,10 @@
 # OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 # PERFORMANCE OF THIS SOFTWARE.
 
-import gobject, gtk
+import gi
+gi.require_version('GLib', '2.0')
+gi.require_version('Gtk', '3.0')
+from gi.repository import GLib, Gtk
 from pyalsa import alsacard, alsahcontrol
 
 INTF_PCM = alsahcontrol.interface_id['PCM']
@@ -57,16 +60,16 @@ class Stream:
         value = alsahcontrol.Value(self.element)
         value.read()
         values = value.get_tuple(TYPE_INTEGER, info.count)
-        self.label = gtk.Label(self.get_label(info))
+        self.label = Gtk.Label(self.get_label(info))
         self.label.set_single_line_mode(True)
         self.parent.scales_vbox.pack_start(self.label, expand=False)
         for i in range(info.count):
-            adj = gtk.Adjustment(value=values[i],
+            adj = Gtk.Adjustment(value=values[i],
                     lower=info.min, upper=info.max,
                     step_incr=1,
                     page_incr=(info.max-info.min+1)/8)
             adj.connect('value-changed', self.update_ctl_from_scale, i)
-            scale = gtk.HScale(adj)
+            scale = Gtk.HScale(adj)
             scale.set_draw_value(False)
             self.parent.scales_vbox.pack_start(scale, expand=False)
             self.scales.append(scale)
@@ -157,7 +160,7 @@ class Stream:
             f.close()
         return cmdline.replace('\x00', ' ').strip()
 
-class MixerWindow(gtk.Window):
+class MixerWindow(Gtk.Window):
     card_numbers = alsacard.card_list()
     current_card = -1
     hcontrol = None
@@ -167,21 +170,21 @@ class MixerWindow(gtk.Window):
     hctl_sources = []
 
     def __init__(self):
-        gtk.Window.__init__(self)
-        self.connect('destroy', lambda w: gtk.main_quit())
+        Gtk.Window.__init__(self)
+        self.connect('destroy', lambda w: Gtk.main_quit())
         self.set_title("Hardware Mixer Volumes")
 
-        vbox = gtk.VBox()
+        vbox = Gtk.VBox()
         self.add(vbox)
 
-        hbox = gtk.HBox()
+        hbox = Gtk.HBox()
         vbox.pack_start(hbox, expand=False)
 
-        label = gtk.Label("_Sound Card: ")
+        label = Gtk.Label("_Sound Card: ")
         label.set_use_underline(True)
         hbox.pack_start(label, expand=False)
 
-        combo = gtk.combo_box_new_text()
+        combo = Gtk.combo_box_new_text()
         for i in self.card_numbers:
             str = "%d: %s" % (i, alsacard.card_get_name(i))
             combo.append_text(str)
@@ -191,23 +194,23 @@ class MixerWindow(gtk.Window):
         hbox.pack_start(combo)
         label.set_mnemonic_widget(combo)
 
-        self.lock_check = gtk.CheckButton(label="_Lock Channels")
+        self.lock_check = Gtk.CheckButton(label="_Lock Channels")
         self.lock_check.set_active(True)
         vbox.pack_start(self.lock_check, expand=False)
 
-        scrollwin = gtk.ScrolledWindow()
-        scrollwin.set_policy(hscrollbar_policy=gtk.POLICY_NEVER, vscrollbar_policy=gtk.POLICY_AUTOMATIC)
-        scrollwin.set_shadow_type(gtk.SHADOW_NONE)
+        scrollwin = Gtk.ScrolledWindow()
+        scrollwin.set_policy(hscrollbar_policy=Gtk.POLICY_NEVER, vscrollbar_policy=Gtk.POLICY_AUTOMATIC)
+        scrollwin.set_shadow_type(Gtk.SHADOW_NONE)
         vbox.pack_start(scrollwin)
 
-        self.scales_vbox = gtk.VBox()
+        self.scales_vbox = Gtk.VBox()
         scrollwin.add_with_viewport(self.scales_vbox)
 
-        label = gtk.Label()
+        label = Gtk.Label()
         label.set_single_line_mode(True)
         line_height = label.size_request()[1]
         label.destroy()
-        scale = gtk.HScale()
+        scale = Gtk.HScale()
         scale.set_draw_value(False)
         line_height += scale.size_request()[1]
         scale.destroy()
@@ -223,7 +226,7 @@ class MixerWindow(gtk.Window):
 
     def change_card(self, cardnum):
         for s in self.hctl_sources:
-            gobject.source_remove(s)
+            GLib.source_remove(s)
         self.hctl_sources = []
 
         self.hcontrol = self.open_hcontrol_for_card(cardnum)
@@ -249,7 +252,7 @@ class MixerWindow(gtk.Window):
             self.streams.append(stream)
 
         for fd,condition in self.hcontrol.poll_fds:
-            self.hctl_sources.append(gobject.io_add_watch(fd, condition, self.hctl_io_callback))
+            self.hctl_sources.append(GLib.io_add_watch(fd, condition, self.hctl_io_callback))
 
         self.update_msg_label()
 
@@ -267,7 +270,7 @@ class MixerWindow(gtk.Window):
             else:
                 msg = "This card does not have stream controls."
             if not has_msg:
-                self.msg_label = gtk.Label(msg)
+                self.msg_label = Gtk.Label(msg)
                 self.scales_vbox.pack_start(self.msg_label)
                 self.scales_vbox.show_all()
             elif self.msg_label.get_text() != msg:
@@ -280,9 +283,9 @@ class MixerWindow(gtk.Window):
                     mode=alsahcontrol.open_mode['NONBLOCK'])
         except:
             # TODO: alsa error msg
-            dlg = gtk.MessageDialog(self,
-                    gtk.DIALOG_MODAL | gtk.DIALOG_DESTROY_WITH_PARENT,
-                    gtk.MESSAGE_ERROR, gtk.BUTTONS_OK,
+            dlg = Gtk.MessageDialog(self,
+                    Gtk.DIALOG_MODAL | Gtk.DIALOG_DESTROY_WITH_PARENT,
+                    Gtk.MESSAGE_ERROR, Gtk.BUTTONS_OK,
                     "Cannot open sound card control device.")
             dlg.run()
             dlg.destroy()
@@ -304,7 +307,7 @@ class MixerWindow(gtk.Window):
 
 def main():
     MixerWindow()
-    gtk.main()
+    Gtk.main()
 
 main()
 
