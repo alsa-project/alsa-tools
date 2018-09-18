@@ -138,26 +138,20 @@ class Stream:
             subdevice = info.index
         filename = "/proc/asound/card%d/pcm%dp/sub%d/status" % (card, device, subdevice)
         try:
-            f = open(filename, "r")
+            with open(filename, "r") as f:
+                for line in f:
+                    if line[:9] == "owner_pid":
+                        return int(line.split(':')[1].strip())
         except IOError:
             return None
-        try:
-            for line in f.readlines():
-                if line[:9] == "owner_pid":
-                    return int(line.split(':')[1].strip())
-        finally:
-            f.close()
         return None
 
     def get_pid_cmdline(self, pid):
         try:
-            f = open("/proc/%d/cmdline" % pid, "r")
+            with open("/proc/%d/cmdline" % pid, "r") as f:
+                cmdline = f.read()
         except IOError:
             return None
-        try:
-            cmdline = f.read()
-        finally:
-            f.close()
         return cmdline.replace('\x00', ' ').strip()
 
 class MixerWindow(Gtk.Window):
