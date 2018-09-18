@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/env python
 
 # hwmixvolume - ALSA hardware mixer volume control applet
 # Copyright (c) 2009-2010 Clemens Ladisch
