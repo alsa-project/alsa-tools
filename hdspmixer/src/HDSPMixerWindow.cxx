@@ -35,8 +35,8 @@ static void readregisters_cb(void *arg)
     hdsp_peak_rms_t hdsp_peak_rms;
     struct hdspm_peak_rms hdspm_peak_rms;
     bool isMADI = false;
-    uint32_t *input_peaks, *playback_peaks, *output_peaks;
-    uint64_t *input_rms, *playback_rms, *output_rms;
+    __u32 *input_peaks, *playback_peaks, *output_peaks;
+    __u64 *input_rms, *playback_rms, *output_rms;
     
     HDSPMixerWindow *w = (HDSPMixerWindow *)arg;
 
