@@ -15,6 +15,8 @@ hdspmixer_SOURCES = \
 	HDSPMixerEmpty.h \
 	HDSPMixerOutput.cxx \
 	HDSPMixerOutput.h \
+	HDSPMixerLoopback.cxx \
+	HDSPMixerLoopback.h \
 	HDSPMixerIOMixer.cxx \
 	HDSPMixerIOMixer.h \
 	HDSPMixerSelector.cxx \

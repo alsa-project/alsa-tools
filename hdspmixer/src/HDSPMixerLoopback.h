@@ -19,27 +19,29 @@
  */
 
 #pragma interface
-#ifndef HDSPMixerPresetData_H
-#define HDSPMixerPresetData_H
+#ifndef HDSPMixerLoopback_H
+#define HDSPMixerLoopback_H
 
-class HDSPMixerPresetData
+#include <FL/Fl.H>
+#include <FL/Fl_Widget.H>
+#include "HDSPMixerWindow.h"
+#include "pixmaps.h"
+
+class HDSPMixerWindow;
+
+class HDSPMixerLoopback:public Fl_Widget
 {
+private:
+    HDSPMixerWindow *basew;
+    int _loopback{-1};
 public:
-    int mute;
-    int solo;
-    int input;
-    int playback;
-    int output;
-    int submix;
-    int submix_value;
-    int last_destination;
-    int level;
-    int numbers;
-    int over;
-    int rate;
-    int rmsplus3;
-    int loopback;
-    HDSPMixerPresetData();
+    HDSPMixerLoopback *relative;
+    int index;
+    HDSPMixerLoopback(int x, int y, int idx);
+    void draw();
+    int handle(int e);
+    int get();
+    void set(int l);
 };
 
 #endif

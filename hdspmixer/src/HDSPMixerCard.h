@@ -52,6 +52,7 @@ public:
     HDSPMixerCard(int cardtype, int id, char *shortname);
     int channels_input, channels_playback, window_width, window_height, card_id;
     int channels_output;
+    int max_channels;
     int type;
     int last_preset; /* Last activated preset before switching to another card */
     int last_dirty; /* Last dirty flag before switching to another card */
@@ -68,6 +69,7 @@ public:
     void adjustSettings();
     void getAeb();
     hdsp_9632_aeb_t h9632_aeb;
+    int supportsLoopback() const;
 };
 
 #endif

@@ -27,6 +27,7 @@
 #include <FL/fl_draw.H>
 #include <alsa/sound/hdsp.h>
 #include "HDSPMixerFader.h"
+#include "HDSPMixerLoopback.h"
 #include "HDSPMixerPeak.h"
 #include "HDSPMixerGain.h"
 #include "HDSPMixerMeter.h"
@@ -36,6 +37,7 @@
 
 class HDSPMixerFader;
 class HDSPMixerGain;
+class HDSPMixerLoopback;
 class HDSPMixerPeak;
 class HDSPMixerMeter;
 class HDSPMixerOutputData;
@@ -56,6 +58,7 @@ public:
     HDSPMixerFader *fader;
     HDSPMixerGain *gain;
     HDSPMixerMeter *meter;
+    HDSPMixerLoopback *loopback;
     HDSPMixerOutput(int x, int y, int w, int h, int out);
     void draw();
     void draw_background();

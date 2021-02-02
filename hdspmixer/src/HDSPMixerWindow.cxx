@@ -411,7 +411,7 @@ void HDSPMixerWindow::save()
 		    if (fwrite((void *)&(outputs->strips[channel]->data[card][speed][preset]->fader_pos), sizeof(int), 1, file) != 1) {
 			goto save_error;
 		    }
-		    
+
  		}
 		/* Lineouts */		    
 		if (fwrite((void *)&(outputs->strips[HDSP_MAX_CHANNELS]->data[card][speed][preset]->fader_pos), sizeof(int), 1, file) != 1) {
@@ -463,6 +463,20 @@ void HDSPMixerWindow::save()
 	    }
 	}
     }
+
+    for (int speed = 0; speed < 3; ++speed) {
+	for (int card = 0; card < MAX_CARDS; ++card) {
+	    for (int preset = 0; preset < 8; ++preset) {
+		for (int channel = 0; channel < HDSP_MAX_CHANNELS; ++channel) {
+		    /* output loopbacks */
+		    if (fwrite((void *)&(outputs->strips[channel]->data[card][speed][preset]->loopback), sizeof(int), 1, file) != 1) {
+			goto save_error;
+		    }
+		}
+	    }
+	}
+    }
+
     fclose(file);
     return;
 save_error:
@@ -562,7 +576,6 @@ void HDSPMixerWindow::load()
 		    if (fread((void *)&(outputs->strips[channel]->data[card][speed][preset]->fader_pos), sizeof(int), 1, file) != 1) {
 			goto load_error;
 		    }
-		    
  		}
 		/* Lineouts */		    
 		if (fread((void *)&(outputs->strips[HDSP_MAX_CHANNELS]->data[card][speed][preset]->fader_pos), sizeof(int), 1, file) != 1) {
@@ -614,6 +627,19 @@ void HDSPMixerWindow::load()
                 goto load_error;
             }
         }
+	    }
+	}
+    }
+
+    for (int speed = 0; speed < 3; ++speed) {
+	for (int card = 0; card < MAX_CARDS; ++card) {
+	    for (int preset = 0; preset < 8; ++preset) {
+		for (int channel = 0; channel < channels_per_card; ++channel) {
+		    /* read additional loopback settings only present in newer mix files */
+		    if (fread((void *)&(outputs->strips[channel]->data[card][speed][preset]->loopback), sizeof(int), 1, file) != 1) {
+			goto load_error;
+		    }
+		}
 	    }
 	}
     }
@@ -814,6 +840,8 @@ void HDSPMixerWindow::restoreDefaults(int card)
 		}		
 		outputs->strips[i]->data[card][speed][preset]->fader_pos = (preset != 4) ? 137*CF : 0;
 		outputs->strips[i+1]->data[card][speed][preset]->fader_pos = (preset != 4) ? 137*CF : 0;
+		outputs->strips[i]->data[card][speed][preset]->loopback = 0;
+		outputs->strips[i+1]->data[card][speed][preset]->loopback = 0;
 		if (preset == 3 || preset == 7) {
 		    inputs->strips[i]->data[card][speed][preset]->mute = 1;
 		    inputs->strips[i+1]->data[card][speed][preset]->mute = 1;
@@ -1020,6 +1048,8 @@ void HDSPMixerWindow::checkState()
 	    corrupt++;
 	/* Outputs row */
 	if (outputs->strips[i]->data[current_card][speed][p]->fader_pos != outputs->strips[i]->fader->pos[0])
+	    corrupt++;
+	if (outputs->strips[i]->data[current_card][speed][p]->loopback != outputs->strips[i]->loopback->get())
 	    corrupt++;
     }
 
@@ -1278,4 +1308,3 @@ muted:
 	}
     }    
 }
-

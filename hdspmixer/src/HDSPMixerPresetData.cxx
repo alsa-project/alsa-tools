@@ -36,5 +36,6 @@ HDSPMixerPresetData::HDSPMixerPresetData()
     over = 3;
     level = 0;
     rate = 1;
+    loopback = 0;
 }
 
