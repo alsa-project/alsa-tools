@@ -26,6 +26,7 @@ class HDSPMixerOutputData
 {
 public:
     int fader_pos;
+    int loopback;
     HDSPMixerOutputData();
 };
 

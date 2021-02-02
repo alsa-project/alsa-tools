@@ -204,6 +204,7 @@ HDSPMixerOutput::HDSPMixerOutput(int x, int y, int w, int h, int num):Fl_Group(x
     peak = new HDSPMixerPeak(x+3, y+4, 0);
     gain = new HDSPMixerGain(x+3, y+175, 0);
     meter = new HDSPMixerMeter(x+20, y+27, false, peak);
+    loopback = new HDSPMixerLoopback(x+1, y+208, out_num);
     end();
 }
 

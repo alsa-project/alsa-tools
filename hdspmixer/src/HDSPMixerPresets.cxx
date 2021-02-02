@@ -143,6 +143,7 @@ void HDSPMixerPresets::save_preset(int prst) {
 	basew->playbacks->strips[i]->data[card][speed][p]->dest = basew->playbacks->strips[i]->targets->selected;
 	
 	basew->outputs->strips[i]->data[card][speed][p]->fader_pos = basew->outputs->strips[i]->fader->pos[0];
+	basew->outputs->strips[i]->data[card][speed][p]->loopback = basew->outputs->strips[i]->loopback->get();
     }
     /* Line outs */
     basew->outputs->strips[HDSP_MAX_CHANNELS]->data[card][speed][p]->fader_pos = basew->outputs->strips[HDSP_MAX_CHANNELS]->fader->pos[0];
@@ -188,6 +189,7 @@ void HDSPMixerPresets::restore_preset(int prst) {
 	basew->playbacks->strips[i]->targets->selected = basew->playbacks->strips[i]->data[card][speed][p]->dest;
 	
 	basew->outputs->strips[i]->fader->pos[0] = basew->outputs->strips[i]->data[card][speed][p]->fader_pos;
+	basew->outputs->strips[i]->loopback->set(basew->outputs->strips[i]->data[card][speed][p]->loopback);
     }
     /* Line outs */
     basew->outputs->strips[HDSP_MAX_CHANNELS]->fader->pos[0] = basew->outputs->strips[HDSP_MAX_CHANNELS+1]->data[card][speed][p]->fader_pos;

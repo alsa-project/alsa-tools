@@ -47,6 +47,7 @@
 #include "../pixmaps/over.xpm"
 #include "../pixmaps/peak.xpm"
 #include "../pixmaps/solo.xpm"
+#include "../pixmaps/loopback.xpm"
 #include "../pixmaps/iomixer_r.xpm"
 #include "../pixmaps/output_r.xpm"
 #include "../pixmaps/matrix_black.xpm"
