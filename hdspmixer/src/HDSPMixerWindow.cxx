@@ -471,6 +471,29 @@ void HDSPMixerWindow::save()
 	}
     }
 
+	/* Output loopback data */
+	for (int channel = 0; channel < HDSP_MAX_CHANNELS; ++channel) {
+		auto const strip = outputs->strips[channel];
+
+		for (int card = 0; card < MAX_CARDS; ++card) {
+			auto const data = strip->data[card];
+
+			for (int speed = 0; speed < 3; ++speed) {
+				auto const spd = data[speed];
+
+				for (int preset = 0; preset < 8; ++preset) {
+					auto const data = spd[preset];
+
+					if (fwrite((void *)&(data->loopback),
+						   sizeof(int),
+						   1,
+						   out) != 1)
+						goto save_error;
+				}
+			}
+		}
+	}
+
 	/* If the file we want to write already exists it could be possible that it
 	* was saved with a newer version. If that is the case we just append its
 	* content to the new output file and that way ensure that we don't lose any
@@ -519,6 +542,7 @@ void HDSPMixerWindow::load()
     bool ondisk_v1 = false;
     int pan_array_size = 14; /* old (pre 1.0.24) HDSP_MAX_DEST */
     int channels_per_card = 26; /* old (pre 1.0.24) HDSP_MAX_CHANNELS */
+    bool res = true;
 
     if (fread(&buffer, sizeof(char), sizeof(buffer), file) != sizeof(buffer)) {
             goto load_error;
@@ -647,6 +671,46 @@ void HDSPMixerWindow::load()
 	    }
 	}
     }
+
+	/* Output loopback data */
+	for (int channel = 0; channel < HDSP_MAX_CHANNELS; ++channel) {
+		auto const strip = outputs->strips[channel];
+
+		for (int card = 0; card < MAX_CARDS; ++card) {
+			auto const data = strip->data[card];
+
+			for (int speed = 0; speed < 3; ++speed) {
+				auto const spd = data[speed];
+
+				for (int preset = 0; preset < 8; ++preset) {
+					auto const data = spd[preset];
+
+					/* TODO: Somewhere we get a value of 5 from, investigate
+					 * this another day. For now just reset it here and
+					 * continue looping to reset the value.
+					 */
+					data->loopback = 0;
+
+					if (feof(file)) {
+						res = true;
+						continue;
+					}
+
+					if (ferror(file)) {
+						res = false;
+						continue;
+					}
+
+					if (fread((void *)&(data->loopback), sizeof(int), 1, file) != 1)
+						res = false;
+				}
+			}
+		}
+	}
+
+	if (!res)
+		goto load_error;
+
     fclose(file);
     setTitleWithFilename();
     resetMixer();
@@ -844,6 +908,8 @@ void HDSPMixerWindow::restoreDefaults(int card)
 		}		
 		outputs->strips[i]->data[card][speed][preset]->fader_pos = (preset != 4) ? 137*CF : 0;
 		outputs->strips[i+1]->data[card][speed][preset]->fader_pos = (preset != 4) ? 137*CF : 0;
+		outputs->strips[i]->data[card][speed][preset]->loopback = 0;
+		outputs->strips[i+1]->data[card][speed][preset]->loopback = 0;
 		if (preset == 3 || preset == 7) {
 		    inputs->strips[i]->data[card][speed][preset]->mute = 1;
 		    inputs->strips[i+1]->data[card][speed][preset]->mute = 1;
@@ -1050,6 +1116,8 @@ void HDSPMixerWindow::checkState()
 	    corrupt++;
 	/* Outputs row */
 	if (outputs->strips[i]->data[current_card][speed][p]->fader_pos != outputs->strips[i]->fader->pos[0])
+	    corrupt++;
+	if (outputs->strips[i]->data[current_card][speed][p]->loopback != outputs->strips[i]->loopback->get())
 	    corrupt++;
     }
 

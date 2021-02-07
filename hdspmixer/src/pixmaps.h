@@ -49,6 +49,7 @@ extern char const * output_xpm[];
 extern char const * over_xpm[];
 extern char const * peak_xpm[];
 extern char const * solo_xpm[];
+extern char const * loopback_xpm[];
 extern char const * iomixer_r_xpm[];
 extern char const * output_r_xpm[];
 extern char const * matrix_white_xpm[];

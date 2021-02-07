@@ -231,6 +231,8 @@ void HDSPMixerCard::adjustSettings() {
             /* should never happen */
             break;
         }
+
+        max_channels = sizeof(channel_map_mf_ss);
     }
     
     if (type == Digiface) {
@@ -253,6 +255,8 @@ void HDSPMixerCard::adjustSettings() {
             /* should never happen */
             break;
         }
+
+        max_channels = sizeof(channel_map_df_ss);
     }
 
     if (type == RPM) {
@@ -263,6 +267,8 @@ void HDSPMixerCard::adjustSettings() {
         channel_map_input = channel_map_playback = channel_map_rpm;
         dest_map = dest_map_rpm;
         meter_map_input = meter_map_playback = channel_map_rpm;
+
+        max_channels = sizeof(channel_map_rpm);
     }
 
 
@@ -286,6 +292,8 @@ void HDSPMixerCard::adjustSettings() {
             /* should never happen */
             break;
         }
+
+        max_channels = sizeof(channel_map_df_ss);
     }
 
     if (type == H9632) {
@@ -312,6 +320,8 @@ void HDSPMixerCard::adjustSettings() {
             meter_map_input = meter_map_playback = channel_map_h9632_qs;
             break;
         }
+
+        max_channels = sizeof(channel_map_h9632_ss);
     }
 
     if (HDSPeMADI == type) {
@@ -341,6 +351,7 @@ void HDSPMixerCard::adjustSettings() {
             break;
         }
 
+        max_channels = sizeof(channel_map_unity_ss);
     }
 
     if (HDSPeAIO == type) {
@@ -379,6 +390,7 @@ void HDSPMixerCard::adjustSettings() {
             break;
         }
 
+        max_channels = sizeof(channel_map_aio_out_ss);
     }
 
     if (HDSP_AES == type) {
@@ -394,6 +406,7 @@ void HDSPMixerCard::adjustSettings() {
         meter_map_input = channel_map_aes32;
         meter_map_playback = channel_map_aes32;
 
+        max_channels = sizeof(channel_map_aes32);
     }
 
     if (HDSPeRayDAT == type) {
@@ -426,6 +439,7 @@ void HDSPMixerCard::adjustSettings() {
             break;
         }
 
+        max_channels = sizeof(channel_map_raydat_ss);
     }
 
     window_width = (channels_playback+2)*STRIP_WIDTH;
@@ -545,3 +559,23 @@ int HDSPMixerCard::initializeCard(HDSPMixerWindow *w)
     return 0;
 }
 
+int HDSPMixerCard::supportsLoopback() const
+{
+    int err = 0;
+    snd_ctl_elem_value_t *elemval;
+    snd_ctl_elem_id_t * elemid;
+    snd_ctl_t *handle;
+    snd_ctl_elem_value_alloca(&elemval);
+    snd_ctl_elem_id_alloca(&elemid);
+    if ((err = snd_ctl_open(&handle, name, SND_CTL_NONBLOCK)) < 0)
+	return err;
+
+    snd_ctl_elem_id_set_name(elemid, "Output Loopback");
+    snd_ctl_elem_id_set_interface(elemid, SND_CTL_ELEM_IFACE_HWDEP);
+    snd_ctl_elem_id_set_index(elemid, 0);
+    snd_ctl_elem_value_set_id(elemval, elemid);
+    err = snd_ctl_elem_read(handle, elemval);
+    snd_ctl_close(handle);
+
+    return err;
+}
