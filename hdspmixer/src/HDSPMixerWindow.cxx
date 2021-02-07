@@ -353,18 +353,25 @@ void HDSPMixerWindow::save()
             sizeof(inputs->strips[0]->data[0][0][0]->fader_pos) /
             sizeof(inputs->strips[0]->data[0][0][0]->fader_pos[0]));
 
+	FILE *in,*out;
 
-    FILE *file;
+	/* We want to append any existing extra data that might got written by a
+	 * newer version to this file, therefore write our data to file_name.tmp
+	 * and append the old data. Also this way we would not corrupt the file
+	 * should we crash.
+	 */
+	std::string const tmp = file_name + std::string(".tmp");
+	char const * const tmpc = tmp.c_str();
 
-    if ((file = fopen(file_name, "w")) == NULL) {
-	fl_alert("Error opening file %s for saving", file_name);
+    if ((out = fopen(tmpc, "w")) == NULL) {
+	fl_alert("Error opening file %s for saving", tmpc);
     }
     if (dirty) {
 	inputs->buttons->presets->save_preset(current_preset+1);
     }
     /* since hdspmixer 1.11, we also store the meter level settings. Indicate
      * the new on-disk structure via a small header */
-    if (fwrite((void *)&header, sizeof(char), sizeof(header), file) !=
+    if (fwrite((void *)&header, sizeof(char), sizeof(header), out) !=
             sizeof(header)) {
         goto save_error;
     }
@@ -374,99 +381,122 @@ void HDSPMixerWindow::save()
 	    for (int preset = 0; preset < 8; ++preset) {
 		for (int channel = 0; channel < HDSP_MAX_CHANNELS; ++channel) {
 		    /* inputs pans and volumes */
-		    if (fwrite((void *)&(inputs->strips[channel]->data[card][speed][preset]->pan_pos[0]), sizeof(int), pan_array_size, file) != pan_array_size) {
+		    if (fwrite((void *)&(inputs->strips[channel]->data[card][speed][preset]->pan_pos[0]), sizeof(int), pan_array_size, out) != pan_array_size) {
 			goto save_error;
 		    }
-		    if (fwrite((void *)&(inputs->strips[channel]->data[card][speed][preset]->fader_pos[0]), sizeof(int), pan_array_size, file) != pan_array_size) {
+		    if (fwrite((void *)&(inputs->strips[channel]->data[card][speed][preset]->fader_pos[0]), sizeof(int), pan_array_size, out) != pan_array_size) {
 			goto save_error;
 		    }
 		    /* playbacks pans and volumes */
-		    if (fwrite((void *)&(playbacks->strips[channel]->data[card][speed][preset]->pan_pos[0]), sizeof(int), pan_array_size, file) != pan_array_size) {
+		    if (fwrite((void *)&(playbacks->strips[channel]->data[card][speed][preset]->pan_pos[0]), sizeof(int), pan_array_size, out) != pan_array_size) {
 			goto save_error;
 		    }
-		    if (fwrite((void *)&(playbacks->strips[channel]->data[card][speed][preset]->fader_pos[0]), sizeof(int), pan_array_size, file) != pan_array_size) {
+		    if (fwrite((void *)&(playbacks->strips[channel]->data[card][speed][preset]->fader_pos[0]), sizeof(int), pan_array_size, out) != pan_array_size) {
 			goto save_error;
 		    }
 		    /* inputs mute/solo/dest */
-		    if (fwrite((void *)&(inputs->strips[channel]->data[card][speed][preset]->mute), sizeof(int), 1, file) != 1) {
+		    if (fwrite((void *)&(inputs->strips[channel]->data[card][speed][preset]->mute), sizeof(int), 1, out) != 1) {
 			goto save_error;
 		    }
-		    if (fwrite((void *)&(inputs->strips[channel]->data[card][speed][preset]->solo), sizeof(int), 1, file) != 1) {
+		    if (fwrite((void *)&(inputs->strips[channel]->data[card][speed][preset]->solo), sizeof(int), 1, out) != 1) {
 			goto save_error;
 		    }
-		    if (fwrite((void *)&(inputs->strips[channel]->data[card][speed][preset]->dest), sizeof(int), 1, file) != 1) {
+		    if (fwrite((void *)&(inputs->strips[channel]->data[card][speed][preset]->dest), sizeof(int), 1, out) != 1) {
 			goto save_error;
 		    }
 		    /* playbacks mute/solo/dest */
-		    if (fwrite((void *)&(playbacks->strips[channel]->data[card][speed][preset]->mute), sizeof(int), 1, file) != 1) {
+		    if (fwrite((void *)&(playbacks->strips[channel]->data[card][speed][preset]->mute), sizeof(int), 1, out) != 1) {
 			goto save_error;
 		    }
-		    if (fwrite((void *)&(playbacks->strips[channel]->data[card][speed][preset]->solo), sizeof(int), 1, file) != 1) {
+		    if (fwrite((void *)&(playbacks->strips[channel]->data[card][speed][preset]->solo), sizeof(int), 1, out) != 1) {
 			goto save_error;
 		    }
-		    if (fwrite((void *)&(playbacks->strips[channel]->data[card][speed][preset]->dest), sizeof(int), 1, file) != 1) {
+		    if (fwrite((void *)&(playbacks->strips[channel]->data[card][speed][preset]->dest), sizeof(int), 1, out) != 1) {
 			goto save_error;
 		    }
 		    /* outputs volumes */
-		    if (fwrite((void *)&(outputs->strips[channel]->data[card][speed][preset]->fader_pos), sizeof(int), 1, file) != 1) {
+		    if (fwrite((void *)&(outputs->strips[channel]->data[card][speed][preset]->fader_pos), sizeof(int), 1, out) != 1) {
 			goto save_error;
 		    }
 		    
  		}
 		/* Lineouts */		    
-		if (fwrite((void *)&(outputs->strips[HDSP_MAX_CHANNELS]->data[card][speed][preset]->fader_pos), sizeof(int), 1, file) != 1) {
+		if (fwrite((void *)&(outputs->strips[HDSP_MAX_CHANNELS]->data[card][speed][preset]->fader_pos), sizeof(int), 1, out) != 1) {
 		    goto save_error;
 		}
-		if (fwrite((void *)&(outputs->strips[HDSP_MAX_CHANNELS+1]->data[card][speed][preset]->fader_pos), sizeof(int), 1, file) != 1) {
+		if (fwrite((void *)&(outputs->strips[HDSP_MAX_CHANNELS+1]->data[card][speed][preset]->fader_pos), sizeof(int), 1, out) != 1) {
 		    goto save_error;
 		}
 		/* Global settings */
-		if (fwrite((void *)&(data[card][speed][preset]->input), sizeof(int), 1, file) != 1) {
+		if (fwrite((void *)&(data[card][speed][preset]->input), sizeof(int), 1, out) != 1) {
 		    goto save_error;
 		}
-		if (fwrite((void *)&(data[card][speed][preset]->output), sizeof(int), 1, file) != 1) {
+		if (fwrite((void *)&(data[card][speed][preset]->output), sizeof(int), 1, out) != 1) {
 		    goto save_error;
 		}
-		if (fwrite((void *)&(data[card][speed][preset]->playback), sizeof(int), 1, file) != 1) {
+		if (fwrite((void *)&(data[card][speed][preset]->playback), sizeof(int), 1, out) != 1) {
 		    goto save_error;
 		}
-		if (fwrite((void *)&(data[card][speed][preset]->submix), sizeof(int), 1, file) != 1) {
+		if (fwrite((void *)&(data[card][speed][preset]->submix), sizeof(int), 1, out) != 1) {
 		    goto save_error;
 		}
-		if (fwrite((void *)&(data[card][speed][preset]->submix_value), sizeof(int), 1, file) != 1) {
+		if (fwrite((void *)&(data[card][speed][preset]->submix_value), sizeof(int), 1, out) != 1) {
 		    goto save_error;
 		}
-		if (fwrite((void *)&(data[card][speed][preset]->solo), sizeof(int), 1, file) != 1) {
+		if (fwrite((void *)&(data[card][speed][preset]->solo), sizeof(int), 1, out) != 1) {
 		    goto save_error;
 		}
-		if (fwrite((void *)&(data[card][speed][preset]->mute), sizeof(int), 1, file) != 1) {
+		if (fwrite((void *)&(data[card][speed][preset]->mute), sizeof(int), 1, out) != 1) {
 		    goto save_error;
 		}		
-		if (fwrite((void *)&(data[card][speed][preset]->last_destination), sizeof(int), 1, file) != 1) {
+		if (fwrite((void *)&(data[card][speed][preset]->last_destination), sizeof(int), 1, out) != 1) {
 		    goto save_error;
 		}
-		if (fwrite((void *)&(data[card][speed][preset]->rmsplus3), sizeof(int), 1, file) != 1) {
+		if (fwrite((void *)&(data[card][speed][preset]->rmsplus3), sizeof(int), 1, out) != 1) {
 		    goto save_error;
 		}
-		if (fwrite((void *)&(data[card][speed][preset]->numbers), sizeof(int), 1, file) != 1) {
+		if (fwrite((void *)&(data[card][speed][preset]->numbers), sizeof(int), 1, out) != 1) {
 		    goto save_error;
 		}
-		if (fwrite((void *)&(data[card][speed][preset]->over), sizeof(int), 1, file) != 1) {
+		if (fwrite((void *)&(data[card][speed][preset]->over), sizeof(int), 1, out) != 1) {
 		    goto save_error;
 		}
-		if (fwrite((void *)&(data[card][speed][preset]->level), sizeof(int), 1, file) != 1) {
+		if (fwrite((void *)&(data[card][speed][preset]->level), sizeof(int), 1, out) != 1) {
 		    goto save_error;
 		}
-		if (fwrite((void *)&(data[card][speed][preset]->rate), sizeof(int), 1, file) != 1) {
+		if (fwrite((void *)&(data[card][speed][preset]->rate), sizeof(int), 1, out) != 1) {
 		    goto save_error;
 		}
 	    }
 	}
     }
-    fclose(file);
+
+	/* If the file we want to write already exists it could be possible that it
+	* was saved with a newer version. If that is the case we just append its
+	* content to the new output file and that way ensure that we don't lose any
+	* data the new version wrote.
+	*/
+	if ((in = fopen(file_name, "r")) != NULL) {
+		if (!fseek(in, ftell(out), SEEK_SET)) {
+			char buff[512];
+			size_t read;
+			while ((read = fread(&buff, sizeof(char), sizeof(buff), in)) != 0)
+				fwrite(buff, sizeof(char), read, out);
+			if (ferror(in) || ferror(out))
+				fl_alert("Error appending %s to %s", file_name, tmpc);
+		}
+		fclose(in);
+	}
+
+	fclose(out);
+
+	if (rename(tmpc, file_name))
+		fl_alert("Error renaming %s to %s", tmpc, file_name);
+	::remove(tmpc);
+
     return;
 save_error:
-    fclose(file);
+    fclose(out);
     fl_alert("Error saving presets to file %s", file_name);
     return;
 }
