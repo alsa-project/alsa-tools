@@ -51,4 +51,4 @@ This is for the experts only. It makes you select each configuration field indiv
 http://www.intel.com/content/dam/www/public/us/en/documents/product-specifications/high-definition-audio-specification.pdf )
 
  * Parser hints
-This enables you to send special "hints" to the driver that causes parsing to behave differently. Leave them at the "default" setting unless you have read the driver documentation. ( Which, at the time of this writing, is available here: https://www.kernel.org/doc/Documentation/sound/alsa/HD-Audio.txt - see the "Hint strings" section. )
+This enables you to send special "hints" to the driver that causes parsing to behave differently. Leave them at the "default" setting unless you have read the driver documentation. ( Which, at the time of this writing, is available here: https://www.kernel.org/doc/Documentation/sound/hd-audio/notes.rst - see the "Hint strings" section. )
