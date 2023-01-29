@@ -39,7 +39,7 @@ int main(int argc, char **argv)
 {
     HDSPMixerWindow *window;
     HDSPMixerCard *hdsp_cards[3];
-    char *name, *shortname;
+    char *name = NULL, *shortname;
     int card;
     int cards = 0;
 
