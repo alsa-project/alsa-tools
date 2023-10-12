@@ -55,6 +55,6 @@ int tram_table_count=0;
 int gpr_constant_count=0;
 
 char patch_name[PATCH_NAME_SIZE]="NO_NAME";
-int macro_depth=0;
+unsigned int macro_depth=0;
 
 
