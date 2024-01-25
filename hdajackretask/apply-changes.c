@@ -15,6 +15,15 @@ static gchar* tempdir = NULL;
 static gchar* scriptfile = NULL;
 static gchar* errorfile = NULL;
 
+struct soundserver {
+    enum {
+        PULSEAUDIO,
+        PIPEWIRE
+    } type;
+    gboolean was_killed;
+    gchar *user;
+};
+
 static GQuark quark()
 {
     return g_quark_from_static_string("hda-jack-retask-error");
@@ -125,33 +134,73 @@ static gchar* get_pulseaudio_client_conf()
     return fname;
 }
 
-static gboolean kill_pulseaudio(gboolean* was_killed, int card, GError** err)
+static gboolean call_systemctl(gchar* user, gchar* operation, gchar *unit, GError **err)
+{
+    gchar* s;
+    gboolean ok;
+
+    if (getuid() == 0) {
+        // special case for root
+        // XDG_RUNTIME_DIR setup seems to be mandatory for Fedora, may differ for other distros
+        s = g_strdup_printf("runuser -l %s -c 'XDG_RUNTIME_DIR=/var/run/user/$(id -u) systemctl --user %s %s'", user, operation, unit);
+    } else {
+        s = g_strdup_printf("systemctl --user %s %s", operation, unit);
+    }
+    ok = g_spawn_command_line_sync(s, NULL, NULL, NULL, err);
+    g_free(s);
+    return ok;
+}
+
+static gboolean kill_soundserver(struct soundserver* state, int card, GError** err)
 {
     gchar* fuser = NULL, *fuser2 = NULL;
     gchar* s = NULL;
     gchar* clientconf = NULL;
     gboolean ok;
-    *was_killed = FALSE;
+    char *p;
+    state->type = PULSEAUDIO;
+    state->was_killed = FALSE;
+    state->user = NULL;
     /* Is PA having a lock on the sound card? */
     s = g_strdup_printf("fuser -v /dev/snd/controlC%d", card);
     /* Due to some bug in fuser, stdout and stderr output is unclear. Better check both. */
     if (!(ok = g_spawn_command_line_sync(s, &fuser, &fuser2, NULL, err))) 
         goto cleanup;
-    if ((ok = strstr(fuser, "pulseaudio") == NULL && strstr(fuser2, "pulseaudio") == NULL))
-        goto cleanup; // PulseAudio not locking the sound card
+    if (strstr(fuser, "pulseaudio") != NULL || strstr(fuser2, "pulseaudio") != NULL) {
+        clientconf = get_pulseaudio_client_conf();
+        if (!(ok = !g_file_test(clientconf, G_FILE_TEST_EXISTS))) {
+            g_set_error(err, quark(), 0, "Cannot block PulseAudio from respawning:\n"
+                "Please either remove '%s' or kill PulseAudio manually.", clientconf);
+            goto cleanup;
+        }
+        
+        if (!(ok = g_file_set_contents(clientconf, "autospawn=no\n", -1, err)))
+            goto cleanup;
+        state->was_killed = TRUE;
+        ok = g_spawn_command_line_sync("pulseaudio -k", NULL, NULL, NULL, err);
+    } else if ((p = strstr(fuser, "wireplumber")) != NULL || (p = strstr(fuser2, "wireplumber")) != NULL) {
+        *p = '\0';
+        while (p != fuser && p != fuser2 && *p != '\n')
+            p--;
+        if (*p == '\n')
+            p++;
+        
+        GRegex *regex;
+        GMatchInfo *match_info;
 
-    clientconf = get_pulseaudio_client_conf();
-    if (!(ok = !g_file_test(clientconf, G_FILE_TEST_EXISTS))) {
-        g_set_error(err, quark(), 0, "Cannot block PulseAudio from respawning:\n"
-            "Please either remove '%s' or kill PulseAudio manually.", clientconf);
-        goto cleanup;
+        regex = g_regex_new (" ([a-zA-Z0-9_-]+) ", G_REGEX_DEFAULT, G_REGEX_MATCH_DEFAULT, NULL);
+        g_regex_match (regex, p, 0, &match_info);
+        if (g_match_info_matches (match_info))
+            state->user = g_match_info_fetch (match_info, 1);
+        g_match_info_free (match_info);
+        g_regex_unref (regex);
+        
+        state->type = PIPEWIRE;
+        ok = call_systemctl(state->user, "stop", "wireplumber.service", err);
+        state->was_killed = ok;
+    } else {
+        // Sound server not locking the sound card
     }
-    
-    if (!(ok = g_file_set_contents(clientconf, "autospawn=no\n", -1, err)))
-        goto cleanup;
-
-    *was_killed = TRUE;
-    ok = g_spawn_command_line_sync("pulseaudio -k", NULL, NULL, NULL, err);
 
 cleanup:
     g_free(clientconf);
@@ -161,16 +210,32 @@ cleanup:
     return ok;
 }
 
-static gboolean restore_pulseaudio(gboolean was_killed, GError** err) 
+static gboolean restore_soundserver(struct soundserver* state, GError** err)
 {
-    gchar* clientconf = get_pulseaudio_client_conf();
-    if (was_killed && g_unlink(clientconf) != 0) {
-        g_set_error(err, quark(), 0, "%s", g_strerror(errno));
-        g_free(clientconf);
-        return FALSE;
+    gboolean ok = FALSE;
+    switch (state->type) {
+        case PULSEAUDIO:
+            gchar* clientconf = get_pulseaudio_client_conf();
+            if (state->was_killed && g_unlink(clientconf) != 0) {
+                g_set_error(err, quark(), 0, "%s", g_strerror(errno));
+                g_free(clientconf);
+                goto cleanup;
+            }
+            g_free(clientconf);
+            ok = TRUE;
+            break;
+        case PIPEWIRE:
+            if (state->was_killed)
+                ok = call_systemctl(state->user, "start", "wireplumber.service", err);
+            else
+                ok = TRUE;
+            break;
     }
-    g_free(clientconf);
-    return TRUE;
+
+cleanup:
+    g_free(state->user);
+    state->user = NULL;
+    return ok;
 }
 
 gboolean apply_changes_reconfig(pin_configs_t* pins, int entries, int card, int device, 
@@ -178,10 +243,10 @@ gboolean apply_changes_reconfig(pin_configs_t* pins, int entries, int card, int 
 {
     gboolean result = FALSE;
 //    gchar* script_name = NULL;
-    gboolean pa_killed = FALSE;
+    struct soundserver state = { 0 };
     /* Check for users of the sound card */
     /* Kill pulseaudio if necessary (and possible) */
-    if (!kill_pulseaudio(&pa_killed, card, err))
+    if (!kill_soundserver(&state, card, err))
         goto cleanup;
     /* Create script */
     if (!create_reconfig_script(pins, entries, card, device, model, hints, err))
@@ -191,7 +256,7 @@ gboolean apply_changes_reconfig(pin_configs_t* pins, int entries, int card, int 
         goto cleanup;
     result = TRUE;
 cleanup:
-    if (!restore_pulseaudio(pa_killed, result ? err : NULL)) {
+    if (!restore_soundserver(&state, result ? err : NULL)) {
         result = FALSE;
     }
 //    g_free(script_name);
