@@ -519,7 +519,7 @@ static void documentation_clicked(GtkWidget* sender, ui_data_t* ui)
         int neww = screen ? (gdk_screen_get_width(screen)*3)/4 : 800;
         int newh = screen ? (gdk_screen_get_height(screen)*3)/4 : 600;
         
-        gtk_window_set_default_size(GTK_WINDOW(dlg), neww, newh);
+        gtk_window_set_default_size(GTK_WINDOW(dlg), MIN(1600, neww), MIN(1000, newh));
     }
 
     gtk_dialog_run(dlg);
