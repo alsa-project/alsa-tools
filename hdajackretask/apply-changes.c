@@ -213,9 +213,11 @@ cleanup:
 static gboolean restore_soundserver(struct soundserver* state, GError** err)
 {
     gboolean ok = FALSE;
+    gchar* clientconf;
+
     switch (state->type) {
         case PULSEAUDIO:
-            gchar* clientconf = get_pulseaudio_client_conf();
+            clientconf = get_pulseaudio_client_conf();
             if (state->was_killed && g_unlink(clientconf) != 0) {
                 g_set_error(err, quark(), 0, "%s", g_strerror(errno));
                 g_free(clientconf);
