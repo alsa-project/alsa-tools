@@ -72,13 +72,10 @@ void new_macro(char *symbol, char *line, char *operand)
 void macro_expand(int macnum,char *operand )
 {
         char *line,*next;
-        int done=0,i,old;
+        int done=0,old;
         extern unsigned int macro_depth;
         extern int macro_line_num;
         char string[MAX_LINE_LENGTH];
-       
-        //initialize macro use:
-        i=0;
        
         if(macro_depth+1> MAX_MAC_DEPTH)
                 as_exit("Error exceeded maximum number of recursive macro calls");

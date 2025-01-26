@@ -244,6 +244,7 @@ void asm_open(char *name)
         struct stat st;
         char *next;
         int backup_line_num,backup_file_num;
+        size_t rsize;
 
     
                 
@@ -284,8 +285,10 @@ void asm_open(char *name)
         
         buff[i].mem_end = buff[i].mem_start+st.st_size;
         
-        read(fd, buff[i].mem_start, st.st_size);
+        rsize = read(fd, buff[i].mem_start, st.st_size);
         close(fd);
+        if (rsize != st.st_size)
+                as_exit("short read from input file\n");
          
 #ifdef DEBUG        
   	printf("File %s opened:\n",name);
@@ -383,13 +386,14 @@ void output_tram_line(struct list_head *line_head, int type)
                         val = __cpu_to_le32(tram_sym->data.value);
                         fwrite(&val,sizeof(u32),1,fp);
 			if(listing){
-				if(type==TYPE_TRAM_ADDR_READ)
+				if(type==TYPE_TRAM_ADDR_READ) {
 					fprintf(listfile,"\tRead");
-				else
+				} else {
 					fprintf(listfile,"\tWrite");
+				}
 			
-					fprintf(listfile,": 0x3%02x/0x2%02x (%s), offset 0x%07x\n",tram_sym->data.address,tram_sym->data.address,
-						(prev_sym((&tram_sym->list)))->data.name,tram_sym->data.value);
+				fprintf(listfile,": 0x3%02x/0x2%02x (%s), offset 0x%07x\n",tram_sym->data.address,tram_sym->data.address,
+					(prev_sym((&tram_sym->list)))->data.name,tram_sym->data.value);
 			}
 			
                 }

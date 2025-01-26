@@ -63,7 +63,9 @@ enum foo {
         
 };
 
-
+#ifndef DECLARE_OP_CODES
+extern char op_codes[NUM_OPS+1][9];
+#else
 char op_codes[NUM_OPS+1][9]=
   {
     "MACS",
@@ -110,6 +112,7 @@ char op_codes[NUM_OPS+1][9]=
     "con",
     "NotAnOp"
   };
+#endif
 
 //extern int file_num,source_line_num
 

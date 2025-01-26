@@ -22,6 +22,7 @@
 
 #include"types.h"
 #include"proto.h"
+#include"parse.h"
 
 extern int dbg_opt;
 extern FILE *listfile;
@@ -45,7 +46,6 @@ void op(int op, int z,int  w,int  x,int  y)
 	int  w0, w1;
         extern int dsp_code[DSP_CODE_SIZE];
         extern int ip;
-        extern char op_codes[35][9];
 	extern char listtemp[60];
 	if (ip >= 0x200)
 		as_exit("to many instructions");
@@ -306,7 +306,6 @@ void add_symbol(char *name, u16 type, u16 address, u32 value)
        
         extern int gpr_input_count,gpr_output_count,gpr_static_count,gpr_dynamic_count,gpr_control_count,gpr_constant_count;
         struct sym *sym;
-        struct tram *tmp_ptr;
         extern struct list_head sym_head;
         extern struct delay tram_delay[MAX_TANK_ADDR];
         extern struct lookup tram_lookup[MAX_TANK_ADDR];
@@ -356,10 +355,8 @@ void add_symbol(char *name, u16 type, u16 address, u32 value)
                         else
                                 tram_delay[tmp].write++;
                 }else{
-                        tmp_ptr=(struct tram *)sym;
                         list_add_tail(&(((struct tram *)sym)->tram) , &(tram_lookup[tmp].tram) );
-			tmp_ptr=(struct tram *)sym;
-                                if(type== TYPE_TRAM_ADDR_READ)
+                        if(type== TYPE_TRAM_ADDR_READ)
                                 tram_lookup[tmp].read++;   
                         else
                                 tram_lookup[tmp].write++;

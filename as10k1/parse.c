@@ -18,6 +18,7 @@
 #include<string.h>
 #include<stdio.h>
 #include"types.h"
+#define DECLARE_OP_CODES
 #include"parse.h"
 #include"proto.h" 
 
@@ -87,7 +88,7 @@ int parse( char line_string[MAX_LINE_LENGTH], char *line)
         if((tmp=ismacro(op_name_ptr)) != -1 ){
                 if(defmacro==0)
                         macro_expand(tmp,strtok(NULL,""));
-			return(0);
+		return(0);
         }
 	
         if( (op_num=op_decode(op_name_ptr))==-1) {
