@@ -21,7 +21,7 @@
 #pragma implementation
 #include "HC_Aeb.h"
 
-static void setAebStatus(char *ctl_name, int val, int card_index)
+static void setAebStatus(const char *ctl_name, int val, int card_index)
 {
     int err;
     char card_name[6];

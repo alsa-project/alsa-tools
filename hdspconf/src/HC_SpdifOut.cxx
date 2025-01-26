@@ -21,7 +21,7 @@
 #pragma implementation
 #include "HC_SpdifOut.h"
 
-static void setSpdifBit(char *ctl_name, int val, int card_index)
+static void setSpdifBit(const char *ctl_name, int val, int card_index)
 {
     int err;
     char card_name[6];

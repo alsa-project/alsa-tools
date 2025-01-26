@@ -51,7 +51,7 @@ public:
     void setAdatSyncStatus(unsigned char s);
     void setWCStatus(unsigned char s);
 private:
-    char *adat_name;
+    const char *adat_name;
     int h_step;
     Fl_Box_Draw_F *draw_box;
 };

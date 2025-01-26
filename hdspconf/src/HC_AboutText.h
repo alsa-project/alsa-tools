@@ -32,7 +32,7 @@ public:
     HC_AboutText(int x, int y, int w, int h);
     void draw();
 private:
-    char *text;
+    const char *text;
 };
 
 #endif
