@@ -249,7 +249,7 @@ static void create_mixer_frame(GtkWidget *box, int stream)
 	gtk_box_pack_end(GTK_BOX(vbox), toggle, FALSE, FALSE, 0);
 	/* gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(toggle), TRUE); */
 	gtk_signal_connect(GTK_OBJECT(toggle), "toggled",
-			   GTK_SIGNAL_FUNC(config_set_stereo), (gpointer)stream-1);
+			   GTK_SIGNAL_FUNC(config_set_stereo), GINT_TO_POINTER(stream-1));
 
 	hbox = gtk_hbox_new(TRUE, 6);
 	gtk_widget_show(hbox);
@@ -2176,7 +2176,7 @@ int main(int argc, char **argv)
 
 	if (! name) {
 		/* probe cards */
-		static char cardname[8];
+		static char cardname[16];
 		/* FIXME: hardcoded max number of cards */
 		for (card_number = 0; card_number < 8; card_number++) {
 			sprintf(cardname, "hw:%d", card_number);

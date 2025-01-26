@@ -48,6 +48,7 @@ int strstr_icase_blank(const char * const string1, const char * const string2)
 	char search_string[MAX_SEARCH_FIELD_LENGTH];
 	char *pstr;
 	int pos_first_non_blank;
+	size_t len;
 
 	strncpy(search_string, string2, MAX_SEARCH_FIELD_LENGTH);
 	search_string[MAX_SEARCH_FIELD_LENGTH - 1] = '\0';
@@ -84,7 +85,11 @@ int strstr_icase_blank(const char * const string1, const char * const string2)
 			}
 		}
 	}
-	strncpy(search_string, cmp_line, strlen(search_string));
+	len = strlen(search_string);
+	if (len > sizeof(search_string) - 1)
+		len = sizeof(search_string) - 1;
+	strncpy(search_string, cmp_line, len);
+	search_string[len] = '\0';
 
 	position = 0;
 	while (position < strlen(string1))

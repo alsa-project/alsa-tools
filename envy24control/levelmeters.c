@@ -65,7 +65,7 @@ static GdkGC *get_pen(int idx, int nRed, int nGreen, int nBlue)
 	return gc;
 }
 
-static int get_index(gchar *name)
+static int get_index(const gchar *name)
 {
 	int result;
 

@@ -54,9 +54,9 @@ void subst_tilde_in_filename(char * const filename)
 
 	if ((pos_after_tilde = strchr(filename, '~')) != NULL) {
 		pos_after_tilde++;
-		strncpy(new_filename, getenv("HOME"), MAX_FILE_NAME_LENGTH);
-		strncpy(new_filename + strlen(new_filename), pos_after_tilde, MAX_FILE_NAME_LENGTH - strlen(new_filename));
-		new_filename[MAX_FILE_NAME_LENGTH - 1] = '\0';
+		strncpy(new_filename, getenv("HOME"), sizeof(new_filename) - 1);
+		strncpy(new_filename + strlen(new_filename), pos_after_tilde, sizeof(new_filename) - strlen(new_filename) - 1);
+		new_filename[sizeof(new_filename) - 1] = '\0';
 		strncpy(filename, new_filename, MAX_FILE_NAME_LENGTH);
 	}
 }
@@ -522,7 +522,7 @@ int reorganize_profiles(char * const buffer, const int max_length)
 {
 	int profile_number, card_number, card_number_max;
 	int res;
-	int pos_profile_begin, pos_profile_end, pos_card_begin, pos_card_end, pos_name_header;
+	int pos_profile_begin, pos_card_begin, pos_card_end, pos_name_header;
 	int pos_alsa_section_begin, pos_after_alsa_section;
 	char header[MAX_SEARCH_FIELD_LENGTH];
 	void *buffer_copy = NULL;
@@ -547,7 +547,6 @@ int reorganize_profiles(char * const buffer, const int max_length)
 		compose_search_string(header, PROFILE_HEADER_TEMPL, profile_or_card_number_as_str, place_holder, MAX_SEARCH_FIELD_LENGTH);
 		header[MAX_SEARCH_FIELD_LENGTH - 1] = '\0';
 		snprintf(buffer_copy + strlen(buffer_copy), max_length - strlen(buffer_copy), "%s\n", header);
-		pos_profile_end = get_profile_end(buffer, profile_number);
 		/* search max card number in profile */
 		card_number_max = get_max_card_number_in_profile(buffer, profile_number);
 		for (card_number = 0; card_number <= card_number_max; card_number++)
@@ -641,9 +640,9 @@ int save_restore_alsactl_settings(char * const tmpfile, const int card_number, c
 
 void compose_tmpfile_name(char * const tmpfile, const char * const cfgfile)
 {
-	strncpy(tmpfile, cfgfile, MAX_FILE_NAME_LENGTH);
+	strncpy(tmpfile, cfgfile, MAX_FILE_NAME_LENGTH - 1);
 	tmpfile[MAX_FILE_NAME_LENGTH - 1] = '\0';
-	strncpy(tmpfile + strlen(tmpfile), "_alsactl_tmp", MAX_FILE_NAME_LENGTH - strlen(tmpfile));
+	strncpy(tmpfile + strlen(tmpfile), "_alsactl_tmp", MAX_FILE_NAME_LENGTH - strlen(tmpfile) - 1);
 	tmpfile[MAX_FILE_NAME_LENGTH - 1] = '\0';
 }
 

@@ -20,9 +20,9 @@ int new_process(char * const cmd_line[MAX_PARAM])
 	struct stat file_status;
 
 	/* memory for storage of function pointers from the signal handling routines */
-	void (*int_stat)();
-	void (*quit_stat)();
-	void (*usr2_stat)();
+	void (*int_stat)(int);
+	void (*quit_stat)(int);
+	void (*usr2_stat)(int);
 
 	/*
 	 * check command file
