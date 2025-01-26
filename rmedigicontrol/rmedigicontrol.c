@@ -29,7 +29,7 @@ void destroy(GtkWidget *widget,gpointer data)
 int main(int argc, char *argv[])
 {
 	int card;
-	char name[8],*err;
+	char name[16],*err;
 	snd_ctl_card_info_t *hw_info;
 	card_type_t type;
 	
