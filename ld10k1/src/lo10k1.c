@@ -473,8 +473,9 @@ static int transfer_patch(int udin, char *ctrl_opt, liblo10k1_emu_patch_t *ep, l
 			if (*ctrl_opt != ',') {
 				error("wrong ctrl option format - wrong separator beetwen subfunctions");
 				return 1;
-			} else
-				*ctrl_opt++;
+			} else {
+				ctrl_opt++;
+			}
 		}
 	}
 	
@@ -691,8 +692,9 @@ static int transfer_native_patch(liblo10k1_dsp_patch_t *p, char *ctrl_opt)
 			if (*ctrl_opt != ',') {
 				error("wrong ctrl option format - wrong separator beetwen subfunctions");
 				return 1;
-			} else
-				*ctrl_opt++;
+			} else {
+				ctrl_opt++;
+			}
 		}
 	}
 	
@@ -1466,7 +1468,6 @@ int main(int argc, char *argv[])
 
 	int opt_list;
 	int opt_setup;
-	int opt_info;
 	int opt_add;
 	int opt_del;
 	int opt_con_add;
@@ -1526,7 +1527,6 @@ int main(int argc, char *argv[])
 	opt_add = 0;
 	opt_del = 0;
 	opt_list_patch = NULL;
-	opt_info = 0;
 	opt_con_add = 0;
 	opt_con_del = 0;
 	opt_debug = 0;
@@ -1618,7 +1618,7 @@ int main(int argc, char *argv[])
 			opt_list_patch = optarg;
 			break;
 		case 'i':
-			opt_info = 1;
+			/* nothing */
 			break;
 		case 'q':
 			opt_con_add = 1;

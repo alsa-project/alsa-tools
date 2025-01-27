@@ -354,7 +354,7 @@ int dump_load(int audigy, char *file_name)
 	fctrl = (ld10k1_ctl_dump_t *)ptr;
 	memset(ctrl, 0, sizeof(emu10k1_fx8010_control_gpr_t) * header->ctl_count);
 	for (i = 0; i < header->ctl_count; i++) {
-		strcpy(ctrl[i].id.name, fctrl[i].name);
+		strcpy((char *)ctrl[i].id.name, fctrl[i].name);
 		ctrl[i].id.iface = EMU10K1_CTL_ELEM_IFACE_MIXER;
 		ctrl[i].id.index = fctrl[i].index;
 		ctrl[i].vcount = fctrl[i].vcount;

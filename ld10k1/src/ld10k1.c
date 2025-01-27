@@ -77,7 +77,7 @@ void error(const char *fmt, ...)
 	va_end(va);
 }
 
-static void log(const char *fmt, ...)
+static void alog(const char *fmt, ...)
 {
 	va_list va;
 
@@ -116,7 +116,7 @@ static void cleanup()
 {
 	if (pidpath[0])
 		unlink(pidpath);
-	log("Exiting daemon");
+	alog("Exiting daemon");
 }
 
 static void term_handler(int i)
@@ -247,7 +247,7 @@ int main(int argc, char *argv[])
 		
 		pidfile = fopen(pidpath, "wt");
 		if (!pidfile) {
-			log("%s: pidfile (%s)\n", strerror(errno), pidpath);
+			alog("%s: pidfile (%s)\n", strerror(errno), pidpath);
 			return 1;
 		}
 		
@@ -263,7 +263,7 @@ int main(int argc, char *argv[])
 			dup2(fileno(logfile), fileno(stdout));
 		}
 		
-		log("Starting daemon");
+		alog("Starting daemon");
 	}
 
 	params.type = uses_pipe ? COMM_TYPE_LOCAL : COMM_TYPE_IP;

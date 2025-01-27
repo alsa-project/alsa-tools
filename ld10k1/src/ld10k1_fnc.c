@@ -2152,7 +2152,7 @@ int ld10k1_conn_point_add(ld10k1_dsp_mgr_t *dsp_mgr, ld10k1_conn_point_t *point,
 	int allocgprcount = 0;
 	int allocinstrcount = 0;
 	unsigned int reserved[2];
-	unsigned int res[2];
+	int res[2];
 	int reservedcount = 0;
 	int usedreserved = 0;
 

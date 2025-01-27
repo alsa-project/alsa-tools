@@ -792,11 +792,8 @@ int ld10k1_fnc_name_find(int data_conn, int op, int size)
 int ld10k1_fnc_name_rename(int data_conn, int op, int size)
 {
 	ld10k1_fnc_name_t name_info;
-	int ret;
 	int err;
 	ld10k1_patch_t *patch;
-
-	ret = -1;
 
 	if ((err = receive_msg_data(data_conn, &name_info, sizeof(ld10k1_fnc_name_t))) < 0)
 		return err;

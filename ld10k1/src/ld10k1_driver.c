@@ -199,7 +199,7 @@ int ld10k1_update_driver(ld10k1_dsp_mgr_t *dsp_mgr)
 		if (!add_ctrl)
 			return LD10K1_ERR_NO_MEM;
 		for (i = 0, item = dsp_mgr->add_ctl_list; item != NULL; item = item->next, i++) {
-			strcpy(add_ctrl[i].id.name, item->ctl.name);
+			strcpy((char *)add_ctrl[i].id.name, item->ctl.name);
 			add_ctrl[i].id.iface = EMU10K1_CTL_ELEM_IFACE_MIXER;
 			add_ctrl[i].id.index = item->ctl.index;
 			add_ctrl[i].vcount = item->ctl.vcount;
@@ -225,7 +225,7 @@ int ld10k1_update_driver(ld10k1_dsp_mgr_t *dsp_mgr)
 		if (!del_ids)
 			return LD10K1_ERR_NO_MEM;
 		for (i = 0, item = dsp_mgr->del_ctl_list; item != NULL; item = item->next, i++) {
-			strcpy(del_ids[i].name, item->ctl.name);
+			strcpy((char *)del_ids[i].name, item->ctl.name);
 			del_ids[i].iface = EMU10K1_CTL_ELEM_IFACE_MIXER;
 			del_ids[i].index = item->ctl.index;
 		}
