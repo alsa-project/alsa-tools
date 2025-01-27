@@ -9,7 +9,7 @@ gboolean apply_changes_reconfig(pin_configs_t* pins, int entries, int card, int 
 
 gboolean apply_changes_boot(pin_configs_t* pins, int entries, int card, int device, 
     const char* model, const char* hints, GError** err);
-gboolean reset_changes_boot();
+gboolean reset_changes_boot(GError ** err);
 
 #endif
 
