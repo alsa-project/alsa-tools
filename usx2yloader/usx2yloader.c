@@ -225,7 +225,8 @@ static int get_file_name(const char *key, unsigned int idx, char *fname)
 		for (p = buf + len; *p && isspace(*p); p++)
 			;
 		if (*p == '/') {
-			strncpy(fname, p, MAX_PATH);
+			strncpy(fname, p, MAX_PATH - 1);
+			fname[MAX_PATH - 1] = '\0';
 		} else {
 			snprintf(fname, MAX_PATH, "%s/%s", DATAPATH, p);
 		}
