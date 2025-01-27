@@ -629,9 +629,7 @@ gint DrawMixer(gpointer unused) {
   int OutPeak[ECHO_MAXAUDIOOUTPUTS];
   int VirLevel[ECHO_MAXAUDIOOUTPUTS];
   int VirPeak[ECHO_MAXAUDIOOUTPUTS];
-  static int InClip[ECHO_MAXAUDIOINPUTS];
-  static int OutClip[ECHO_MAXAUDIOOUTPUTS];
-  char str[8];
+  char str[16];
   int i, o, dB;
   GdkColor Grid={0x787878, 0, 0, 0};
   GdkColor Labels={0x9694C4, 0, 0, 0};
@@ -647,13 +645,8 @@ gint DrawMixer(gpointer unused) {
   update_rect.height = Mixheight;
   GetVUmeters(InLevel, InPeak, OutLevel, OutPeak, VirLevel, VirPeak);
 
-  if (!gc) {
+  if (!gc)
     gc=gdk_gc_new(gtk_widget_get_parent_window(Mixdarea));
-    for (i=0; i<nIn; i++)
-      InClip[i]=0;
-    for (i=0; i<nLOut; i++)
-      OutClip[i]=0;
-  }
 
   gdk_draw_rectangle(Mixpixmap, Mixdarea->style->black_gc, TRUE, 0, 0, Mixwidth, Mixheight);
 
@@ -1693,7 +1686,7 @@ void ToggleWindow(GtkWidget *widget, gpointer window) {
 // Scan all controls and sets up the structures needed to access them.
 int OpenControls(const char *card, const char *cardname) {
   int err, i, o;
-  int numid, count, items, item;
+  int numid, items, item;
   snd_hctl_t *handle;
   snd_hctl_elem_t *elem;
   snd_ctl_elem_id_t *id;
@@ -1726,7 +1719,6 @@ int OpenControls(const char *card, const char *cardname) {
       continue;
     snd_hctl_elem_get_id(elem, id);
     numid=snd_ctl_elem_id_get_numid(id);
-    count=snd_ctl_elem_info_get_count(info);
     if (!strcmp("Monitor Mixer Volume", snd_ctl_elem_id_get_name(id))) {
       if (!mixerId) {
         mixerId=numid;
@@ -1879,7 +1871,7 @@ int main(int argc, char *argv[]) {
   GtkWidget *label, *menu, *menuitem;
   GSList *bgroup;
   int err, i, o, n, cardnum, value;
-  char hwname[8], cardname[32], load, save;
+  char hwname[16], cardname[32], load, save;
   snd_ctl_card_info_t *hw_info;
 
   load=save=1;
@@ -1900,8 +1892,8 @@ int main(int argc, char *argv[]) {
     }
     if ((err=snd_ctl_card_info(ctlhandle, hw_info))>=0) {
       if (!strncmp(snd_ctl_card_info_get_driver(hw_info), "Echo_", 5)) {
-        strncpy(card, hwname, 7);
-        hwname[7]=0;
+        strncpy(card, hwname, sizeof(hwname)-1);
+        card[sizeof(hwname)-1]=0;
         strncpy(cardname, snd_ctl_card_info_get_name(hw_info), 31);
         cardname[31]=0;
         strncpy(cardId, snd_ctl_card_info_get_name(hw_info), 15);
