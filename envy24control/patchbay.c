@@ -30,7 +30,7 @@ extern int output_channels, input_channels, pcm_output_channels, spdif_channels;
 
 static int is_active(GtkWidget *widget)
 {
-	return GTK_TOGGLE_BUTTON(widget)->active ? 1 : 0;
+	return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 }
 
 static int get_toggle_index(int stream)

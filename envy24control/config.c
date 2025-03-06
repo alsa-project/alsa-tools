@@ -47,7 +47,7 @@ void config_close()
 void config_set_stereo(GtkWidget *but, gpointer data)
 {
   gint i=GPOINTER_TO_INT(data);
-  config_stereo[i]=GTK_TOGGLE_BUTTON(but)->active;
+  config_stereo[i]=gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(but));
 }
 
 void config_restore_stereo()

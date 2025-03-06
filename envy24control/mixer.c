@@ -39,13 +39,13 @@ extern int input_channels, output_channels, pcm_output_channels, spdif_channels,
 
 static int is_active(GtkWidget *widget)
 {
-	return GTK_TOGGLE_BUTTON(widget)->active ? 1 : 0;
+	return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 }
 
 void mixer_update_stream(int stream, int vol_flag, int sw_flag)
 {
 	int err;
-	
+
 	if (! stream_is_active[stream - 1])
 		return;
 
@@ -180,12 +180,13 @@ void mixer_adjust(GtkAdjustment *adj, gpointer data)
 	int button = (long)data & 1;
 	int stereo = is_active(mixer_stereo_toggle[stream-1]) ? 1 : 0;
 	int vol[2] = { -1, -1 };
-	
-	vol[button] = 96 - adj->value;
-	if (stereo) {
-		gtk_adjustment_set_value(GTK_ADJUSTMENT(mixer_adj[stream-1][button ^ 1]), adj->value);
-		vol[button ^ 1] = 96 - adj->value;
-	}
+	double adjustment_value = gtk_adjustment_get_value(adj);
+
+    vol[button] = 96 - adjustment_value;
+    if (stereo) {
+        gtk_adjustment_set_value(GTK_ADJUSTMENT(mixer_adj[stream-1][button ^ 1]), adjustment_value);
+        vol[button ^ 1] = 96 - adjustment_value;
+    }
 	set_volume1(stream, vol[0], vol[1]);
 }
 

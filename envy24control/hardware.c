@@ -39,13 +39,13 @@ static inline int is_update_needed(void);
 
 static int is_active(GtkWidget *widget)
 {
-	return GTK_TOGGLE_BUTTON(widget)->active ? 1 : 0;
+	return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 }
 
 void master_clock_update(void)
 {
 	int err, rate, need_default_update;
-	
+
 	if ((err = snd_ctl_elem_read(ctl, internal_clock)) < 0)
 		g_print("Unable to read Internal Clock state: %s\n", snd_strerror(err));
 	if ((err = snd_ctl_elem_read(ctl, internal_clock_default)) < 0)
@@ -343,7 +343,7 @@ void rate_reset_toggled(GtkWidget *togglebutton, gpointer data)
 void volume_change_rate_update(void)
 {
 	int err;
-	
+
 	if ((err = snd_ctl_elem_read(ctl, volume_rate)) < 0)
 		g_print("Unable to read volume change rate: %s\n", snd_strerror(err));
 	gtk_adjustment_set_value(GTK_ADJUSTMENT(hw_volume_change_adj),
@@ -353,8 +353,8 @@ void volume_change_rate_update(void)
 void volume_change_rate_adj(GtkAdjustment *adj, gpointer data)
 {
 	int err;
-	
-	snd_ctl_elem_value_set_integer(volume_rate, 0, adj->value);
+	double adjustment_value = gtk_adjustment_get_value(adj);
+	snd_ctl_elem_value_set_integer(volume_rate, 0, adjustment_value);
 	if ((err = snd_ctl_elem_write(ctl, volume_rate)) < 0)
 		g_print("Unable to write volume change rate: %s\n", snd_strerror(err));
 }
@@ -363,7 +363,7 @@ void spdif_output_update(void)
 {
 	int err;
 	snd_aes_iec958_t iec958;
-	
+
 	if ((err = snd_ctl_elem_read(ctl, spdif_output)) < 0) {
 		if (err == -ENOENT)
 			return;
@@ -550,7 +550,7 @@ void consumer_category_toggled(GtkWidget *togglebutton, gpointer data)
 	char *str = (char *)data;
 	snd_aes_iec958_t iec958;
 
-	snd_ctl_elem_value_get_iec958(spdif_output, &iec958);	
+	snd_ctl_elem_value_get_iec958(spdif_output, &iec958);
 	if (!is_active(togglebutton))
 		return;
 	if (iec958.status[0] & IEC958_AES0_PROFESSIONAL)
@@ -598,7 +598,7 @@ void spdif_output_toggled(GtkWidget *togglebutton, gpointer data)
 			page = 1;
 		}
 		spdif_output_write();
-		gtk_notebook_set_page(GTK_NOTEBOOK(hw_spdif_output_notebook), page);
+		gtk_notebook_set_current_page(GTK_NOTEBOOK(hw_spdif_output_notebook), page);
 		spdif_output_update();
 	}
 }
@@ -635,7 +635,7 @@ void spdif_input_toggled(GtkWidget *togglebutton, gpointer data)
 {
 	int err;
 	char *str = (char *)data;
-	
+
 	if (!is_active(togglebutton))
 		return;
 	if (!strcmp(str, "Off"))

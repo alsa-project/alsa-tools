@@ -105,9 +105,6 @@ int envy_analog_volume_available(void)
 }
 
 
-/*
- */
-
 void dac_volume_update(int idx)
 {
 	snd_ctl_elem_value_t *val;
@@ -210,14 +207,12 @@ void adc_sense_update(int idx)
 }
 
 
-/*
- */
-
 void dac_volume_adjust(GtkAdjustment *adj, gpointer data)
 {
 	int idx = (int)(long)data;
 	snd_ctl_elem_value_t *val;
-	int err, ival = -(int)adj->value;
+	double adjustment_value = gtk_adjustment_get_value(adj);
+	int err, ival = -(int)adjustment_value;
 	char text[16];
 
 	snd_ctl_elem_value_alloca(&val);
@@ -235,7 +230,8 @@ void adc_volume_adjust(GtkAdjustment *adj, gpointer data)
 {
 	int idx = (int)(long)data;
 	snd_ctl_elem_value_t *val;
-	int err, ival = -(int)adj->value;
+	double adjustment_value = gtk_adjustment_get_value(adj);
+	int err, ival = -(int)adjustment_value;
 	char text[16];
 
 	snd_ctl_elem_value_alloca(&val);
@@ -253,7 +249,8 @@ void ipga_volume_adjust(GtkAdjustment *adj, gpointer data)
 {
 	int idx = (int)(long)data;
 	snd_ctl_elem_value_t *val;
-	int err, ival = -(int)adj->value;
+	double adjustment_value = gtk_adjustment_get_value(adj);
+	int err, ival = -(int)adjustment_value;
 	char text[16];
 
 	snd_ctl_elem_value_alloca(&val);
@@ -298,9 +295,6 @@ void adc_sense_toggled(GtkWidget *togglebutton, gpointer data)
 	if ((err = snd_ctl_elem_write(ctl, val)) < 0)
 		g_print("Unable to write adc sense: %s\n", snd_strerror(err));
 }
-
-/*
- */
 
 void analog_volume_init(void)
 {

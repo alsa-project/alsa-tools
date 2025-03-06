@@ -19,7 +19,7 @@
 
 #include "envy24control.h"
 
-void control_input_callback(gpointer data, gint source, GdkInputCondition condition)
+gint control_input_callback(GIOChannel *source, GIOCondition condition, gpointer data)
 {
 	snd_ctl_t *ctl = (snd_ctl_t *)data;
 	snd_ctl_event_t *ev;
@@ -29,12 +29,12 @@ void control_input_callback(gpointer data, gint source, GdkInputCondition condit
 
 	snd_ctl_event_alloca(&ev);
 	if (snd_ctl_read(ctl, ev) < 0)
-		return;
+		return FALSE;
 	name = snd_ctl_event_elem_get_name(ev);
 	index = snd_ctl_event_elem_get_index(ev);
 	mask = snd_ctl_event_elem_get_mask(ev);
 	if (! (mask & (SND_CTL_EVENT_MASK_VALUE | SND_CTL_EVENT_MASK_INFO)))
-		return;
+		return FALSE;
 
 	switch (snd_ctl_event_elem_get_interface(ev)) {
 	case SND_CTL_ELEM_IFACE_MIXER:
@@ -84,5 +84,6 @@ void control_input_callback(gpointer data, gint source, GdkInputCondition condit
 	default:
 		break;
 	}
+	return TRUE;
 }
 
