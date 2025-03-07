@@ -13,7 +13,7 @@
    GNU General Public License for more details.
 ******************************************************************************/
 
-#include "rmedigicontrol.h" 
+#include "rmedigicontrol.h"
 
 static snd_ctl_elem_value_t *val;
 
@@ -28,18 +28,18 @@ GtkWidget *create_loopback_toggle()
 	GtkWidget *t;
 	GtkWidget *box;
 	char *elem_name="Loopback Input";
-	
+
 	box=gtk_hbox_new(FALSE,0);
-	
+
 	snd_ctl_elem_value_malloc(&val);
-	
+
 	snd_ctl_elem_value_set_interface(val, SND_CTL_ELEM_IFACE_MIXER);
 	snd_ctl_elem_value_set_name(val,elem_name);
 	snd_ctl_elem_read(ctl, val);
-	
+
 	t=gtk_check_button_new_with_label(elem_name);
 
-	gtk_signal_connect(GTK_OBJECT(t),"toggled",GTK_SIGNAL_FUNC(loopback_toggled),NULL);
+	g_signal_connect(t,"toggled",G_CALLBACK(loopback_toggled),NULL);
 	if(snd_ctl_elem_value_get_integer(val,0))
 		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(t),TRUE);
 
