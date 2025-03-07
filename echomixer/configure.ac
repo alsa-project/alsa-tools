@@ -5,6 +5,6 @@ AC_HEADER_STDC
 AM_INIT_AUTOMAKE
 AM_MAINTAINER_MODE([enable])
 
-PKG_CHECK_MODULES(ECHOMIXER, gtk+-2.0 alsa >= 1.0.0)
+PKG_CHECK_MODULES(ECHOMIXER, gtk+-3.0 alsa >= 1.0.0)
 
 AC_OUTPUT(Makefile desktop/Makefile)

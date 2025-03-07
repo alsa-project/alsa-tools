@@ -85,7 +85,7 @@ extern ice1712_eeprom_t card_eeprom;
 extern GtkWidget *mixer_mix_drawing;
 extern GtkWidget *mixer_clear_peaks_button;
 extern GtkWidget *mixer_drawing[20];
-extern GtkObject *mixer_adj[20][2];
+extern GtkAdjustment *mixer_adj[20][2];
 extern GtkWidget *mixer_vscale[20][2];
 extern GtkWidget *mixer_solo_toggle[20][2];
 extern GtkWidget *mixer_mute_toggle[20][2];
@@ -108,7 +108,7 @@ extern GtkWidget *hw_master_clock_actual_rate_label;
 extern GtkWidget *hw_rate_locking_check;
 extern GtkWidget *hw_rate_reset_check;
 
-extern GtkObject *hw_volume_change_adj;
+extern GtkAdjustment *hw_volume_change_adj;
 extern GtkWidget *hw_volume_change_spin;
 
 extern GtkWidget *hw_spdif_profi_nonaudio_radio;
@@ -151,9 +151,9 @@ extern GtkWidget *input_interface_internal;
 extern GtkWidget *input_interface_front_input;
 extern GtkWidget *input_interface_rear_input;
 extern GtkWidget *input_interface_wavetable;
-extern GtkObject *av_dac_volume_adj[];
-extern GtkObject *av_adc_volume_adj[];
-extern GtkObject *av_ipga_volume_adj[];
+extern GtkAdjustment *av_dac_volume_adj[];
+extern GtkAdjustment *av_adc_volume_adj[];
+extern GtkAdjustment *av_ipga_volume_adj[];
 extern GtkLabel *av_dac_volume_label[];
 extern GtkLabel *av_adc_volume_label[];
 extern GtkLabel *av_ipga_volume_label[];
@@ -238,6 +238,6 @@ void ipga_volume_adjust(GtkAdjustment *adj, gpointer data);
 void dac_sense_toggled(GtkWidget *togglebutton, gpointer data);
 void adc_sense_toggled(GtkWidget *togglebutton, gpointer data);
 
-void control_input_callback(gpointer data, gint source, GdkInputCondition condition);
-void mixer_input_callback(gpointer data, gint source, GdkInputCondition condition);
+gint control_input_callback(GIOChannel *source, GIOCondition condition, gpointer data);
+gint mixer_input_callback(GIOChannel *source, GIOCondition condition, gpointer data);
 

@@ -13,7 +13,7 @@
    GNU General Public License for more details.
 *****************************************************************************/
 
-#include "rmedigicontrol.h" 
+#include "rmedigicontrol.h"
 
 static snd_ctl_elem_value_t *val;
 static snd_ctl_elem_info_t *info;
@@ -24,21 +24,22 @@ static char *val2char(gdouble val)
 	sprintf(vlab,"%2.0f",100-val);
 	return(vlab);
 }
-static void changed(GtkAdjustment *a,gpointer p)
+static void changed(GtkAdjustment *a, gpointer p)
 {
-	snd_ctl_elem_value_set_integer(val,0,((100-a->value)*snd_ctl_elem_info_get_max(info))/100);
-	snd_ctl_elem_value_set_integer(val,1,((100-a->value)*snd_ctl_elem_info_get_max(info))/100);
-	snd_ctl_elem_write(ctl,val);
-	gtk_label_set_text(p,val2char(a->value));
+	double value = gtk_adjustment_get_value(a);
+	int adjusted_value = ((100 - value) * snd_ctl_elem_info_get_max(info)) / 100;
+	snd_ctl_elem_value_set_integer(val, 0, adjusted_value);
+	snd_ctl_elem_value_set_integer(val, 1, adjusted_value);
+	snd_ctl_elem_write(ctl, val);
+	gtk_label_set_text(GTK_LABEL(p), val2char(value));
 }
 
 GtkWidget *create_level_box()
 {
-	GtkObject *adjust;
+	GtkAdjustment *adjust;
 	GtkWidget *box,*slider1,*label1,*vlabel;
 	char *elem_name="DAC Playback Volume";
-	
-	box=gtk_vbox_new(FALSE,2);
+	box=gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
 
 	snd_ctl_elem_info_malloc(&info);
 	snd_ctl_elem_value_malloc(&val);
@@ -47,19 +48,25 @@ GtkWidget *create_level_box()
 	snd_ctl_elem_info_set_name(info,elem_name);
 	snd_ctl_elem_info_set_numid(info,0);
 	snd_ctl_elem_info(ctl,info);
-	
+
 	snd_ctl_elem_value_set_interface(val,SND_CTL_ELEM_TYPE_INTEGER);
 	snd_ctl_elem_value_set_name(val,elem_name);
 	snd_ctl_elem_read(ctl,val);
 
-	adjust=GTK_OBJECT(gtk_adjustment_new(100-(snd_ctl_elem_value_get_integer(val,0)*100)/snd_ctl_elem_info_get_max(info),0,100,1,5,0));
-
-	vlabel=gtk_label_new(val2char((GTK_ADJUSTMENT(adjust))->value));
-	gtk_signal_connect(adjust,"value_changed",GTK_SIGNAL_FUNC(changed),vlabel);
-	slider1=gtk_vscale_new(GTK_ADJUSTMENT(adjust));
+	adjust = gtk_adjustment_new(
+		100 - (snd_ctl_elem_value_get_integer(val, 0) * 100) / snd_ctl_elem_info_get_max(info),
+		0,   // lower
+		100, // upper
+		1,   // step increment
+		5,   // page increment
+		0    // page size
+	);
+	vlabel = gtk_label_new(val2char(gtk_adjustment_get_value(adjust)));
+	g_signal_connect(adjust,"value_changed",G_CALLBACK(changed),vlabel);
+	slider1=gtk_scale_new(GTK_ORIENTATION_VERTICAL, adjust);
 	gtk_scale_set_draw_value(GTK_SCALE(slider1),FALSE);
 	gtk_scale_set_digits(GTK_SCALE(slider1),0);
-	
+
 	label1=gtk_label_new("Level");
 	gtk_box_pack_start(GTK_BOX(box),label1,FALSE,TRUE,5);
 	gtk_box_pack_start(GTK_BOX(box),slider1,TRUE,TRUE,5);
