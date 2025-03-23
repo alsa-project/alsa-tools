@@ -455,9 +455,9 @@ void profi_stream_toggled(GtkWidget *togglebutton, gpointer data)
 		return;
 	iec958.status[1] &= ~IEC958_AES1_PRO_MODE;
 	if (!strcmp(str, "NOTID")) {
-		iec958.status[0] |= IEC958_AES1_PRO_MODE_STEREOPHONIC;
+		iec958.status[1] |= IEC958_AES1_PRO_MODE_NOTID;
 	} else if (!strcmp(str, "Stereo")) {
-		iec958.status[0] |= IEC958_AES1_PRO_MODE_NOTID;
+		iec958.status[1] |= IEC958_AES1_PRO_MODE_STEREOPHONIC;
 	}
 	snd_ctl_elem_value_set_iec958(spdif_output, &iec958);
 	spdif_output_write();
@@ -500,7 +500,7 @@ void consumer_copyright_toggled(GtkWidget *togglebutton, gpointer data)
 	if (!strcmp(str, "Copyright")) {
 		iec958.status[0] &= ~IEC958_AES0_CON_NOT_COPYRIGHT;
 	} else if (!strcmp(str, "Permitted")) {
-		iec958.status[1] |= IEC958_AES0_CON_NOT_COPYRIGHT;
+		iec958.status[0] |= IEC958_AES0_CON_NOT_COPYRIGHT;
 	}
 	snd_ctl_elem_value_set_iec958(spdif_output, &iec958);
 	spdif_output_write();
@@ -517,9 +517,9 @@ void consumer_copy_toggled(GtkWidget *togglebutton, gpointer data)
 	if (iec958.status[0] & IEC958_AES0_PROFESSIONAL)
 		return;
 	if (!strcmp(str, "1st")) {
-		iec958.status[0] |= IEC958_AES1_CON_ORIGINAL;
-	} else if (!strcmp(str, "Original")) {
 		iec958.status[1] &= ~IEC958_AES1_CON_ORIGINAL;
+	} else if (!strcmp(str, "Original")) {
+		iec958.status[1] |= IEC958_AES1_CON_ORIGINAL;
 	}
 	snd_ctl_elem_value_set_iec958(spdif_output, &iec958);
 	spdif_output_write();
@@ -539,7 +539,7 @@ void consumer_emphasis_toggled(GtkWidget *togglebutton, gpointer data)
 	if (!strcmp(str, "No")) {
 		iec958.status[0] |= IEC958_AES0_CON_EMPHASIS_NONE;
 	} else if (!strcmp(str, "5015")) {
-		iec958.status[1] |= ~IEC958_AES0_CON_EMPHASIS_5015;
+		iec958.status[0] |= IEC958_AES0_CON_EMPHASIS_5015;
 	}
 	snd_ctl_elem_value_set_iec958(spdif_output, &iec958);
 	spdif_output_write();
@@ -555,15 +555,15 @@ void consumer_category_toggled(GtkWidget *togglebutton, gpointer data)
 		return;
 	if (iec958.status[0] & IEC958_AES0_PROFESSIONAL)
 		return;
-	iec958.status[0] &= ~IEC958_AES1_CON_CATEGORY;
+	iec958.status[1] &= ~IEC958_AES1_CON_CATEGORY;
 	if (!strcmp(str, "DAT")) {
-		iec958.status[0] |= IEC958_AES1_CON_DAT;
+		iec958.status[1] |= IEC958_AES1_CON_DAT;
 	} else if (!strcmp(str, "PCM")) {
-		iec958.status[0] |= IEC958_AES1_CON_PCM_CODER;
+		iec958.status[1] |= IEC958_AES1_CON_PCM_CODER;
 	} else if (!strcmp(str, "CD")) {
-		iec958.status[0] |= IEC958_AES1_CON_IEC908_CD;
+		iec958.status[1] |= IEC958_AES1_CON_IEC908_CD;
 	} else if (!strcmp(str, "General")) {
-		iec958.status[0] |= IEC958_AES1_CON_GENERAL;
+		iec958.status[1] |= IEC958_AES1_CON_GENERAL;
 	}
 	snd_ctl_elem_value_set_iec958(spdif_output, &iec958);
 	spdif_output_write();
