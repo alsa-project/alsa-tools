@@ -725,7 +725,7 @@ static void create_volume_change(GtkWidget *box)
 	gtk_box_pack_start(GTK_BOX(hbox), label, TRUE, FALSE, 0);
 	gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);
 
-	spinbutton_adj = gtk_adjustment_new(16, 0, 255, 1, 10, 10);
+	spinbutton_adj = gtk_adjustment_new(16, 0, 255, 1, 10, 0);
 	hw_volume_change_adj = spinbutton_adj;
 	spinbutton = gtk_spin_button_new(GTK_ADJUSTMENT(spinbutton_adj), 1, 0);
 	gtk_widget_show(spinbutton);
@@ -1869,7 +1869,7 @@ static void create_profiles(GtkWidget *main, GtkWidget *notebook, int page)
 	gtk_box_pack_start(GTK_BOX(hbox1), label_card_nr, FALSE, FALSE, 20);
 	gtk_label_set_justify(GTK_LABEL(label_card_nr), GTK_JUSTIFY_LEFT);
 
-	card_button_adj = gtk_adjustment_new(16, 0, MAX_CARD_NUMBERS - 1, 1, 10, 10);
+	card_button_adj = gtk_adjustment_new(16, 0, MAX_CARD_NUMBERS - 1, 1, 10, 0);
 	card_number_adj = card_button_adj;
 	card_button = gtk_spin_button_new(GTK_ADJUSTMENT (card_button_adj), 1, 0);
 	gtk_widget_show(card_button);
