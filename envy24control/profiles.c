@@ -94,7 +94,9 @@ int get_file_size(const char * const filename)
 {
 	struct stat file_status;
 
-	strncpy(filename_without_tilde, filename, MAX_FILE_NAME_LENGTH);
+	if (filename_without_tilde != filename) {
+		strncpy(filename_without_tilde, filename, MAX_FILE_NAME_LENGTH);
+	}
 	filename_without_tilde[MAX_FILE_NAME_LENGTH - 1] = '\0';
 	subst_tilde_in_filename(filename_without_tilde);
 	if (stat(filename_without_tilde, &file_status) < 0) {
@@ -470,7 +472,8 @@ int get_pos_name_header_from_card(const char * const buffer, const int profile_n
 	char place_holder;
 	int pos_card_begin, pos_card_end, pos_name_header;
 
-	pos_card_begin = get_card_begin(buffer, profile_number, card_number);
+	if ((pos_card_begin = get_card_begin(buffer, profile_number, card_number)) < 0)
+		return pos_card_begin;
 	pos_card_end = get_card_end(buffer, profile_number, card_number);
 	place_holder = PLACE_HOLDER_STR;
 	strncpy(header, PROFILE_NAME_TEMPL, MAX_SEARCH_FIELD_LENGTH);
