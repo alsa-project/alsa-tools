@@ -81,6 +81,10 @@ void control_input_callback(gpointer data, gint source, GdkInputCondition condit
 		else if (!strcmp(name, "Input Sensitivity Switch"))
 			adc_sense_update(index);
 		break;
+	case SND_CTL_ELEM_IFACE_PCM:
+		if (!strcmp(name, "IEC958 Playback Default"))
+			spdif_output_update();
+		break;
 	default:
 		break;
 	}
