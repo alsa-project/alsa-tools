@@ -78,7 +78,9 @@ int which_cfgfile(char ** const cfgfile)
 			   (inputFile = fopen(SYS_PROFILERC, "r")) == NULL) {
 			res = -ENOENT;
 		} else {
-			fclose(inputFile);
+			if (inputFile != NULL) {
+				fclose(inputFile);
+			}
 			*cfgfile = SYS_PROFILERC;
 			res = EXIT_SUCCESS;
 		}
