@@ -1146,13 +1146,16 @@ int save_restore(const char * const operation, const int profile_number, const i
 				fprintf(stderr, "Cannot save settings for card '%d' in profile '%d'.\n", card_number, profile_number);
 				return -errno;
 			}
+			close(res);
 			unlink(cfgfile);
 		} else {
+			close(res);
 			if ((res = open(cfgfile, O_RDWR | 0400000 /* O_NOFOLLOW */, FILE_CREA_MODE)) < 0) {
 				fprintf(stderr, "Cannot open configuration file '%s' for writing.\n", cfgfile);
 				fprintf(stderr, "Cannot save settings for card '%d' in profile '%d'.\n", card_number, profile_number);
 				return -errno;
 			}
+			close(res);
 		}
 		res =  save_profile(profile_number, card_number, profile_name, cfgfile);
 	} else if (!strcmp(operation, ALSACTL_OP_RESTORE)) {
