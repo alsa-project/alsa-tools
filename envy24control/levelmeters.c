@@ -25,7 +25,6 @@ static GdkRGBA *penOrangeShadow = NULL;
 static GdkRGBA *penOrangeLight = NULL;
 static GdkRGBA *penRedShadow = NULL;
 static GdkRGBA *penRedLight = NULL;
-static int level[22] = { 0 };
 static snd_ctl_elem_value_t *peaks;
 
 extern int input_channels, output_channels, pcm_output_channels, spdif_channels, view_spdif_playback;
@@ -71,12 +70,12 @@ static int get_index(const gchar *name)
 	result = atoi(name + 5);
 	if (result < 1 || result > 20) {
 		g_print("Wrong drawing area ID: %s\n", name);
-		gtk_main_quit();
+		exit(EXIT_FAILURE);
 	}
 	return result;
 }
 
-static void redraw_meters(int idx, int width, int height, int level1, int level2, cairo_t *cr)
+static void redraw_meters(int idx, int width, int height, int level1, int level2, GtkSnapshot *snapshot)
 {
 	int stereo = idx == 0;
 	int segment_width = stereo ? (width / 2) - 8 : width - 12;
@@ -87,135 +86,108 @@ static void redraw_meters(int idx, int width, int height, int level1, int level2
 	int seg;
 	int segs_on1 = ((segments * level1) + 128) / 255;
 	int segs_on2 = ((segments * level2) + 128) / 255;
-	int end_seg;
-	GdkRectangle clip;
+	GdkRGBA black = { 0, 0, 0, 1 };
 
 	// g_print("segs_on1 = %i (%i), segs_on2 = %i (%i)\n", segs_on1, level1, segs_on2, level2);
-	cairo_rectangle(cr, 0, 0, width, height);
-	cairo_fill(cr);
-
-	gdk_cairo_get_clip_rectangle(cr, &clip);
-	seg = segments - (clip.y + clip.height) / 4;
-	if (seg < 0)
-		seg = 0;
-	segs_on1 -= seg;
-	segs_on2 -= seg;
-	end_seg = segments - (clip.y - 2) / 4;
-
-	for (; seg < green_segments && seg < end_seg; seg++) {
-		gdk_cairo_set_source_rgba(cr,
-					  segs_on1 > 0 ? penGreenLight : penGreenShadow);
-		cairo_rectangle(cr,
-				6, 3 + ((segments - seg - 1) * 4),
-				segment_width,
-				3);
-		cairo_fill(cr);
+	gtk_snapshot_append_color(snapshot, &black, &GRAPHENE_RECT_INIT(0, 0, width, height));
+	for (seg = 0; seg < green_segments; seg++) {
+		gtk_snapshot_append_color(snapshot,
+					  segs_on1 > 0 ? penGreenLight : penGreenShadow,
+					  &GRAPHENE_RECT_INIT(
+						  6, 3 + ((segments - seg - 1) * 4),
+						  segment_width,
+						  3));
 		if (stereo) {
-			gdk_cairo_set_source_rgba(cr,
-						  segs_on2 > 0 ? penGreenLight : penGreenShadow);
-			cairo_rectangle(cr,
-					2 + (width / 2),
-					3 + ((segments - seg - 1) * 4),
-					segment_width,
-					3);
-			cairo_fill(cr);
-                }
-		segs_on1--;
-		segs_on2--;
-	}
-	for (; seg < green_segments + orange_segments && seg < end_seg; seg++) {
-		gdk_cairo_set_source_rgba(cr,
-					  segs_on1 > 0 ? penOrangeLight : penOrangeShadow);
-		cairo_rectangle(cr,
-				6, 3 + ((segments - seg - 1) * 4),
-				segment_width,
-				3);
-		cairo_fill(cr);
-		if (stereo) {
-			gdk_cairo_set_source_rgba(cr,
-						  segs_on2 > 0 ? penOrangeLight : penOrangeShadow);
-			cairo_rectangle(cr,
-					2 + (width / 2),
-					3 + ((segments - seg - 1) * 4),
-					segment_width,
-					3);
-			cairo_fill(cr);
+			gtk_snapshot_append_color(snapshot,
+						  segs_on2 > 0 ? penGreenLight : penGreenShadow,
+						  &GRAPHENE_RECT_INIT(
+							  2 + (width / 2),
+							  3 + ((segments - seg - 1) * 4),
+							  segment_width,
+							  3));
 		}
 		segs_on1--;
 		segs_on2--;
 	}
-	for (; seg < segments && seg < end_seg; seg++) {
-		gdk_cairo_set_source_rgba(cr,
-					  segs_on1 > 0 ? penRedLight : penRedShadow);
-		cairo_rectangle(cr,
-				6, 3 + ((segments - seg - 1) * 4),
-				segment_width,
-				3);
-		cairo_fill(cr);
+	for (; seg < green_segments + orange_segments; seg++) {
+		gtk_snapshot_append_color(snapshot,
+					  segs_on1 > 0 ? penOrangeLight : penOrangeShadow,
+					  &GRAPHENE_RECT_INIT(
+						  6, 3 + ((segments - seg - 1) * 4),
+						  segment_width,
+						  3));
 		if (stereo) {
-			gdk_cairo_set_source_rgba(cr,
-						  segs_on2 > 0 ? penRedLight : penRedShadow);
-			cairo_rectangle(cr,
-					2 + (width / 2),
-					3 + ((segments - seg - 1) * 4),
-					segment_width,
-					3);
-			cairo_fill(cr);
+			gtk_snapshot_append_color(snapshot,
+						  segs_on2 > 0 ? penOrangeLight : penOrangeShadow,
+						  &GRAPHENE_RECT_INIT(
+							  2 + (width / 2),
+							  3 + ((segments - seg - 1) * 4),
+							  segment_width,
+							  3));
+		}
+		segs_on1--;
+		segs_on2--;
+	}
+	for (; seg < segments; seg++) {
+		gtk_snapshot_append_color(snapshot,
+					  segs_on1 > 0 ? penRedLight : penRedShadow,
+					  &GRAPHENE_RECT_INIT(
+						  6, 3 + ((segments - seg - 1) * 4),
+						  segment_width,
+						  3));
+		if (stereo) {
+			gtk_snapshot_append_color(snapshot,
+						  segs_on2 > 0 ? penRedLight : penRedShadow,
+						  &GRAPHENE_RECT_INIT(
+							  2 + (width / 2),
+							  3 + ((segments - seg - 1) * 4),
+							  segment_width,
+							  3));
 		}
 		segs_on1--;
 		segs_on2--;
 	}
 }
 
-gboolean level_meters_draw_callback(GtkWidget *widget, cairo_t *cr, gpointer data)
+#define ENVY_TYPE_LEVEL_METER envy_level_meter_get_type()
+G_DECLARE_FINAL_TYPE(EnvyLevelMeter, envy_level_meter, ENVY, LEVEL_METER, GtkWidget)
+
+struct _EnvyLevelMeter
+{
+	GtkWidget parent_instance;
+};
+
+G_DEFINE_FINAL_TYPE(EnvyLevelMeter, envy_level_meter, GTK_TYPE_WIDGET)
+
+static void envy_level_meter_snapshot(GtkWidget *widget, GtkSnapshot *snapshot)
 {
 	int idx = get_index(gtk_widget_get_name(widget));
 	int l1, l2;
 	
 	get_levels(idx, &l1, &l2);
-	redraw_meters(idx, gtk_widget_get_allocated_width(widget), gtk_widget_get_allocated_height(widget), l1, l2, cr);
-	return FALSE;
+	redraw_meters(idx, gtk_widget_get_width(widget), gtk_widget_get_height(widget), l1, l2, snapshot);
+}
+
+static void envy_level_meter_class_init(EnvyLevelMeterClass *klass)
+{
+	GtkWidgetClass *widget_class = GTK_WIDGET_CLASS(klass);
+	widget_class->snapshot = envy_level_meter_snapshot;
+}
+
+static void envy_level_meter_init(EnvyLevelMeter *self)
+{
+}
+
+GtkWidget *envy_level_meter_new(void)
+{
+	EnvyLevelMeter *self = g_object_new(ENVY_TYPE_LEVEL_METER, NULL);
+	return GTK_WIDGET(self);
 }
 
 static void update_meter(int idx)
 {
-	int stereo = idx == 0;
-	GtkWidget *widget = stereo ? mixer_mix_drawing : mixer_drawing[idx - 1];
-	int width = gtk_widget_get_allocated_width(widget);
-	int height = gtk_widget_get_allocated_height(widget);
-	int segments = (height - 6) / 4;
-	int level_idx = stereo ? 20 : idx - 1;
-	int l1, l2, segs_on, old_segs_on, h;
-
-	get_levels(idx, &l1, &l2);
-	segs_on = ((segments * l1) + 128) / 255;
-	old_segs_on = ((segments * level[level_idx]) + 128) / 255;
-	h = abs(old_segs_on - segs_on);
-	level[level_idx] = l1;
-
-	if (h > 0) {
-		int y = segments - MAX(old_segs_on, segs_on);
-		gtk_widget_queue_draw_area(widget,
-					   6, 4 * y + 3,
-					   stereo ? (width / 2) - 8 : width - 12,
-					   4 * h - 1);
-	}
-
-	if (stereo) {
-		level_idx++;
-		segs_on = ((segments * l2) + 128) / 255;
-		old_segs_on = ((segments * level[level_idx]) + 128) / 255;
-		h = abs(old_segs_on - segs_on);
-		level[level_idx] = l2;
-
-		if (h > 0) {
-			int y = segments - MAX(old_segs_on, segs_on);
-			gtk_widget_queue_draw_area(widget,
-						   2 + (width / 2), 4 * y + 3,
-						   (width / 2) - 8,
-						   4 * h - 1);
-		}
-	}
+	GtkWidget *widget = idx == 0 ? mixer_mix_drawing : mixer_drawing[idx-1];
+	gtk_widget_queue_draw(widget);
 }
 
 gint level_meters_timeout_callback(gpointer data)

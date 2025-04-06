@@ -132,6 +132,20 @@ struct profile_button {
 GtkWidget *active_button = NULL;
 GtkAdjustment *card_number_adj;
 
+static guint meters_timeout;
+static guint master_clock_status_timeout;
+static guint internal_clock_status_timeout;
+static guint rate_locking_status_timeout;
+static guint rate_reset_status_timeout;
+
+
+static void set_margin(GtkWidget *widget, int width)
+{
+	gtk_widget_set_margin_start(widget, width);
+	gtk_widget_set_margin_top(widget, width);
+	gtk_widget_set_margin_end(widget, width);
+	gtk_widget_set_margin_bottom(widget, width);
+}
 
 static void create_mixer_frame(GtkWidget *box, int stream)
 {
@@ -171,21 +185,27 @@ static void create_mixer_frame(GtkWidget *box, int stream)
 	}
 
 	frame = gtk_frame_new(str);
-	gtk_box_pack_start(GTK_BOX(box), frame, FALSE, TRUE, 0);
-	gtk_container_set_border_width(GTK_CONTAINER(frame), 2);
+	gtk_widget_add_css_class(frame, "mixer-frame");
+	gtk_box_append(GTK_BOX(box), frame);
+	set_margin(frame, 2);
 
 	vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
-	gtk_container_add(GTK_CONTAINER(frame), vbox);
-	gtk_container_set_border_width(GTK_CONTAINER(vbox), 2);
+	gtk_frame_set_child(GTK_FRAME(frame), vbox);
+	gtk_widget_set_hexpand(vbox, FALSE);
+	set_margin(vbox, 2);
 
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
-	gtk_box_pack_start(GTK_BOX(vbox), hbox, TRUE, TRUE, 0);
+	gtk_box_append(GTK_BOX(vbox), hbox);
+	gtk_widget_set_halign(hbox, GTK_ALIGN_FILL);
 
 	adj = gtk_adjustment_new(96, 0, 96, 1, 16, 0);
 	mixer_adj[stream-1][0] = adj;
 	vscale = gtk_scale_new(GTK_ORIENTATION_VERTICAL, adj);
 	mixer_vscale[stream-1][0] = vscale;
-	gtk_box_pack_start(GTK_BOX(hbox), vscale, TRUE, FALSE, 0);
+	gtk_scale_set_draw_value(GTK_SCALE(vscale), TRUE);
+	gtk_box_append(GTK_BOX(hbox), vscale);
+	gtk_widget_set_hexpand(vscale, TRUE);
+	gtk_widget_set_halign(vscale, GTK_ALIGN_START);
 	gtk_scale_set_value_pos(GTK_SCALE(vscale), GTK_POS_BOTTOM);
 	gtk_scale_set_digits(GTK_SCALE(vscale), 0);
 	g_signal_connect(adj, "value_changed",
@@ -193,26 +213,30 @@ static void create_mixer_frame(GtkWidget *box, int stream)
 			 (gpointer)(long)((stream << 16) + 0));
 
 	vbox1 = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-	gtk_box_pack_start(GTK_BOX(hbox), vbox1, FALSE, FALSE, 0);
+	gtk_box_append(GTK_BOX(hbox), vbox1);
+	gtk_widget_set_vexpand(vbox1, FALSE);
 
-	drawing = gtk_drawing_area_new();
+	drawing = envy_level_meter_new();
 	mixer_drawing[stream-1] = drawing;
 	sprintf(drawname, "Mixer%i", stream);
 	gtk_widget_set_name(drawing, drawname);
-	g_signal_connect(drawing, "draw",
-			 G_CALLBACK(level_meters_draw_callback), NULL);
-	gtk_widget_set_events(drawing, GDK_EXPOSURE_MASK);
 	gtk_widget_set_size_request(drawing, 36, (60 * tall_equal_mixer_ht + 204));
-	gtk_box_pack_start(GTK_BOX(vbox1), drawing, FALSE, FALSE, 1);
+	gtk_box_append(GTK_BOX(vbox1), drawing);
+	gtk_widget_set_margin_top(drawing, 1);
+	gtk_widget_set_margin_bottom(drawing, 1);
 
 	label = gtk_label_new("");
-	gtk_box_pack_start(GTK_BOX(vbox1), label, TRUE, TRUE, 2);
+	gtk_box_append(GTK_BOX(vbox1), label);
+	gtk_widget_set_margin_top(label, 2);
+	gtk_widget_set_margin_bottom(label, 2);
 
 	adj = gtk_adjustment_new(96, 0, 96, 1, 16, 0);
 	mixer_adj[stream-1][1] = adj;
 	vscale = gtk_scale_new(GTK_ORIENTATION_VERTICAL, adj);
 	mixer_vscale[stream-1][1] = vscale;
-	gtk_box_pack_start(GTK_BOX(hbox), vscale, TRUE, FALSE, 0);
+	gtk_scale_set_draw_value(GTK_SCALE(vscale), TRUE);
+	gtk_box_append(GTK_BOX(hbox), vscale);
+	gtk_widget_set_hexpand(vscale, TRUE);
 	gtk_scale_set_value_pos(GTK_SCALE(vscale), GTK_POS_BOTTOM);
 	gtk_scale_set_digits(GTK_SCALE(vscale), 0);
 	g_signal_connect(adj, "value_changed",
@@ -221,32 +245,25 @@ static void create_mixer_frame(GtkWidget *box, int stream)
 	
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
 	gtk_box_set_homogeneous(GTK_BOX(hbox), TRUE);
-	gtk_box_pack_start(GTK_BOX(vbox), hbox, TRUE, FALSE, 0);
+	gtk_box_append(GTK_BOX(vbox), hbox);
 
 	label = gtk_label_new("Left");
 	gtk_widget_set_halign(label, GTK_ALIGN_START);
 	gtk_widget_set_valign(label, GTK_ALIGN_CENTER);
-	gtk_box_pack_start(GTK_BOX(hbox), label, FALSE, TRUE, 0);
+	gtk_box_append(GTK_BOX(hbox), label);
 	
 	label = gtk_label_new("Right");
 	gtk_widget_set_halign(label, GTK_ALIGN_END);
 	gtk_widget_set_valign(label, GTK_ALIGN_CENTER);
-	gtk_box_pack_start(GTK_BOX(hbox), label, FALSE, TRUE, 0);
-
-	toggle = gtk_toggle_button_new_with_label("L/R Gang");
-	mixer_stereo_toggle[stream-1] = toggle;
-	gtk_box_pack_end(GTK_BOX(vbox), toggle, FALSE, FALSE, 0);
-	/* gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(toggle), TRUE); */
-	g_signal_connect(toggle, "toggled",
-			 G_CALLBACK(config_set_stereo), GINT_TO_POINTER(stream-1));
+	gtk_box_append(GTK_BOX(hbox), label);
 
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
 	gtk_box_set_homogeneous(GTK_BOX(hbox), TRUE);
-	gtk_box_pack_end(GTK_BOX(vbox), hbox, FALSE, FALSE, 0);
+	gtk_box_append(GTK_BOX(vbox), hbox);
 
 	toggle = gtk_toggle_button_new_with_label("Mute");
 	mixer_mute_toggle[stream-1][0] = toggle;
-	gtk_box_pack_start(GTK_BOX(hbox), toggle, FALSE, TRUE, 0);
+	gtk_box_append(GTK_BOX(hbox), toggle);
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(toggle), TRUE);
 	g_signal_connect(toggle, "toggled",
 			 G_CALLBACK(mixer_toggled_mute),
@@ -254,11 +271,18 @@ static void create_mixer_frame(GtkWidget *box, int stream)
 
 	toggle = gtk_toggle_button_new_with_label("Mute");
 	mixer_mute_toggle[stream-1][1] = toggle;
-	gtk_box_pack_start(GTK_BOX(hbox), toggle, FALSE, TRUE, 0);
+	gtk_box_append(GTK_BOX(hbox), toggle);
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(toggle), TRUE);
 	g_signal_connect(toggle, "toggled",
 			 G_CALLBACK(mixer_toggled_mute),
 			 (gpointer)(long)((stream << 16) + 1));
+
+	toggle = gtk_toggle_button_new_with_label("L/R Gang");
+	mixer_stereo_toggle[stream-1] = toggle;
+	gtk_box_append(GTK_BOX(vbox), toggle);
+	/* gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(toggle), TRUE); */
+	g_signal_connect(toggle, "toggled",
+			 G_CALLBACK(config_set_stereo), GINT_TO_POINTER(stream-1));
 }
 
 
@@ -274,27 +298,25 @@ static void create_inputs_mixer(GtkWidget *main, GtkWidget *notebook, int page)
 
 
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 3);
-	gtk_container_add(GTK_CONTAINER(notebook), hbox);
 
         label = gtk_label_new("Monitor Inputs");
-	gtk_notebook_set_tab_label(GTK_NOTEBOOK(notebook), 
-				   gtk_notebook_get_nth_page(GTK_NOTEBOOK(notebook),page), 
-				   label);
+	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), hbox, label);
 
 	/* build scrolling area */
-	scrolledwindow = gtk_scrolled_window_new(NULL, NULL);
-	gtk_box_pack_start(GTK_BOX(hbox), scrolledwindow, TRUE, TRUE, 0);
+	scrolledwindow = gtk_scrolled_window_new();
+	gtk_box_append(GTK_BOX(hbox), scrolledwindow);
+	gtk_widget_set_hexpand(scrolledwindow, TRUE);
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolledwindow),
 					GTK_POLICY_AUTOMATIC, GTK_POLICY_NEVER);
 
 	viewport = gtk_viewport_new(NULL, NULL);
-	gtk_container_add(GTK_CONTAINER(scrolledwindow), viewport);
+	gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(scrolledwindow), viewport);
 
 	vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-	gtk_container_add(GTK_CONTAINER(viewport), vbox);
+	gtk_viewport_set_child(GTK_VIEWPORT(viewport), vbox);
 
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-	gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, TRUE, 0);
+	gtk_box_append(GTK_BOX(vbox), hbox);
 
 	for(stream = (MAX_PCM_OUTPUT_CHANNELS + MAX_SPDIF_CHANNELS + 1); \
 		stream <= input_channels + (MAX_PCM_OUTPUT_CHANNELS + MAX_SPDIF_CHANNELS); stream ++) {
@@ -319,27 +341,24 @@ static void create_pcms_mixer(GtkWidget *main, GtkWidget *notebook, int page)
 	int stream;
 
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 3);
-	gtk_container_add(GTK_CONTAINER(notebook), hbox);
-
         label = gtk_label_new("Monitor PCMs");
-	gtk_notebook_set_tab_label(GTK_NOTEBOOK(notebook),
-				   gtk_notebook_get_nth_page(GTK_NOTEBOOK(notebook),page),
-				   label);
+	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), hbox, label);
 
 	/* build scrolling area */
-	scrolledwindow = gtk_scrolled_window_new(NULL, NULL);
-	gtk_box_pack_start(GTK_BOX(hbox), scrolledwindow, TRUE, TRUE, 0);
+	scrolledwindow = gtk_scrolled_window_new();
+	gtk_box_append(GTK_BOX(hbox), scrolledwindow);
+	gtk_widget_set_hexpand(scrolledwindow, TRUE);
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolledwindow), 
 					GTK_POLICY_AUTOMATIC, GTK_POLICY_NEVER);
 
 	viewport = gtk_viewport_new(NULL, NULL);
-	gtk_container_add(GTK_CONTAINER(scrolledwindow), viewport);
+	gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(scrolledwindow), viewport);
 
 	vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-	gtk_container_add(GTK_CONTAINER(viewport), vbox);
+	gtk_viewport_set_child(GTK_VIEWPORT(viewport), vbox);
 
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-	gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, TRUE, 0);
+	gtk_box_append(GTK_BOX(vbox), hbox);
 
 	for(stream = 1; stream <= pcm_output_channels; stream ++) {
 		if (mixer_stream_is_active(stream))
@@ -360,7 +379,7 @@ static void create_router_frame(GtkWidget *box, int stream, int pos)
 	GtkWidget *radiobutton;
 	GtkWidget *label;
 	GtkWidget *hseparator;
-	GSList *group = NULL;
+	GtkCheckButton *group;
 	char str[64], str1[64];
 	int idx;
 	static char *table[10] = {
@@ -412,26 +431,27 @@ static void create_router_frame(GtkWidget *box, int stream, int pos)
 	}
 
 	frame = gtk_frame_new(str);
-	gtk_box_pack_start (GTK_BOX(box), frame, FALSE, FALSE, 0);
-	gtk_container_set_border_width(GTK_CONTAINER(frame), 6);
+	gtk_box_append (GTK_BOX(box), frame);
+	set_margin(frame, 6);
 
 
 	vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 	gtk_box_set_homogeneous(GTK_BOX(vbox), TRUE);
-	gtk_container_add(GTK_CONTAINER(frame), vbox);
-	gtk_container_set_border_width(GTK_CONTAINER(vbox), 6);
+	gtk_frame_set_child(GTK_FRAME(frame), vbox);
+	set_margin(vbox, 6);
 
-	radiobutton = gtk_radio_button_new_with_label(group, str1);
+	radiobutton = gtk_check_button_new_with_label(str1);
 	router_radio[stream-1][0] = radiobutton;
-	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(radiobutton));
-	gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
+	group = GTK_CHECK_BUTTON(radiobutton);
+	gtk_box_append(GTK_BOX(vbox), radiobutton);
 	g_signal_connect(radiobutton, "toggled",
 			 G_CALLBACK(patchbay_toggled),
 			 (gpointer)(long)((stream << 16) + 0));
 
 
 	hseparator = gtk_separator_new(GTK_ORIENTATION_HORIZONTAL);
-	gtk_box_pack_start(GTK_BOX(vbox), hseparator, FALSE, FALSE, 0);
+	gtk_widget_set_valign(hseparator, GTK_ALIGN_CENTER);
+	gtk_box_append(GTK_BOX(vbox), hseparator);
 
 	label = gtk_label_new("");
 
@@ -439,31 +459,30 @@ static void create_router_frame(GtkWidget *box, int stream, int pos)
 	if( (stream <= 2) /* hw1/2 */ ||
 	    ((stream > MAX_OUTPUT_CHANNELS) && (stream <= MAX_OUTPUT_CHANNELS + 2)) /* spdif1/2 */
 	    ) {
-		radiobutton = gtk_radio_button_new_with_label(group, stream & 1 ? "Digital Mix L" : "Digital Mix R");
+		radiobutton = gtk_check_button_new_with_label(stream & 1 ? "Digital Mix L" : "Digital Mix R");
 		router_radio[stream-1][1] = radiobutton;
-		group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(radiobutton));
-		gtk_box_pack_start(GTK_BOX(vbox), 
-				    radiobutton, FALSE, FALSE, 0);
+		gtk_check_button_set_group(GTK_CHECK_BUTTON(radiobutton), group);
+		gtk_box_append(GTK_BOX(vbox), radiobutton);
 		g_signal_connect(radiobutton, "toggled",
 				 G_CALLBACK(patchbay_toggled),
 				 (gpointer)(long)((stream << 16) + 1));
 	}
 	else {
 	  label = gtk_label_new("");
-	  gtk_box_pack_start(GTK_BOX(vbox), label, FALSE, FALSE, 0);
+	  gtk_box_append(GTK_BOX(vbox), label);
 	}
 
 
 	hseparator = gtk_separator_new(GTK_ORIENTATION_HORIZONTAL);
-	gtk_box_pack_start(GTK_BOX(vbox), hseparator, FALSE, FALSE, 0);
+	gtk_widget_set_valign(hseparator, GTK_ALIGN_CENTER);
+	gtk_box_append(GTK_BOX(vbox), hseparator);
 
 
 	for(idx = 2 - spdif_channels; idx < input_channels + 2; idx++) {
-		radiobutton = gtk_radio_button_new_with_label(group, table[idx]);
+		radiobutton = gtk_check_button_new_with_label(table[idx]);
 		router_radio[stream-1][2+idx] = radiobutton;
-		group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(radiobutton));
-		gtk_box_pack_start(GTK_BOX(vbox), 
-				    radiobutton, FALSE, FALSE, 0);
+		gtk_check_button_set_group(GTK_CHECK_BUTTON(radiobutton), group);
+		gtk_box_append(GTK_BOX(vbox), radiobutton);
 		g_signal_connect(radiobutton, "toggled",
 				 G_CALLBACK(patchbay_toggled), 
 				 (gpointer)(long)((stream << 16) + 2 + idx));
@@ -478,21 +497,17 @@ static void create_router(GtkWidget *main, GtkWidget *notebook, int page)
 	GtkWidget *viewport;
 	int stream, pos;
 
-	scrolledwindow = gtk_scrolled_window_new(NULL, NULL);
-	gtk_container_add(GTK_CONTAINER(notebook), scrolledwindow);
+	scrolledwindow = gtk_scrolled_window_new();
+        label = gtk_label_new("Patchbay / Router");
+	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), scrolledwindow, label);
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolledwindow), 
 				       GTK_POLICY_AUTOMATIC, GTK_POLICY_NEVER);
 
-        label = gtk_label_new("Patchbay / Router");
-	gtk_notebook_set_tab_label(GTK_NOTEBOOK(notebook), 
-				   gtk_notebook_get_nth_page(GTK_NOTEBOOK(notebook), page), 
-				   label);
-
 	viewport = gtk_viewport_new(NULL, NULL);
-	gtk_container_add(GTK_CONTAINER(scrolledwindow), viewport);
+	gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(scrolledwindow), viewport);
 
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-	gtk_container_add(GTK_CONTAINER(viewport), hbox);
+	gtk_viewport_set_child(GTK_VIEWPORT(viewport), hbox);
 
 	pos = 0;
 	for (stream = 1; stream <= output_channels; stream++) {
@@ -511,76 +526,78 @@ static void create_master_clock(GtkWidget *box)
 	GtkWidget *vbox;
 	GtkWidget *radiobutton;
 	GtkWidget *label;
-	GSList *group = NULL;
+	GtkCheckButton *group;
 
 	frame = gtk_frame_new("Master Clock");
-	gtk_box_pack_start(GTK_BOX(box), frame, FALSE, FALSE, 4);
+	gtk_box_append(GTK_BOX(box), frame);
+	gtk_widget_set_margin_start(frame, 4);
+	gtk_widget_set_margin_end(frame, 4);
 
 
 	vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-	gtk_container_add(GTK_CONTAINER(frame), vbox);
-	gtk_container_set_border_width(GTK_CONTAINER(vbox), 6);
+	gtk_frame_set_child(GTK_FRAME(frame), vbox);
+	set_margin(vbox, 6);
 
 
-	radiobutton = gtk_radio_button_new_with_label(group, "Int 22050");
+	radiobutton = gtk_check_button_new_with_label("Int 22050");
 	hw_master_clock_xtal_22050 = radiobutton;
-	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(radiobutton));
-	gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
+	group = GTK_CHECK_BUTTON(radiobutton);
+	gtk_box_append(GTK_BOX(vbox), radiobutton);
 	g_signal_connect(radiobutton, "toggled",
 			 G_CALLBACK(internal_clock_toggled), 
 			 (gpointer)"22050");
 
 
-	radiobutton = gtk_radio_button_new_with_label(group, "Int 32000");
+	radiobutton = gtk_check_button_new_with_label("Int 32000");
 	hw_master_clock_xtal_32000 = radiobutton;
-	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(radiobutton));
-	gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
+	gtk_check_button_set_group(GTK_CHECK_BUTTON(radiobutton), group);
+	gtk_box_append(GTK_BOX(vbox), radiobutton);
 	g_signal_connect(radiobutton, "toggled",
 			 G_CALLBACK(internal_clock_toggled), 
 			 (gpointer)"32000");
 
 
-	radiobutton = gtk_radio_button_new_with_label(group, "Int 44100");
+	radiobutton = gtk_check_button_new_with_label("Int 44100");
 	hw_master_clock_xtal_44100 = radiobutton;
-	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(radiobutton));
-	gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
+	gtk_check_button_set_group(GTK_CHECK_BUTTON(radiobutton), group);
+	gtk_box_append(GTK_BOX(vbox), radiobutton);
 	g_signal_connect(radiobutton, "toggled",
 			 G_CALLBACK(internal_clock_toggled), 
 			 (gpointer)"44100");
 
 
-	radiobutton = gtk_radio_button_new_with_label(group, "Int 48000");
+	radiobutton = gtk_check_button_new_with_label("Int 48000");
 	hw_master_clock_xtal_48000 = radiobutton;
-	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(radiobutton));
-	gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
+	gtk_check_button_set_group(GTK_CHECK_BUTTON(radiobutton), group);
+	gtk_box_append(GTK_BOX(vbox), radiobutton);
 	g_signal_connect(radiobutton, "toggled",
 			 G_CALLBACK(internal_clock_toggled), 
 			 (gpointer)"48000");
 
 
-	radiobutton = gtk_radio_button_new_with_label(group, "Int 88200");
+	radiobutton = gtk_check_button_new_with_label("Int 88200");
 	hw_master_clock_xtal_88200 = radiobutton;
-	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(radiobutton));
-	gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
+	gtk_check_button_set_group(GTK_CHECK_BUTTON(radiobutton), group);
+	gtk_box_append(GTK_BOX(vbox), radiobutton);
 	g_signal_connect(radiobutton, "toggled",
 			 G_CALLBACK(internal_clock_toggled), 
 			 (gpointer)"88200");
 
 
-	radiobutton = gtk_radio_button_new_with_label(group, "Int 96000");
+	radiobutton = gtk_check_button_new_with_label("Int 96000");
 	hw_master_clock_xtal_96000 = radiobutton;
-	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(radiobutton));
-	gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
+	gtk_check_button_set_group(GTK_CHECK_BUTTON(radiobutton), group);
+	gtk_box_append(GTK_BOX(vbox), radiobutton);
 	g_signal_connect(radiobutton, "toggled",
 			 G_CALLBACK(internal_clock_toggled), 
 			 (gpointer)"96000");
 
 
 
-	radiobutton = gtk_radio_button_new_with_label(group, "S/PDIF In");
+	radiobutton = gtk_check_button_new_with_label("S/PDIF In");
 	hw_master_clock_spdif_radio = radiobutton;
-	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(radiobutton));
-	gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
+	gtk_check_button_set_group(GTK_CHECK_BUTTON(radiobutton), group);
+	gtk_box_append(GTK_BOX(vbox), radiobutton);
 	g_signal_connect(radiobutton, "toggled",
 			 G_CALLBACK(internal_clock_toggled), 
 			 (gpointer)"SPDIF");
@@ -591,17 +608,17 @@ static void create_master_clock(GtkWidget *box)
 	    card_eeprom.subvendor != ICE1712_SUBDEVICE_DELTA1010LT)
 		return;
 
-	radiobutton = gtk_radio_button_new_with_label(group, "Word Clock");
+	radiobutton = gtk_check_button_new_with_label("Word Clock");
 	hw_master_clock_word_radio = radiobutton;
-	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(radiobutton));
-	gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
+	gtk_check_button_set_group(GTK_CHECK_BUTTON(radiobutton), group);
+	gtk_box_append(GTK_BOX(vbox), radiobutton);
 	g_signal_connect(radiobutton, "toggled",
 			 G_CALLBACK(internal_clock_toggled), 
 			 (gpointer)"WordClock");
 	
         label = gtk_label_new("Locked");
         hw_master_clock_status_label = label;
-        gtk_box_pack_start(GTK_BOX(vbox), label, FALSE, TRUE, 0);
+        gtk_box_append(GTK_BOX(vbox), label);
 }
 
 static void create_rate_state(GtkWidget *box)
@@ -611,16 +628,17 @@ static void create_rate_state(GtkWidget *box)
 	GtkWidget *check;
 
 	frame = gtk_frame_new("Rate State");
-	gtk_box_pack_start(GTK_BOX(box), frame, TRUE, TRUE, 0);
+	gtk_box_append(GTK_BOX(box), frame);
+	gtk_widget_set_vexpand(frame, TRUE);
 
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
 	gtk_box_set_homogeneous(GTK_BOX(hbox), TRUE);
-	gtk_container_add(GTK_CONTAINER(frame), hbox);
-	gtk_container_set_border_width(GTK_CONTAINER(hbox), 6);
+	gtk_frame_set_child(GTK_FRAME(frame), hbox);
+	set_margin(hbox, 6);
 
 	check = gtk_check_button_new_with_label("Locked");
 	hw_rate_locking_check = check;
-	gtk_box_pack_start(GTK_BOX(hbox), check, FALSE, FALSE, 0);
+	gtk_box_append(GTK_BOX(hbox), check);
 	g_signal_connect(check, "toggled",
 			 G_CALLBACK(rate_locking_toggled), 
 			 (gpointer)"locked");
@@ -628,7 +646,7 @@ static void create_rate_state(GtkWidget *box)
 
 	check = gtk_check_button_new_with_label("Reset");
 	hw_rate_reset_check = check;
-	gtk_box_pack_start(GTK_BOX(hbox), check, FALSE, FALSE, 0);
+	gtk_box_append(GTK_BOX(hbox), check);
 	g_signal_connect(check, "toggled",
 			 G_CALLBACK(rate_reset_toggled), 
 			 (gpointer)"reset");
@@ -641,16 +659,14 @@ static void create_actual_rate(GtkWidget *box)
 	GtkWidget *label;
 
 	frame = gtk_frame_new("Actual Rate");
-	gtk_box_pack_start(GTK_BOX(box), frame, TRUE, TRUE, 0);
+	gtk_box_append(GTK_BOX(box), frame);
+	gtk_widget_set_vexpand(frame, TRUE);
 
 	label = gtk_label_new("");
 	hw_master_clock_actual_rate_label = label;
-	gtk_container_add(GTK_CONTAINER(frame), label);
+	gtk_frame_set_child(GTK_FRAME(frame), label);
 	gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);
-	gtk_widget_set_margin_start(label, 6);
-	gtk_widget_set_margin_end(label, 6);
-	gtk_widget_set_margin_top(label, 6);
-	gtk_widget_set_margin_bottom(label, 6);
+	set_margin(label, 6);
 }
 
 static void create_volume_change(GtkWidget *box)
@@ -662,20 +678,24 @@ static void create_volume_change(GtkWidget *box)
 	GtkWidget *label;
 
 	frame = gtk_frame_new("Volume Change");
-	gtk_box_pack_start(GTK_BOX(box), frame, TRUE, TRUE, 0);
+	gtk_box_append(GTK_BOX(box), frame);
+	gtk_widget_set_vexpand(frame, TRUE);
 
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-	gtk_container_add(GTK_CONTAINER(frame), hbox);
-	gtk_container_set_border_width(GTK_CONTAINER(hbox), 6);
+	gtk_frame_set_child(GTK_FRAME(frame), hbox);
+	set_margin(hbox, 6);
 
 	label = gtk_label_new("Rate");
-	gtk_box_pack_start(GTK_BOX(hbox), label, TRUE, FALSE, 0);
+	gtk_box_append(GTK_BOX(hbox), label);
+	gtk_widget_set_hexpand(label, TRUE);
 	gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);
 
 	spinbutton_adj = gtk_adjustment_new(16, 0, 255, 1, 10, 0);
 	hw_volume_change_adj = spinbutton_adj;
 	spinbutton = gtk_spin_button_new(spinbutton_adj, 1, 0);
-	gtk_box_pack_start(GTK_BOX(hbox), spinbutton, TRUE, FALSE, 0);
+	gtk_box_append(GTK_BOX(hbox), spinbutton);
+	gtk_widget_set_hexpand(spinbutton, TRUE);
+	gtk_widget_set_halign(spinbutton, GTK_ALIGN_CENTER);
 	gtk_widget_set_valign(spinbutton, GTK_ALIGN_CENTER);
 	gtk_spin_button_set_numeric(GTK_SPIN_BUTTON(spinbutton), TRUE);
 	g_signal_connect(spinbutton_adj, "value_changed",
@@ -688,29 +708,30 @@ static void create_spdif_output_settings_profi_data(GtkWidget *box)
 	GtkWidget *frame;
 	GtkWidget *vbox;
 	GtkWidget *radiobutton;
-	GSList *group = NULL;
+	GtkCheckButton *group;
 
 	frame = gtk_frame_new("Data Mode");
-	gtk_box_pack_start(GTK_BOX(box), frame, FALSE, TRUE, 0);
+	gtk_box_append(GTK_BOX(box), frame);
 
 
 	vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-	gtk_container_add(GTK_CONTAINER(frame), vbox);
-	gtk_container_set_border_width(GTK_CONTAINER(vbox), 6);
+	gtk_frame_set_child(GTK_FRAME(frame), vbox);
+	set_margin(vbox, 6);
 
 
-	radiobutton = gtk_radio_button_new_with_label(group, "Non-audio");
+	radiobutton = gtk_check_button_new_with_label("Non-audio");
 	hw_spdif_profi_nonaudio_radio = radiobutton;
-	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(radiobutton));
-	gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
+	group = GTK_CHECK_BUTTON(radiobutton);
+	gtk_check_button_set_active(group, TRUE);
+	gtk_box_append(GTK_BOX(vbox), radiobutton);
 	g_signal_connect(radiobutton, "toggled",
 			 G_CALLBACK(profi_data_toggled), 
 			 (gpointer)"Non-audio");
 
-	radiobutton = gtk_radio_button_new_with_label(group, "Audio");
+	radiobutton = gtk_check_button_new_with_label("Audio");
 	hw_spdif_profi_audio_radio = radiobutton;
-	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(radiobutton));
-	gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
+	gtk_check_button_set_group(GTK_CHECK_BUTTON(radiobutton), group);
+	gtk_box_append(GTK_BOX(vbox), radiobutton);
 	g_signal_connect(radiobutton, "toggled",
 			 G_CALLBACK(profi_data_toggled), 
 			 (gpointer)"Audio");
@@ -721,28 +742,29 @@ static void create_spdif_output_settings_profi_stream(GtkWidget *box)
 	GtkWidget *frame;
 	GtkWidget *vbox;
 	GtkWidget *radiobutton;
-	GSList *group = NULL;
+	GtkCheckButton *group;
 
 	frame = gtk_frame_new("Stream");
-	gtk_box_pack_start(GTK_BOX(box), frame, FALSE, TRUE, 0);
+	gtk_box_append(GTK_BOX(box), frame);
 
 
 	vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-	gtk_container_add(GTK_CONTAINER(frame), vbox);
-	gtk_container_set_border_width(GTK_CONTAINER(vbox), 6);
+	gtk_frame_set_child(GTK_FRAME(frame), vbox);
+	set_margin(vbox, 6);
 
-	radiobutton = gtk_radio_button_new_with_label(group, "Stereophonic");
+	radiobutton = gtk_check_button_new_with_label("Stereophonic");
 	hw_profi_stream_stereo_radio = radiobutton;
-	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(radiobutton));
-	gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
+	group = GTK_CHECK_BUTTON(radiobutton);
+	gtk_check_button_set_active(group, TRUE);
+	gtk_box_append(GTK_BOX(vbox), radiobutton);
 	g_signal_connect(radiobutton, "toggled",
 			 G_CALLBACK(profi_stream_toggled), 
 			 (gpointer)"Stereo");
 
-	radiobutton = gtk_radio_button_new_with_label(group, "Not indicated");
+	radiobutton = gtk_check_button_new_with_label("Not indicated");
 	hw_profi_stream_notid_radio = radiobutton;
-	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(radiobutton));
-	gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
+	gtk_check_button_set_group(GTK_CHECK_BUTTON(radiobutton), group);
+	gtk_box_append(GTK_BOX(vbox), radiobutton);
 	g_signal_connect(radiobutton, "toggled",
 			 G_CALLBACK(profi_stream_toggled), 
 			 (gpointer)"NOTID");
@@ -753,45 +775,46 @@ static void create_spdif_output_settings_profi_emphasis(GtkWidget *box)
 	GtkWidget *frame;
 	GtkWidget *vbox;
 	GtkWidget *radiobutton;
-	GSList *group = NULL;
+	GtkCheckButton *group;
 
 	frame = gtk_frame_new("Emphasis");
-	gtk_box_pack_start(GTK_BOX(box), frame, FALSE, TRUE, 0);
+	gtk_box_append(GTK_BOX(box), frame);
 
 
 	vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-	gtk_container_add(GTK_CONTAINER(frame), vbox);
-	gtk_container_set_border_width(GTK_CONTAINER(vbox), 6);
+	gtk_frame_set_child(GTK_FRAME(frame), vbox);
+	set_margin(vbox, 6);
 
 
-	radiobutton = gtk_radio_button_new_with_label(group, "No emphasis");
+	radiobutton = gtk_check_button_new_with_label("No emphasis");
 	hw_profi_emphasis_none_radio = radiobutton;
-	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(radiobutton));
-	gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
+	group = GTK_CHECK_BUTTON(radiobutton);
+	gtk_check_button_set_active(group, TRUE);
+	gtk_box_append(GTK_BOX(vbox), radiobutton);
 	g_signal_connect(radiobutton, "toggled",
 			 G_CALLBACK(profi_emphasis_toggled), 
 			 (gpointer)"No");
 
-	radiobutton = gtk_radio_button_new_with_label(group, "50/15us");
+	radiobutton = gtk_check_button_new_with_label("50/15us");
 	hw_profi_emphasis_5015_radio = radiobutton;
-	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(radiobutton));
-	gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
+	gtk_check_button_set_group(GTK_CHECK_BUTTON(radiobutton), group);
+	gtk_box_append(GTK_BOX(vbox), radiobutton);
 	g_signal_connect(radiobutton, "toggled",
 			 G_CALLBACK(profi_emphasis_toggled), 
 			 (gpointer)"5015");
 
-	radiobutton = gtk_radio_button_new_with_label(group, "CCITT J.17");
+	radiobutton = gtk_check_button_new_with_label("CCITT J.17");
 	hw_profi_emphasis_ccitt_radio = radiobutton;
-	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(radiobutton));
-	gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
+	gtk_check_button_set_group(GTK_CHECK_BUTTON(radiobutton), group);
+	gtk_box_append(GTK_BOX(vbox), radiobutton);
 	g_signal_connect(radiobutton, "toggled",
 			 G_CALLBACK(profi_emphasis_toggled), 
 			 (gpointer)"CCITT");
 
-	radiobutton = gtk_radio_button_new_with_label(group, "Not indicated");
+	radiobutton = gtk_check_button_new_with_label("Not indicated");
 	hw_profi_emphasis_notid_radio = radiobutton;
-	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(radiobutton));
-	gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
+	gtk_check_button_set_group(GTK_CHECK_BUTTON(radiobutton), group);
+	gtk_box_append(GTK_BOX(vbox), radiobutton);
 	g_signal_connect(radiobutton, "toggled",
 			 G_CALLBACK(profi_emphasis_toggled), 
 			 (gpointer)"NOTID");
@@ -804,23 +827,19 @@ static void create_spdif_output_settings_profi(GtkWidget *notebook, int page)
 	GtkWidget *label;
 
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-	gtk_container_add(GTK_CONTAINER(notebook), hbox);
-
         label = gtk_label_new("Professional");
-	gtk_notebook_set_tab_label(GTK_NOTEBOOK(notebook), 
-				   gtk_notebook_get_nth_page(GTK_NOTEBOOK(notebook), page), 
-				   label);
+	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), hbox, label);
 
 	vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-	gtk_box_pack_start(GTK_BOX(hbox), vbox, FALSE, TRUE, 0);
-	gtk_container_set_border_width(GTK_CONTAINER(vbox), 6);
+	gtk_box_append(GTK_BOX(hbox), vbox);
+	set_margin(vbox, 6);
 
 	create_spdif_output_settings_profi_data(vbox);
 	create_spdif_output_settings_profi_stream(vbox);
 
 	vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-	gtk_box_pack_start(GTK_BOX(hbox), vbox, FALSE, TRUE, 0);
-	gtk_container_set_border_width(GTK_CONTAINER(vbox), 6);
+	gtk_box_append(GTK_BOX(hbox), vbox);
+	set_margin(vbox, 6);
 
 	create_spdif_output_settings_profi_emphasis(vbox);
 }
@@ -830,28 +849,29 @@ static void create_spdif_output_settings_consumer_copyright(GtkWidget *box)
 	GtkWidget *frame;
 	GtkWidget *vbox;
 	GtkWidget *radiobutton;
-	GSList *group = NULL;
+	GtkCheckButton *group;
 
 	frame = gtk_frame_new("Copyright");
-	gtk_box_pack_start(GTK_BOX(box), frame, FALSE, TRUE, 0);
+	gtk_box_append(GTK_BOX(box), frame);
 	
 	vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-	gtk_container_add(GTK_CONTAINER(frame), vbox);
-	gtk_container_set_border_width(GTK_CONTAINER(vbox), 6);
+	gtk_frame_set_child(GTK_FRAME(frame), vbox);
+	set_margin(vbox, 6);
 
 
-	radiobutton = gtk_radio_button_new_with_label(group, "Copyrighted");
+	radiobutton = gtk_check_button_new_with_label("Copyrighted");
 	hw_consumer_copyright_on_radio = radiobutton;
-	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(radiobutton));
-	gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
+	group = GTK_CHECK_BUTTON(radiobutton);
+	gtk_check_button_set_active(group, TRUE);
+	gtk_box_append(GTK_BOX(vbox), radiobutton);
 	g_signal_connect(radiobutton, "toggled",
 			 G_CALLBACK(consumer_copyright_toggled), 
 			 (gpointer)"Copyright");
 
-	radiobutton = gtk_radio_button_new_with_label(group, "Copy permitted");
+	radiobutton = gtk_check_button_new_with_label("Copy permitted");
 	hw_consumer_copyright_off_radio = radiobutton;
-	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(radiobutton));
-	gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
+	gtk_check_button_set_group(GTK_CHECK_BUTTON(radiobutton), group);
+	gtk_box_append(GTK_BOX(vbox), radiobutton);
 	g_signal_connect(radiobutton, "toggled",
 			 G_CALLBACK(consumer_copyright_toggled),
 			 (gpointer)"Permitted");
@@ -862,28 +882,28 @@ static void create_spdif_output_settings_consumer_copy(GtkWidget *box)
 	GtkWidget *frame;
 	GtkWidget *vbox;
 	GtkWidget *radiobutton;
-	GSList *group = NULL;
+	GtkCheckButton *group;
 
 	frame = gtk_frame_new("Copy");
-	gtk_box_pack_start(GTK_BOX(box), frame, FALSE, TRUE, 0);
+	gtk_box_append(GTK_BOX(box), frame);
 
 	vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-	gtk_container_add(GTK_CONTAINER(frame), vbox);
-	gtk_container_set_border_width(GTK_CONTAINER(vbox), 6);
+	gtk_frame_set_child(GTK_FRAME(frame), vbox);
+	set_margin(vbox, 6);
 
-	radiobutton = gtk_radio_button_new_with_label(group,
-						      "1-st generation");
+	radiobutton = gtk_check_button_new_with_label("1-st generation");
 	hw_consumer_copy_1st_radio = radiobutton;
-	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(radiobutton));
-	gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
+	group = GTK_CHECK_BUTTON(radiobutton);
+	gtk_check_button_set_active(group, TRUE);
+	gtk_box_append(GTK_BOX(vbox), radiobutton);
 	g_signal_connect(radiobutton, "toggled",
 			 G_CALLBACK(consumer_copy_toggled), 
 			 (gpointer)"1st");
 
-	radiobutton = gtk_radio_button_new_with_label(group, "Original");
+	radiobutton = gtk_check_button_new_with_label("Original");
 	hw_consumer_copy_original_radio = radiobutton;
-	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(radiobutton));
-	gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
+	gtk_check_button_set_group(GTK_CHECK_BUTTON(radiobutton), group);
+	gtk_box_append(GTK_BOX(vbox), radiobutton);
 	g_signal_connect(radiobutton, "toggled",
 			 G_CALLBACK(consumer_copy_toggled), 
 			 (gpointer)"Original");
@@ -894,27 +914,28 @@ static void create_spdif_output_settings_consumer_emphasis(GtkWidget *box)
 	GtkWidget *frame;
 	GtkWidget *vbox;
 	GtkWidget *radiobutton;
-	GSList *group = NULL;
+	GtkCheckButton *group;
 
 	frame = gtk_frame_new("Emphasis");
-	gtk_box_pack_start(GTK_BOX(box), frame, FALSE, TRUE, 0);
+	gtk_box_append(GTK_BOX(box), frame);
 
 	vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-	gtk_container_add(GTK_CONTAINER(frame), vbox);
-	gtk_container_set_border_width(GTK_CONTAINER(vbox), 6);
+	gtk_frame_set_child(GTK_FRAME(frame), vbox);
+	set_margin(vbox, 6);
 
-	radiobutton = gtk_radio_button_new_with_label(group, "No emphasis");
+	radiobutton = gtk_check_button_new_with_label("No emphasis");
 	hw_consumer_emphasis_none_radio = radiobutton;
-	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(radiobutton));
-	gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
+	group = GTK_CHECK_BUTTON(radiobutton);
+	gtk_check_button_set_active(group, TRUE);
+	gtk_box_append(GTK_BOX(vbox), radiobutton);
 	g_signal_connect(radiobutton, "toggled",
 			 G_CALLBACK(consumer_emphasis_toggled), 
 			 (gpointer)"No");
 
-	radiobutton = gtk_radio_button_new_with_label(group, "50/15us");
+	radiobutton = gtk_check_button_new_with_label("50/15us");
 	hw_consumer_emphasis_5015_radio = radiobutton;
-	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(radiobutton));
-	gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
+	gtk_check_button_set_group(GTK_CHECK_BUTTON(radiobutton), group);
+	gtk_box_append(GTK_BOX(vbox), radiobutton);
 	g_signal_connect(radiobutton, "toggled",
 			 G_CALLBACK(consumer_emphasis_toggled), 
 			 (gpointer)"5015");
@@ -925,43 +946,44 @@ static void create_spdif_output_settings_consumer_category(GtkWidget *box)
 	GtkWidget *frame;
 	GtkWidget *vbox;
 	GtkWidget *radiobutton;
-	GSList *group = NULL;
+	GtkCheckButton *group;
 
 	frame = gtk_frame_new("Category");
-	gtk_box_pack_start(GTK_BOX(box), frame, FALSE, TRUE, 0);
+	gtk_box_append(GTK_BOX(box), frame);
 
 	vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-	gtk_container_add(GTK_CONTAINER(frame), vbox);
-	gtk_container_set_border_width(GTK_CONTAINER(vbox), 6);
+	gtk_frame_set_child(GTK_FRAME(frame), vbox);
+	set_margin(vbox, 6);
 
-	radiobutton = gtk_radio_button_new_with_label(group, "DAT");
+	radiobutton = gtk_check_button_new_with_label("DAT");
 	hw_consumer_category_dat_radio = radiobutton;
-	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(radiobutton));
-	gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
+	group = GTK_CHECK_BUTTON(radiobutton);
+	gtk_check_button_set_active(group, TRUE);
+	gtk_box_append(GTK_BOX(vbox), radiobutton);
 	g_signal_connect(radiobutton, "toggled",
 			 G_CALLBACK(consumer_category_toggled), 
 			 (gpointer)"DAT");
 
-	radiobutton = gtk_radio_button_new_with_label(group, "PCM encoder");
+	radiobutton = gtk_check_button_new_with_label("PCM encoder");
 	hw_consumer_category_pcm_radio = radiobutton;
-	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(radiobutton));
-	gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
+	gtk_check_button_set_group(GTK_CHECK_BUTTON(radiobutton), group);
+	gtk_box_append(GTK_BOX(vbox), radiobutton);
 	g_signal_connect(G_OBJECT(radiobutton), "toggled",
 			 G_CALLBACK(consumer_category_toggled), 
 			 (gpointer)"PCM");
 
-	radiobutton = gtk_radio_button_new_with_label(group, "CD (ICE-908)");
+	radiobutton = gtk_check_button_new_with_label("CD (ICE-908)");
 	hw_consumer_category_cd_radio = radiobutton;
-	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(radiobutton));
-	gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
+	gtk_check_button_set_group(GTK_CHECK_BUTTON(radiobutton), group);
+	gtk_box_append(GTK_BOX(vbox), radiobutton);
 	g_signal_connect(G_OBJECT(radiobutton), "toggled",
 			 G_CALLBACK(consumer_category_toggled), 
 			 (gpointer)"CD");
 
-	radiobutton = gtk_radio_button_new_with_label(group, "General");
+	radiobutton = gtk_check_button_new_with_label("General");
 	hw_consumer_category_general_radio = radiobutton;
-	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(radiobutton));
-	gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
+	gtk_check_button_set_group(GTK_CHECK_BUTTON(radiobutton), group);
+	gtk_box_append(GTK_BOX(vbox), radiobutton);
 	g_signal_connect(G_OBJECT(radiobutton), "toggled",
 			 G_CALLBACK(consumer_category_toggled), 
 			 (gpointer)"General");
@@ -974,30 +996,26 @@ static void create_spdif_output_settings_consumer(GtkWidget *notebook, int page)
 	GtkWidget *label;
 
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-	gtk_container_add(GTK_CONTAINER(notebook), hbox);
-	gtk_container_set_border_width(GTK_CONTAINER(hbox), 6);
-
 	label = gtk_label_new("Consumer");
-	gtk_notebook_set_tab_label(GTK_NOTEBOOK(notebook), 
-				   gtk_notebook_get_nth_page(GTK_NOTEBOOK(notebook), page), 
-				   label);
+	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), hbox, label);
+	set_margin(hbox, 6);
 
 	vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-	gtk_box_pack_start(GTK_BOX(hbox), vbox, FALSE, TRUE, 0);
-	gtk_container_set_border_width(GTK_CONTAINER(vbox), 6);
+	gtk_box_append(GTK_BOX(hbox), vbox);
+	set_margin(vbox, 6);
 
 	create_spdif_output_settings_consumer_copyright(vbox);
 	create_spdif_output_settings_consumer_copy(vbox);
 
 	vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-	gtk_box_pack_start(GTK_BOX(hbox), vbox, FALSE, TRUE, 0);
-	gtk_container_set_border_width(GTK_CONTAINER(vbox), 6);
+	gtk_box_append(GTK_BOX(hbox), vbox);
+	set_margin(vbox, 6);
 
 	create_spdif_output_settings_consumer_emphasis(vbox);
 
 	vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-	gtk_box_pack_start(GTK_BOX(hbox), vbox, FALSE, TRUE, 0);
-	gtk_container_set_border_width(GTK_CONTAINER(vbox), 6);
+	gtk_box_append(GTK_BOX(hbox), vbox);
+	set_margin(vbox, 6);
 
 	create_spdif_output_settings_consumer_category(vbox);
 }
@@ -1009,34 +1027,35 @@ static void create_spdif_output_settings(GtkWidget *box)
 	GtkWidget *hbox;
 	GtkWidget *radiobutton;
 	GtkWidget *notebook;
-	GSList *group = NULL;
+	GtkCheckButton *group;
 
 	frame = gtk_frame_new("S/PDIF Output Settings");
-	gtk_box_pack_start(GTK_BOX(box), frame, TRUE, TRUE, 0);
-	gtk_container_set_border_width(GTK_CONTAINER(frame), 6);
+	gtk_box_append(GTK_BOX(box), frame);
+	gtk_widget_set_hexpand(frame, TRUE);
+	set_margin(frame, 6);
 
 
 	vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-	gtk_container_add(GTK_CONTAINER(frame), vbox);
-	gtk_container_set_border_width(GTK_CONTAINER(vbox), 6);
+	gtk_frame_set_child(GTK_FRAME(frame), vbox);
+	set_margin(vbox, 6);
 
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-	gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, TRUE, 0);
+	gtk_box_append(GTK_BOX(vbox), hbox);
 
-	radiobutton = gtk_radio_button_new_with_label(NULL, "Professional");
+	radiobutton = gtk_check_button_new_with_label("Professional");
 	hw_spdif_professional_radio = radiobutton;
-	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(radiobutton));
-	gtk_box_pack_start(GTK_BOX(hbox), radiobutton, FALSE, FALSE, 0);
-	gtk_container_set_border_width(GTK_CONTAINER(radiobutton), 6);
+	group = GTK_CHECK_BUTTON(radiobutton);
+	gtk_box_append(GTK_BOX(hbox), radiobutton);
+	set_margin(radiobutton, 6);
 	g_signal_connect(radiobutton, "toggled",
 			 G_CALLBACK(spdif_output_toggled), 
 			 (gpointer)"Professional");
 
-	radiobutton = gtk_radio_button_new_with_label(group, "Consumer");
+	radiobutton = gtk_check_button_new_with_label("Consumer");
 	hw_spdif_consumer_radio = radiobutton;
-	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(radiobutton));
-	gtk_box_pack_start(GTK_BOX(hbox), radiobutton, FALSE, FALSE, 0);
-	gtk_container_set_border_width(GTK_CONTAINER(radiobutton), 6);
+	gtk_check_button_set_group(GTK_CHECK_BUTTON(radiobutton), group);
+	gtk_box_append(GTK_BOX(hbox), radiobutton);
+	set_margin(radiobutton, 6);
 	g_signal_connect(radiobutton, "toggled",
 			 G_CALLBACK(spdif_output_toggled), 
 			 (gpointer)"Consumer");
@@ -1044,7 +1063,8 @@ static void create_spdif_output_settings(GtkWidget *box)
 
 	notebook = gtk_notebook_new();
 	hw_spdif_output_notebook = notebook;
-	gtk_box_pack_start(GTK_BOX(vbox), notebook, TRUE, TRUE, 0);
+	gtk_box_append(GTK_BOX(vbox), notebook);
+	gtk_widget_set_vexpand(notebook, TRUE);
 
 
 	create_spdif_output_settings_profi(notebook, 0);
@@ -1056,37 +1076,37 @@ static void create_spdif_input_select(GtkWidget *box)
 	GtkWidget *frame;
 	GtkWidget *vbox;
 	GtkWidget *radiobutton;
-	GSList *group = NULL;
+	GtkCheckButton *group;
 
 	frame = gtk_frame_new("Digital Input");
-	gtk_box_pack_start(GTK_BOX(box), frame, FALSE, TRUE, 0);
-	gtk_container_set_border_width(GTK_CONTAINER(frame), 6);
+	gtk_box_append(GTK_BOX(box), frame);
+	set_margin(frame, 6);
 
 	vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-	gtk_container_add(GTK_CONTAINER(frame), vbox);
-	gtk_container_set_border_width(GTK_CONTAINER(vbox), 6);
+	gtk_frame_set_child(GTK_FRAME(frame), vbox);
+	set_margin(vbox, 6);
 
-	radiobutton = gtk_radio_button_new_with_label(group, "Coaxial");
+	radiobutton = gtk_check_button_new_with_label("Coaxial");
 	hw_spdif_input_coaxial_radio = radiobutton;
-	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(radiobutton));
-	gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
+	group = GTK_CHECK_BUTTON(radiobutton);
+	gtk_box_append(GTK_BOX(vbox), radiobutton);
 	g_signal_connect(radiobutton, "toggled",
 			 G_CALLBACK(spdif_input_toggled), 
 			 (gpointer)"Coaxial");
 
-	radiobutton = gtk_radio_button_new_with_label(group, "Optical");
+	radiobutton = gtk_check_button_new_with_label("Optical");
 	hw_spdif_input_optical_radio = radiobutton;
-	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(radiobutton));
-	gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
+	gtk_check_button_set_group(GTK_CHECK_BUTTON(radiobutton), group);
+	gtk_box_append(GTK_BOX(vbox), radiobutton);
 	g_signal_connect(radiobutton, "toggled",
 			 G_CALLBACK(spdif_input_toggled), 
 			 (gpointer)"Optical");
 
 	if (card_is_dmx6fire) {
-		radiobutton = gtk_radio_button_new_with_label(group, "Internal CD");
+		radiobutton = gtk_check_button_new_with_label("Internal CD");
 		hw_spdif_switch_off_radio = radiobutton;
-		group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(radiobutton));
-		gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
+		gtk_check_button_set_group(GTK_CHECK_BUTTON(radiobutton), group);
+		gtk_box_append(GTK_BOX(vbox), radiobutton);
 		g_signal_connect(radiobutton, "toggled",
 				 G_CALLBACK(spdif_input_toggled),
 				 (gpointer)"Off");
@@ -1099,28 +1119,31 @@ static void create_phono_input(GtkWidget *box)
         GtkWidget *frame;
         GtkWidget *vbox;
         GtkWidget *radiobutton;
-        GSList *group = NULL;
+        GtkCheckButton *group;
 
         frame = gtk_frame_new("Phono Input Switch");
-        gtk_box_pack_start(GTK_BOX(box), frame, FALSE, TRUE, 7);
-        gtk_container_set_border_width(GTK_CONTAINER(frame), 6);
+        gtk_box_append(GTK_BOX(box), frame);
+        gtk_widget_set_margin_start(frame, 13);
+        gtk_widget_set_margin_end(frame, 13);
+        gtk_widget_set_margin_top(frame, 6);
+        gtk_widget_set_margin_bottom(frame, 6);
 
         vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-        gtk_container_add(GTK_CONTAINER(frame), vbox);
-        gtk_container_set_border_width(GTK_CONTAINER(vbox), 6);
+        gtk_frame_set_child(GTK_FRAME(frame), vbox);
+        set_margin(vbox, 6);
 
-        radiobutton = gtk_radio_button_new_with_label(group, "Phono");
+        radiobutton = gtk_check_button_new_with_label("Phono");
         hw_phono_input_on_radio = radiobutton;
-        group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(radiobutton));
-        gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
+        group = GTK_CHECK_BUTTON(radiobutton);
+        gtk_box_append(GTK_BOX(vbox), radiobutton);
         g_signal_connect(radiobutton, "toggled",
                          G_CALLBACK(phono_input_toggled),
                          (gpointer)"Phono");
 
-        radiobutton = gtk_radio_button_new_with_label(group, "Mic");
+        radiobutton = gtk_check_button_new_with_label("Mic");
         hw_phono_input_off_radio = radiobutton;
-        group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(radiobutton));
-        gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
+        gtk_check_button_set_group(GTK_CHECK_BUTTON(radiobutton), group);
+        gtk_box_append(GTK_BOX(vbox), radiobutton);
         g_signal_connect(radiobutton, "toggled",
                          G_CALLBACK(phono_input_toggled),
                          (gpointer)"Mic");
@@ -1131,44 +1154,46 @@ static void create_input_interface(GtkWidget *box)
         GtkWidget *frame;
         GtkWidget *vbox;
         GtkWidget *radiobutton;
-        GSList *group = NULL;
+        GtkCheckButton *group;
 
         frame = gtk_frame_new("Line In Selector");
-        gtk_box_pack_start(GTK_BOX(box), frame, FALSE, TRUE, 4);
-        //gtk_container_set_border_width(GTK_CONTAINER(frame), 6);
+        gtk_box_append(GTK_BOX(box), frame);
+        gtk_widget_set_margin_start(frame, 4);
+        gtk_widget_set_margin_end(frame, 4);
+        //set_margin(frame, 6);
 
         vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-        gtk_container_add(GTK_CONTAINER(frame), vbox);
-        gtk_container_set_border_width(GTK_CONTAINER(vbox), 6);
+        gtk_frame_set_child(GTK_FRAME(frame), vbox);
+        set_margin(vbox, 6);
 
-        radiobutton = gtk_radio_button_new_with_label(group, "Internal");
+        radiobutton = gtk_check_button_new_with_label("Internal");
         input_interface_internal = radiobutton;
-        group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(radiobutton));
-        gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
+        group = GTK_CHECK_BUTTON(radiobutton);
+        gtk_box_append(GTK_BOX(vbox), radiobutton);
         g_signal_connect(radiobutton, "toggled",
                          G_CALLBACK(analog_input_select_toggled),
                          (gpointer)"Internal");
 
-        radiobutton = gtk_radio_button_new_with_label(group, "Front Input");
+        radiobutton = gtk_check_button_new_with_label("Front Input");
         input_interface_front_input = radiobutton;
-        group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(radiobutton));
-        gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
+        gtk_check_button_set_group(GTK_CHECK_BUTTON(radiobutton), group);
+        gtk_box_append(GTK_BOX(vbox), radiobutton);
         g_signal_connect(radiobutton, "toggled",
                          G_CALLBACK(analog_input_select_toggled),
                          (gpointer)"Front Input");
 
-        radiobutton = gtk_radio_button_new_with_label(group, "Rear Input");
+        radiobutton = gtk_check_button_new_with_label("Rear Input");
         input_interface_rear_input = radiobutton;
-        group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(radiobutton));
-        gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
+        gtk_check_button_set_group(GTK_CHECK_BUTTON(radiobutton), group);
+        gtk_box_append(GTK_BOX(vbox), radiobutton);
         g_signal_connect(radiobutton, "toggled",
                          G_CALLBACK(analog_input_select_toggled),
                          (gpointer)"Rear Input");
 
-        radiobutton = gtk_radio_button_new_with_label(group, "Wavetable");
+        radiobutton = gtk_check_button_new_with_label("Wavetable");
         input_interface_wavetable = radiobutton;
-        group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(radiobutton));
-        gtk_box_pack_start(GTK_BOX(vbox), radiobutton, FALSE, FALSE, 0);
+        gtk_check_button_set_group(GTK_CHECK_BUTTON(radiobutton), group);
+        gtk_box_append(GTK_BOX(vbox), radiobutton);
         g_signal_connect(radiobutton, "toggled",
                          G_CALLBACK(analog_input_select_toggled),
                          (gpointer)"Wave Table");
@@ -1187,43 +1212,48 @@ static void create_hardware(GtkWidget *main, GtkWidget *notebook, int page)
 	GtkWidget *hseparator;
 
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-	gtk_container_add(GTK_CONTAINER(notebook), hbox);
-
 	label = gtk_label_new("Hardware Settings");
-	gtk_notebook_set_tab_label(GTK_NOTEBOOK(notebook), 
-				   gtk_notebook_get_nth_page(GTK_NOTEBOOK(notebook), page), 
-				   label);
+	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), hbox, label);
 
 	/* Build scrolling area */
-	scrolledwindow = gtk_scrolled_window_new(NULL, NULL);
-	gtk_box_pack_start(GTK_BOX(hbox), scrolledwindow, TRUE, TRUE, 0);
+	scrolledwindow = gtk_scrolled_window_new();
+	gtk_box_append(GTK_BOX(hbox), scrolledwindow);
+	gtk_widget_set_hexpand(scrolledwindow, TRUE);
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolledwindow),
 					GTK_POLICY_AUTOMATIC, GTK_POLICY_NEVER);
 
 	viewport = gtk_viewport_new(NULL, NULL);
-	gtk_container_add(GTK_CONTAINER(scrolledwindow), viewport);
+	gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(scrolledwindow), viewport);
 
 	/* Outer box */
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-	gtk_container_add(GTK_CONTAINER(viewport), hbox);
+	gtk_viewport_set_child(GTK_VIEWPORT(viewport), hbox);
 
 	/* Create boxes for controls */
 	vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-	gtk_box_pack_start(GTK_BOX(hbox), vbox, FALSE, FALSE, 6);
+	gtk_box_append(GTK_BOX(hbox), vbox);
+	gtk_widget_set_margin_start(vbox, 6);
+	gtk_widget_set_margin_end(vbox, 6);
 
 	hbox1 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-	gtk_box_pack_start(GTK_BOX(vbox), hbox1, FALSE, FALSE, 0);
+	gtk_box_append(GTK_BOX(vbox), hbox1);
+	gtk_widget_set_vexpand(hbox1, FALSE);
 
 	hseparator = gtk_separator_new(GTK_ORIENTATION_HORIZONTAL);
-	gtk_box_pack_start(GTK_BOX(vbox), hseparator, FALSE, FALSE, 2);
+	gtk_box_append(GTK_BOX(vbox), hseparator);
+	gtk_widget_set_margin_top(hseparator, 2);
+	gtk_widget_set_margin_bottom(hseparator, 2);
 
 	hbox2 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-	gtk_box_pack_start(GTK_BOX(vbox), hbox2, FALSE, FALSE, 0);
+	gtk_box_append(GTK_BOX(vbox), hbox2);
 
 	create_master_clock(hbox1);
 
 	vbox1 = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-	gtk_box_pack_start(GTK_BOX(hbox1), vbox1, FALSE, FALSE, 20);
+	gtk_box_append(GTK_BOX(hbox1), vbox1);
+	gtk_widget_set_hexpand(vbox1, FALSE);
+	gtk_widget_set_margin_start(vbox1, 20);
+	gtk_widget_set_margin_end(vbox1, 20);
 
 	create_rate_state(vbox1);
 	create_actual_rate(vbox1);
@@ -1247,47 +1277,50 @@ static void create_about(GtkWidget *main, GtkWidget *notebook, int page)
 	GtkWidget *viewport;
 
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-	gtk_container_add(GTK_CONTAINER(notebook), hbox);
-
         label = gtk_label_new("About");
-	gtk_notebook_set_tab_label(GTK_NOTEBOOK(notebook), 
-				   gtk_notebook_get_nth_page(GTK_NOTEBOOK(notebook), page), 
-				   label);
+	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), hbox, label);
 
 	/* build scrolling area */
-	scrolledwindow = gtk_scrolled_window_new(NULL, NULL);
-	gtk_box_pack_start(GTK_BOX(hbox), scrolledwindow, TRUE, TRUE, 0);
+	scrolledwindow = gtk_scrolled_window_new();
+	gtk_box_append(GTK_BOX(hbox), scrolledwindow);
+	gtk_widget_set_hexpand(scrolledwindow, TRUE);
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolledwindow),
 					GTK_POLICY_AUTOMATIC, GTK_POLICY_NEVER);
 
 	viewport = gtk_viewport_new(NULL, NULL);
-	gtk_container_add(GTK_CONTAINER(scrolledwindow), viewport);
+	gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(scrolledwindow), viewport);
 
 
 	vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-	gtk_container_add(GTK_CONTAINER(viewport), vbox);
-	gtk_container_set_border_width(GTK_CONTAINER(vbox), 6);
+	gtk_viewport_set_child(GTK_VIEWPORT(viewport), vbox);
+	set_margin(vbox, 6);
 
 
 	/* Create text as labels */
 	label = gtk_label_new("");
-	gtk_box_pack_start(GTK_BOX(vbox), label, TRUE, TRUE, 6);
+	gtk_box_append(GTK_BOX(vbox), label);
+	gtk_widget_set_vexpand(label, TRUE);
 
 	/* create first line */
 	label = gtk_label_new("Envy24 Control Utility " VERSION);
-	gtk_box_pack_start(GTK_BOX(vbox), label, FALSE, TRUE, 6);
+	gtk_box_append(GTK_BOX(vbox), label);
+	gtk_widget_set_margin_bottom(label, 6);
 
 	/* create second line */
 	label = gtk_label_new("A GTK Tool for Envy24 PCI Audio Chip");
-	gtk_box_pack_start(GTK_BOX(vbox), label, FALSE, TRUE, 6);
+	gtk_box_append(GTK_BOX(vbox), label);
+	gtk_widget_set_margin_top(label, 6);
+	gtk_widget_set_margin_bottom(label, 6);
 
 
 	/* create third line */
 	label = gtk_label_new("Copyright(c) 2000 by Jaroslav Kysela <perex@perex.cz>");
-	gtk_box_pack_start(GTK_BOX(vbox), label, FALSE, TRUE, 6);
+	gtk_box_append(GTK_BOX(vbox), label);
+	gtk_widget_set_margin_top(label, 6);
 
 	label = gtk_label_new("");
-	gtk_box_pack_start(GTK_BOX(vbox), label, TRUE, TRUE, 6);
+	gtk_box_append(GTK_BOX(vbox), label);
+	gtk_widget_set_vexpand(label, TRUE);
 }
 
 static void create_analog_volume(GtkWidget *main, GtkWidget *notebook, int page)
@@ -1299,7 +1332,7 @@ static void create_analog_volume(GtkWidget *main, GtkWidget *notebook, int page)
 	GtkAdjustment *adj;
 	GtkWidget *vscale;
 	GtkWidget *radiobutton;
-	GSList *group;
+	GtkCheckButton *group;
 	GtkWidget *scrolledwindow;
 	GtkWidget *viewport;
 	int i, j;
@@ -1321,21 +1354,17 @@ static void create_analog_volume(GtkWidget *main, GtkWidget *notebook, int page)
 	};
 
 
-	scrolledwindow = gtk_scrolled_window_new(NULL, NULL);
-	gtk_container_add(GTK_CONTAINER(notebook), scrolledwindow);
-
+	scrolledwindow = gtk_scrolled_window_new();
         label = gtk_label_new("Analog Volume");
-	gtk_notebook_set_tab_label(GTK_NOTEBOOK(notebook), 
-				   gtk_notebook_get_nth_page(GTK_NOTEBOOK(notebook), page), 
-				   label);
+	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), scrolledwindow, label);
 
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolledwindow), 
 				       GTK_POLICY_AUTOMATIC, GTK_POLICY_NEVER);
 	viewport = gtk_viewport_new(NULL, NULL);
-	gtk_container_add(GTK_CONTAINER(scrolledwindow), viewport);
+	gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(scrolledwindow), viewport);
 
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-	gtk_container_add(GTK_CONTAINER(viewport), hbox);
+	gtk_viewport_set_child(GTK_VIEWPORT(viewport), hbox);
 
 	/* create DAC */
 	for(i = 0; i < envy_dac_volumes(); i++) {
@@ -1343,24 +1372,29 @@ static void create_analog_volume(GtkWidget *main, GtkWidget *notebook, int page)
 		sprintf(name, "DAC %d", i);
 		frame = gtk_frame_new(name);
 		//gtk_frame_set_shadow_type(GTK_FRAME(frame), GTK_SHADOW_IN);
-		gtk_box_pack_start(GTK_BOX(hbox), frame, FALSE, TRUE, 0);
-		gtk_container_set_border_width(GTK_CONTAINER(frame), 6);
+		gtk_box_append(GTK_BOX(hbox), frame);
+		set_margin(frame, 6);
 
 		vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-		gtk_container_add(GTK_CONTAINER(frame), vbox);
-		gtk_container_set_border_width(GTK_CONTAINER(vbox), 6);
+		gtk_frame_set_child(GTK_FRAME(frame), vbox);
+		set_margin(vbox, 6);
 
 		/* Add friendly labels for DMX 6Fires */
 		if(card_is_dmx6fire && (i < 6)){
 			label = gtk_label_new(dmx6fire_outputs[i]);
-			gtk_box_pack_start(GTK_BOX(vbox), label, FALSE, TRUE, 6);
+			gtk_box_append(GTK_BOX(vbox), label);
+			gtk_widget_set_margin_top(label, 6);
+			gtk_widget_set_margin_bottom(label, 6);
 		}
 
 		adj = gtk_adjustment_new(0, -(envy_dac_max()), 0, 1, 16, 0);
 		av_dac_volume_adj[i] = adj;
 		vscale = gtk_scale_new(GTK_ORIENTATION_VERTICAL, adj);
 		gtk_scale_set_draw_value(GTK_SCALE(vscale), FALSE);
-		gtk_box_pack_start(GTK_BOX(vbox), vscale, TRUE, TRUE, 6);
+		gtk_box_append(GTK_BOX(vbox), vscale);
+		gtk_widget_set_vexpand(vscale, TRUE);
+		gtk_widget_set_margin_top(vscale, 6);
+		gtk_widget_set_margin_bottom(vscale, 6);
 		gtk_scale_set_digits(GTK_SCALE(vscale), 0);
 		g_signal_connect(adj, "value_changed",
 				 G_CALLBACK(dac_volume_adjust), 
@@ -1368,22 +1402,26 @@ static void create_analog_volume(GtkWidget *main, GtkWidget *notebook, int page)
 
 	        label = gtk_label_new("000");
 	        av_dac_volume_label[i] =(GtkLabel *)label;
-		gtk_box_pack_start(GTK_BOX(vbox), label, FALSE, TRUE, 6);
+		gtk_box_append(GTK_BOX(vbox), label);
+		gtk_widget_set_margin_top(label, 6);
+		gtk_widget_set_margin_bottom(label, 6);
 
 
 		if (i >= envy_dac_senses())
 			continue;
 		group = NULL;
 		for (j = 0; j < envy_dac_sense_items(); j++) {
-		  radiobutton = gtk_radio_button_new_with_label(group, 
-								envy_dac_sense_enum_name(j));
+			radiobutton = gtk_check_button_new_with_label(envy_dac_sense_enum_name(j));
 			av_dac_sense_radio[i][j] = radiobutton;
 			g_signal_connect(radiobutton, "toggled",
 					 G_CALLBACK(dac_sense_toggled), 
 					 (gpointer)(long)((i << 8) + j));
-			gtk_box_pack_start(GTK_BOX(vbox), 
-					    radiobutton, FALSE, TRUE, 0);
-			group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(radiobutton));
+			gtk_box_append(GTK_BOX(vbox), radiobutton);
+			if (group) {
+				gtk_check_button_set_group(GTK_CHECK_BUTTON(radiobutton), group);
+			} else {
+				group = GTK_CHECK_BUTTON(radiobutton);
+			}
 		}
 	}
 
@@ -1393,24 +1431,29 @@ static void create_analog_volume(GtkWidget *main, GtkWidget *notebook, int page)
 		sprintf(name, "ADC %d", i);
 		frame = gtk_frame_new(name);
 		//gtk_frame_set_shadow_type(GTK_FRAME(frame), GTK_SHADOW_IN);
-		gtk_box_pack_start(GTK_BOX(hbox), frame, FALSE, TRUE, 0);
-		gtk_container_set_border_width(GTK_CONTAINER(frame), 6);
+		gtk_box_append(GTK_BOX(hbox), frame);
+		set_margin(frame, 6);
 
 		vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-		gtk_container_add(GTK_CONTAINER(frame), vbox);
-		gtk_container_set_border_width(GTK_CONTAINER(vbox), 6);
+		gtk_frame_set_child(GTK_FRAME(frame), vbox);
+		set_margin(vbox, 6);
 
 		/* Add friendly labels for DMX 6Fires */
 		if(card_is_dmx6fire && (i < 6)){
 			label = gtk_label_new(dmx6fire_inputs[i]);
-			gtk_box_pack_start(GTK_BOX(vbox), label, FALSE, TRUE, 6);
+			gtk_box_append(GTK_BOX(vbox), label);
+			gtk_widget_set_margin_top(label, 6);
+			gtk_widget_set_margin_bottom(label, 6);
 		}
 
 		adj = gtk_adjustment_new(0, -(envy_adc_max()), 0, 1, 16, 0);
 		av_adc_volume_adj[i] = adj;
 		vscale = gtk_scale_new(GTK_ORIENTATION_VERTICAL, adj);
 		gtk_scale_set_draw_value(GTK_SCALE(vscale), FALSE);
-		gtk_box_pack_start(GTK_BOX(vbox), vscale, TRUE, TRUE, 6);
+		gtk_box_append(GTK_BOX(vbox), vscale);
+		gtk_widget_set_vexpand(vscale, TRUE);
+		gtk_widget_set_margin_top(vscale, 6);
+		gtk_widget_set_margin_bottom(vscale, 6);
 		gtk_scale_set_value_pos(GTK_SCALE(vscale), GTK_POS_BOTTOM);
 		gtk_scale_set_digits(GTK_SCALE(vscale), 0);
 		g_signal_connect(adj, "value_changed",
@@ -1419,21 +1462,25 @@ static void create_analog_volume(GtkWidget *main, GtkWidget *notebook, int page)
 
 	        label = gtk_label_new("000");
 	        av_adc_volume_label[i] =(GtkLabel *)label;
-		gtk_box_pack_start(GTK_BOX(vbox), label, FALSE, TRUE, 6);
+		gtk_box_append(GTK_BOX(vbox), label);
+		gtk_widget_set_margin_top(label, 6);
+		gtk_widget_set_margin_bottom(label, 6);
 
 		if (i >= envy_adc_senses())
 			continue;
 		group = NULL;
 		for (j = 0; j < envy_adc_sense_items(); j++) {
-			radiobutton = gtk_radio_button_new_with_label(group, 
-								      envy_adc_sense_enum_name(j));
+			radiobutton = gtk_check_button_new_with_label(envy_adc_sense_enum_name(j));
 			av_adc_sense_radio[i][j] = radiobutton;
 			g_signal_connect(radiobutton, "toggled",
 					 G_CALLBACK(adc_sense_toggled), 
 					 (gpointer)(long)((i << 8) + j));
-			gtk_box_pack_start(GTK_BOX(vbox), 
-					    radiobutton, FALSE, TRUE, 0);
-			group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(radiobutton));
+			gtk_box_append(GTK_BOX(vbox), radiobutton);
+			if (group) {
+				gtk_check_button_set_group(GTK_CHECK_BUTTON(radiobutton), group);
+			} else {
+				group = GTK_CHECK_BUTTON(radiobutton);
+			}
 		}
 	}
 
@@ -1443,24 +1490,29 @@ static void create_analog_volume(GtkWidget *main, GtkWidget *notebook, int page)
 		sprintf(name, "IPGA %d", i);
 		frame = gtk_frame_new(name);
 		//gtk_frame_set_shadow_type(GTK_FRAME(frame), GTK_SHADOW_IN);
-		gtk_box_pack_start(GTK_BOX(hbox), frame, FALSE, TRUE, 0);
-		gtk_container_set_border_width(GTK_CONTAINER(frame), 6);
+		gtk_box_append(GTK_BOX(hbox), frame);
+		set_margin(frame, 6);
 
 		vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-		gtk_container_add(GTK_CONTAINER(frame), vbox);
-		gtk_container_set_border_width(GTK_CONTAINER(vbox), 6);
+		gtk_frame_set_child(GTK_FRAME(frame), vbox);
+		set_margin(vbox, 6);
 
 		/* Add friendly labels for DMX 6Fires */
 		if(card_is_dmx6fire && (i < 6)){
 			label = gtk_label_new(dmx6fire_inputs[i]);
-			gtk_box_pack_start(GTK_BOX(vbox), label, FALSE, TRUE, 6);
+			gtk_box_append(GTK_BOX(vbox), label);
+			gtk_widget_set_margin_top(label, 6);
+			gtk_widget_set_margin_bottom(label, 6);
 		}
 
 		adj = gtk_adjustment_new(0, -36, 0, 1, 16, 0);
 		av_ipga_volume_adj[i] = adj;
 		vscale = gtk_scale_new(GTK_ORIENTATION_VERTICAL, adj);
 		gtk_scale_set_draw_value(GTK_SCALE(vscale), FALSE);
-		gtk_box_pack_start(GTK_BOX(vbox), vscale, TRUE, TRUE, 6);
+		gtk_box_append(GTK_BOX(vbox), vscale);
+		gtk_widget_set_vexpand(vscale, TRUE);
+		gtk_widget_set_margin_top(vscale, 6);
+		gtk_widget_set_margin_bottom(vscale, 6);
 		gtk_scale_set_value_pos(GTK_SCALE(vscale), GTK_POS_BOTTOM);
 		gtk_scale_set_digits(GTK_SCALE(vscale), 0);
 		g_signal_connect(adj, "value_changed",
@@ -1469,7 +1521,9 @@ static void create_analog_volume(GtkWidget *main, GtkWidget *notebook, int page)
 
 	        label = gtk_label_new("000");
 	        av_ipga_volume_label[i] = (GtkLabel *)label;
-		gtk_box_pack_start(GTK_BOX(vbox), label, FALSE, TRUE, 6);
+		gtk_box_append(GTK_BOX(vbox), label);
+		gtk_widget_set_margin_top(label, 6);
+		gtk_widget_set_margin_bottom(label, 6);
 	}
 }
 
@@ -1517,7 +1571,7 @@ int delete_card_number(GtkWidget *delete_button)
 	if (card_nr == card_number) {
 		for (index = 0; index < MAX_PROFILES; index++)
 		{
-			gtk_entry_set_text(GTK_ENTRY (profiles_toggle_buttons[index].entry), get_profile_name(index + 1, card_number, profiles_file_name));
+			gtk_editable_set_text(GTK_EDITABLE (profiles_toggle_buttons[index].entry), get_profile_name(index + 1, card_number, profiles_file_name));
 		}
 	}
 
@@ -1544,7 +1598,7 @@ int save_active_profile(GtkWidget *save_button)
 		return EXIT_SUCCESS;
 	if ((index = index_active_profile()) >= 0) {
 		res = save_restore(ALSACTL_OP_STORE, index + 1, card_number, profiles_file_name, \
-			gtk_entry_get_text(GTK_ENTRY (profiles_toggle_buttons[index].entry)));
+			gtk_editable_get_text(GTK_EDITABLE (profiles_toggle_buttons[index].entry)));
 	} else {
 		fprintf(stderr, "No active profile found.\n");
 		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON (save_button), FALSE);
@@ -1589,24 +1643,28 @@ void entry_toggle_editable(GtkWidget *toggle_button, GtkWidget *entry)
 void enter_callback( const GtkWidget *widget, const GtkWidget *entry )
 {
 	const gchar *entry_text;
-	entry_text = gtk_entry_get_text (GTK_ENTRY (entry));
+	entry_text = gtk_editable_get_text (GTK_EDITABLE (entry));
 	printf("Inhalt : %s\n", entry_text);
+}
+
+static void toggle_button_entry_destroy(GtkWidget *self, gpointer data)
+{
+	GtkWidget *entry = (GtkWidget*)data;
+	gtk_widget_unparent(entry);
 }
 
 static GtkWidget *toggle_button_entry(const GtkWidget *parent, const gchar *profile_name, const gint index)
 {
-	GtkWidget *box;
 	GtkWidget *entry_label;
 	GtkWidget *toggle_button;
 
-	box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-
 	toggle_button = gtk_toggle_button_new();
-	gtk_container_set_border_width(GTK_CONTAINER(toggle_button), 3);
+	set_margin(toggle_button, 3);
 
 	profiles_toggle_buttons[index].entry = entry_label = gtk_entry_new();
 	gtk_entry_set_max_length(GTK_ENTRY (entry_label), MAX_PROFILE_NAME_LENGTH);
-	gtk_entry_set_text(GTK_ENTRY (entry_label), profile_name);
+	gtk_editable_set_width_chars(GTK_EDITABLE (entry_label), 16);
+	gtk_editable_set_text(GTK_EDITABLE (entry_label), profile_name);
 	/* only the active profile can be modified */
 	gtk_editable_set_editable(GTK_EDITABLE (entry_label), FALSE);
 	g_signal_connect(entry_label, "activate",
@@ -1615,9 +1673,13 @@ static GtkWidget *toggle_button_entry(const GtkWidget *parent, const gchar *prof
 	g_signal_connect(toggle_button, "toggled",
 			 G_CALLBACK (entry_toggle_editable),
 			 (gpointer) entry_label);
+	g_signal_connect(toggle_button, "destroy",
+			 G_CALLBACK (toggle_button_entry_destroy),
+			 (gpointer) entry_label);
 
-	gtk_box_pack_start(GTK_BOX (box), entry_label, FALSE, FALSE, 20);
-	gtk_container_add(GTK_CONTAINER (toggle_button), box);
+	gtk_widget_set_parent(entry_label, toggle_button);
+	gtk_widget_set_margin_start(entry_label, 20);
+	gtk_widget_set_margin_end(entry_label, 20);
 	return (toggle_button);
 }
 
@@ -1642,71 +1704,77 @@ static void create_profiles(GtkWidget *main, GtkWidget *notebook, int page)
 	gint max_digits;
 
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-	gtk_container_add(GTK_CONTAINER(notebook), hbox);
-
-
         label = gtk_label_new("Profiles");
-	gtk_notebook_set_tab_label(GTK_NOTEBOOK(notebook), 
-				   gtk_notebook_get_nth_page(GTK_NOTEBOOK(notebook), page), 
-				   label);
+	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), hbox, label);
 
 	/* build scrolling area */
-	scrolledwindow = gtk_scrolled_window_new(NULL, NULL);
-	gtk_box_pack_start(GTK_BOX(hbox), scrolledwindow, TRUE, TRUE, 0);
+	scrolledwindow = gtk_scrolled_window_new();
+	gtk_box_append(GTK_BOX(hbox), scrolledwindow);
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolledwindow),
 					GTK_POLICY_AUTOMATIC, GTK_POLICY_NEVER);
 
 	viewport = gtk_viewport_new(NULL, NULL);
-	gtk_container_add(GTK_CONTAINER(scrolledwindow), viewport);
+	gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(scrolledwindow), viewport);
 
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-	gtk_container_add(GTK_CONTAINER(viewport), hbox);
-	gtk_container_set_border_width(GTK_CONTAINER(hbox), 0);
+	gtk_viewport_set_child(GTK_VIEWPORT(viewport), hbox);
 
 
 	/* Create button boxes */
-	vbox1 = gtk_button_box_new(GTK_ORIENTATION_VERTICAL);
+	vbox1 = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 
 	for (index = 0; index < MAX_PROFILES; index++)	{
 		profile_name = get_profile_name(index + 1, card_number, profiles_file_name);
 		profiles_toggle_buttons[index].toggle_button = toggle_button_entry(window, profile_name, index);
-		gtk_box_pack_start(GTK_BOX (vbox1), profiles_toggle_buttons[index].toggle_button, FALSE, FALSE, 0);
+		gtk_box_append(GTK_BOX (vbox1), profiles_toggle_buttons[index].toggle_button);
+		gtk_widget_set_vexpand(profiles_toggle_buttons[index].toggle_button, index != 0 ? TRUE : FALSE);
+		gtk_widget_set_valign(profiles_toggle_buttons[index].toggle_button, GTK_ALIGN_END);
+		gtk_widget_set_halign(profiles_toggle_buttons[index].toggle_button, GTK_ALIGN_CENTER);
 	}
-	gtk_container_set_border_width(GTK_CONTAINER(vbox1), 6);
+	set_margin(vbox1, 6);
 
-	vbox2 = gtk_button_box_new(GTK_ORIENTATION_VERTICAL);
-	gtk_container_set_border_width(GTK_CONTAINER(vbox2), 50);
+	vbox2 = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+	set_margin(vbox2, 50);
 
 	hbox1 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-	gtk_box_pack_start(GTK_BOX(vbox2), hbox1, FALSE, FALSE, 20);
+	gtk_box_append(GTK_BOX(vbox2), hbox1);
+	gtk_widget_set_halign(hbox1, GTK_ALIGN_CENTER);
 
         label_card_nr = gtk_label_new("Card Number:");
-	gtk_box_pack_start(GTK_BOX(hbox1), label_card_nr, FALSE, FALSE, 20);
+	gtk_box_append(GTK_BOX(hbox1), label_card_nr);
 	gtk_label_set_justify(GTK_LABEL(label_card_nr), GTK_JUSTIFY_LEFT);
+	gtk_widget_set_margin_start(label_card_nr, 20);
+	gtk_widget_set_margin_end(label_card_nr, 20);
 
 	card_button_adj = gtk_adjustment_new(16, 0, MAX_CARD_NUMBERS - 1, 1, 10, 0);
 	card_number_adj = card_button_adj;
 	card_button = gtk_spin_button_new(card_button_adj, 1, 0);
-	gtk_box_pack_start(GTK_BOX (hbox1), card_button, TRUE, FALSE, 0);
+	gtk_box_append(GTK_BOX (hbox1), card_button);
+	gtk_widget_set_hexpand(card_button, TRUE);
+	gtk_widget_set_halign(card_button, GTK_ALIGN_CENTER);
 	gtk_spin_button_set_numeric(GTK_SPIN_BUTTON (card_button), TRUE);
 	gtk_adjustment_set_value(card_button_adj, card_number);
 
 	delete_button = gtk_toggle_button_new_with_label("Delete card from profiles");
-	gtk_box_pack_start(GTK_BOX (vbox2), delete_button, FALSE, FALSE, 20);
+	gtk_box_append(GTK_BOX (vbox2), delete_button);
+	gtk_widget_set_vexpand(delete_button, TRUE);
+	gtk_widget_set_valign(delete_button, GTK_ALIGN_END);
 	g_signal_connect(delete_button, "toggled",
 			 G_CALLBACK (delete_card_number),
 			 NULL);
 
 	save_button = gtk_toggle_button_new_with_label("Save active profile");
-	gtk_box_pack_end(GTK_BOX (vbox2), save_button, FALSE, FALSE, 20);
+	gtk_box_append(GTK_BOX (vbox2), save_button);
+	gtk_widget_set_vexpand(save_button, TRUE);
+	gtk_widget_set_valign(save_button, GTK_ALIGN_END);
 	g_signal_connect(save_button, "toggled",
 			 G_CALLBACK (save_active_profile),
 			 NULL);
 
-	gtk_container_add(GTK_CONTAINER(hbox), vbox1);
+	gtk_box_append(GTK_BOX(hbox), vbox1);
 	gtk_widget_set_hexpand(vbox1, TRUE);
-	gtk_container_add(GTK_CONTAINER(hbox), vbox2);
-	gtk_widget_set_hexpand(vbox2, TRUE);
+	gtk_box_append(GTK_BOX(hbox), vbox2);
+	gtk_widget_set_halign(vbox2, GTK_ALIGN_CENTER);
 
 	if (default_profile != NULL)
 	{
@@ -1747,59 +1815,71 @@ static void create_outer(GtkWidget *main)
 
 	/* Create digital mixer frame */
 	vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 1);
-	gtk_box_pack_start(GTK_BOX(main), vbox, FALSE, FALSE, 0);
+	gtk_box_append(GTK_BOX(main), vbox);
 
 	label = gtk_label_new(" Rt-clk Menu >>");
 	//gtk_widget_set_halign(label, GTK_ALIGN_START);
 	//gtk_widget_set_valign(label, GTK_ALIGN_CENTER);
-	gtk_box_pack_start(GTK_BOX(vbox), label, FALSE, FALSE, 3);
+	gtk_box_append(GTK_BOX(vbox), label);
+	gtk_widget_set_margin_top(label, 3);
+	gtk_widget_set_margin_bottom(label, 3);
 	frame = gtk_frame_new("Digital Mixer");
-	gtk_box_pack_start(GTK_BOX(vbox), frame, FALSE, TRUE, 0);
-	gtk_container_set_border_width(GTK_CONTAINER(frame), 6);
+	gtk_widget_add_css_class(frame, "mixer-frame");
+	gtk_box_append(GTK_BOX(vbox), frame);
+	set_margin(frame, 6);
 
 	/* Create controls in the digital mixer frame */
 
 	vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-	gtk_container_add(GTK_CONTAINER(frame), vbox);	
+	gtk_frame_set_child(GTK_FRAME(frame), vbox);
 
 	hbox1 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-	gtk_box_pack_start(GTK_BOX(vbox), hbox1, FALSE, FALSE, 6);
+	gtk_box_append(GTK_BOX(vbox), hbox1);
+	gtk_widget_set_halign(hbox1, GTK_ALIGN_CENTER);
+	gtk_widget_set_margin_top(hbox1, 6);
+	gtk_widget_set_margin_bottom(hbox1, 6);
 
-	drawing = gtk_drawing_area_new();
+	drawing = envy_level_meter_new();
 	mixer_mix_drawing = drawing;
 	gtk_widget_set_name(drawing, "DigitalMixer");
-	gtk_box_pack_start(GTK_BOX(hbox1), drawing, TRUE, FALSE, 6);
+	gtk_box_append(GTK_BOX(hbox1), drawing);
 	if (tall_equal_mixer_ht > 1 ) {
 		gtk_widget_set_size_request(drawing, 60, 264 + 60 * (tall_equal_mixer_ht - 1));
 	} else {
 		gtk_widget_set_size_request(drawing, 60, 264);
 	}
-	g_signal_connect(drawing, "draw",
-			 G_CALLBACK(level_meters_draw_callback), NULL);
-	gtk_widget_set_events(drawing, GDK_EXPOSURE_MASK);
 
 	hbox1 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
 	gtk_box_set_homogeneous(GTK_BOX(hbox1), TRUE);
-	gtk_box_pack_start(GTK_BOX(vbox), hbox1, TRUE, FALSE, 0);
-	gtk_container_set_border_width(GTK_CONTAINER(hbox1), 6);
+	gtk_box_append(GTK_BOX(vbox), hbox1);
+	set_margin(hbox1, 6);
 
 	label = gtk_label_new("Left");
 	gtk_widget_set_halign(label, GTK_ALIGN_START);
 	gtk_widget_set_valign(label, GTK_ALIGN_CENTER);
-	gtk_box_pack_start(GTK_BOX(hbox1), label, FALSE, TRUE, 0);
+	gtk_box_append(GTK_BOX(hbox1), label);
 
 	label = gtk_label_new("Right");
 	gtk_widget_set_halign(label, GTK_ALIGN_END);
 	gtk_widget_set_valign(label, GTK_ALIGN_CENTER);
-	gtk_box_pack_start(GTK_BOX(hbox1), label, FALSE, TRUE, 0);
+	gtk_box_append(GTK_BOX(hbox1), label);
 
 
 	mixer_clear_peaks_button = gtk_button_new_with_label("Reset Peaks");
-	gtk_box_pack_start(GTK_BOX(vbox), mixer_clear_peaks_button, TRUE, FALSE, 0);
-	gtk_container_set_border_width(GTK_CONTAINER(mixer_clear_peaks_button), 4);
+	gtk_box_append(GTK_BOX(vbox), mixer_clear_peaks_button);
+	set_margin(mixer_clear_peaks_button, 4);
 	g_signal_connect(mixer_clear_peaks_button, "clicked",
 			 G_CALLBACK(level_meters_reset_peaks), NULL);
 }/* End create_outer  */
+
+static void close_window(void)
+{
+	g_source_remove(meters_timeout);
+	g_source_remove(master_clock_status_timeout);
+	g_source_remove(internal_clock_status_timeout);
+	g_source_remove(rate_locking_status_timeout);
+	g_source_remove(rate_reset_status_timeout);
+}
 
 static void usage(void)
 {
@@ -1839,6 +1919,7 @@ int main(int argc, char **argv)
 	int wwidth = 796;
 	const int chanwidth = 86;
 	const int fixwidth = 108;
+	const char *css;
 
 	static struct option long_options[] = {
 		{"device", 1, 0, 'D'},
@@ -1861,7 +1942,8 @@ int main(int argc, char **argv)
 	snd_ctl_elem_value_alloca(&val);
 
 	/* Go through gtk initialization */
-        gtk_init(&argc, &argv);
+        gtk_init();
+	g_set_prgname("envy24control");
 
 	name = NULL; /* probe */
 	card_number = 0;
@@ -2040,30 +2122,32 @@ int main(int argc, char **argv)
 	fprintf(stderr, "using\t --- input_channels: %i\n\t --- output_channels: %i\n\t --- pcm_output_channels: %i\n\t --- spdif in/out channels: %i\n", \
 		input_channels, output_channels, pcm_output_channels, spdif_channels);
 
-	/* Reduce button padding so the mixers don't get so wide */
+	/* Reduce padding so the mixers don't get so wide */
 	provider = gtk_css_provider_new();
-	gtk_css_provider_load_from_data(provider,
-					"button { padding-left: 6px; padding-right: 6px; }",
-					-1, NULL);
-	gtk_style_context_add_provider_for_screen(gdk_screen_get_default(),
-						  GTK_STYLE_PROVIDER(provider),
-						  GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+	css = ".mixer-frame button { padding-left: 6px; padding-right: 6px; }\n"
+		".mixer-frame scale { padding-left: 8px; padding-right: 8px; }";
+#if GTK_CHECK_VERSION(4, 12, 0)
+	gtk_css_provider_load_from_string(provider, css);
+#else
+	gtk_css_provider_load_from_data(provider, css, -1);
+#endif
+	gtk_style_context_add_provider_for_display(gdk_display_get_default(),
+						   GTK_STYLE_PROVIDER(provider),
+						   GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
 	g_object_unref(provider);
 
         /* Make the title */
         sprintf(title, "Envy24 Control Utility %s (%s)", VERSION, snd_ctl_card_info_get_longname(hw_info));
 
         /* Create the main window */
-        window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+        window = gtk_window_new();
         gtk_window_set_title(GTK_WINDOW(window), title);
-        g_signal_connect(window, "delete_event", 
-                         G_CALLBACK(gtk_main_quit), NULL);
-        signal(SIGINT, (void *)gtk_main_quit);
+        g_signal_connect(window, "destroy", G_CALLBACK(close_window), NULL);
 
 	gtk_window_set_default_size(GTK_WINDOW(window), wwidth, 300);
 
 	outerbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 3);
-	gtk_container_add(GTK_CONTAINER(window), outerbox);
+	gtk_window_set_child(GTK_WINDOW(window), outerbox);
 
 	create_outer(outerbox);
 
@@ -2071,7 +2155,7 @@ int main(int argc, char **argv)
         notebook = gtk_notebook_new();
 	gtk_notebook_set_scrollable(GTK_NOTEBOOK(notebook), TRUE);
 	gtk_notebook_popup_enable(GTK_NOTEBOOK(notebook));
-	gtk_box_pack_start(GTK_BOX(outerbox), notebook, TRUE, TRUE, 0);
+	gtk_box_append(GTK_BOX(outerbox), notebook);
 
 	page = 0;
 
@@ -2103,14 +2187,14 @@ int main(int argc, char **argv)
 		g_io_add_watch(channel, G_IO_IN, midi_process, NULL);
 		g_io_channel_unref(channel);
 	}
-	g_timeout_add(40, level_meters_timeout_callback, NULL);
-	g_timeout_add(100, master_clock_status_timeout_callback, NULL);
-	g_timeout_add(100, internal_clock_status_timeout_callback, NULL);
-	g_timeout_add(100, rate_locking_status_timeout_callback, NULL);
-	g_timeout_add(100, rate_reset_status_timeout_callback, NULL);
+	meters_timeout = g_timeout_add(40, level_meters_timeout_callback, NULL);
+	master_clock_status_timeout = g_timeout_add(100, master_clock_status_timeout_callback, NULL);
+	internal_clock_status_timeout = g_timeout_add(100, internal_clock_status_timeout_callback, NULL);
+	rate_locking_status_timeout = g_timeout_add(100, rate_locking_status_timeout_callback, NULL);
+	rate_reset_status_timeout = g_timeout_add(100, rate_reset_status_timeout_callback, NULL);
 
 
-	gtk_widget_show_all(window);
+	gtk_window_present(GTK_WINDOW(window));
 
 	level_meters_postinit();
 	mixer_postinit();
@@ -2118,7 +2202,8 @@ int main(int argc, char **argv)
 	hardware_postinit();
 	analog_volume_postinit();
 
-	gtk_main();
+	while (g_list_model_get_n_items(gtk_window_get_toplevels()) > 0)
+		g_main_context_iteration(NULL, TRUE);
 
 	snd_ctl_close(ctl);
 	midi_close();

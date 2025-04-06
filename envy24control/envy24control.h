@@ -163,7 +163,7 @@ extern GtkWidget *av_adc_sense_radio[][4];
 /* flags */
 extern int card_is_dmx6fire;
 
-gboolean level_meters_draw_callback(GtkWidget *widget, cairo_t *cr, gpointer data);
+GtkWidget *envy_level_meter_new(void);
 gint level_meters_timeout_callback(gpointer data);
 void level_meters_reset_peaks(GtkButton *button, gpointer data);
 void level_meters_init(void);
