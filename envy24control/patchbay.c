@@ -23,14 +23,14 @@
 #define ANALOG_PLAYBACK_ROUTE_NAME	"H/W Playback Route"
 
 #define toggle_set(widget, state) \
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), state);
+	gtk_check_button_set_active(GTK_CHECK_BUTTON(widget), state);
 
 static int stream_active[MAX_OUTPUT_CHANNELS + MAX_SPDIF_CHANNELS];
 extern int output_channels, input_channels, pcm_output_channels, spdif_channels;
 
 static int is_active(GtkWidget *widget)
 {
-	return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget)) ? 1 : 0;
+	return gtk_check_button_get_active(GTK_CHECK_BUTTON(widget)) ? 1 : 0;
 }
 
 static int get_toggle_index(int stream)
