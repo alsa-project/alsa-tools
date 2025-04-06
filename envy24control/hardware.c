@@ -35,11 +35,11 @@ static snd_ctl_elem_value_t *phono_input;
 static inline int is_update_needed(void);
 
 #define toggle_set(widget, state) \
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), state);
+	gtk_check_button_set_active(GTK_CHECK_BUTTON(widget), state);
 
 static int is_active(GtkWidget *widget)
 {
-	return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget)) ? 1 : 0;
+	return gtk_check_button_get_active(GTK_CHECK_BUTTON(widget)) ? 1 : 0;
 }
 
 static void label_set(GtkWidget* widget, const char* str)
