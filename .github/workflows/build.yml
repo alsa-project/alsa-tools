@@ -1,0 +1,142 @@
+name: Build alsa-tools
+
+on: [push, pull_request]
+
+jobs:
+  fedora_latest_build:
+    runs-on: ubuntu-latest
+    container:
+      image: fedora:latest
+    env:
+      QTDIR: /usr/lib64/qt-3.3
+    steps:
+    - name: Prepare environment
+      run: |
+        dnf -y upgrade
+        dnf -y install @development-tools gcc-c++ libtool bzip2 gtk2-devel gtk3-devel fltk-devel qt3-devel
+
+    - name: Checkout alsa-lib
+      uses: actions/checkout@v4
+      with:
+        repository: alsa-project/alsa-lib
+        ref: master
+        path: alsa-lib
+    - name: Configure alsa-lib
+      run: |
+        cd alsa-lib
+        head -5 configure.ac
+        libtoolize --force --copy --automake
+        aclocal
+        autoheader
+        automake --foreign --copy --add-missing
+        autoconf
+        export CFLAGS="-O2 -Wall -W -Wunused-const-variable=0 -pipe -g"
+        ./configure
+        echo "Version: $(cat version)"
+    - name: Build alsa-lib
+      run: |
+        cd alsa-lib
+        make
+    - name: Install alsa-lib
+      run: |
+        cd alsa-lib
+        make install
+
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        path: alsa-tools
+    - name: Checkout all tags
+      run: |
+        cd alsa-tools
+        git fetch --prune --tags --force
+        git fetch --prune --unshallow --force
+    - name: Modify version
+      run: |
+        cd alsa-tools
+        mv Makefile Makefile.old
+        version=$(git describe | sed -e 's/v//')
+        if test -z "$version"; then version=$(git describe --tags | sed -e 's/v//'); fi
+        if test -z "$version"; then version1=$(grep "VERSION = .*" Makefile.old | cut -d ' ' -f 3); version2=$(git rev-parse --short HEAD); version="${version1}-g${version2}"; fi
+        echo "Version: ${version}"
+        sed -r "s/VERSION = .*/VERSION = ${version}/" < Makefile.old > Makefile
+        grep "VERSION =" Makefile
+    - name: Compile and install as10k1 (dependency)
+      run: |
+        cd alsa-tools/as10k1
+        ./gitcompile --prefix=/usr
+        make install
+    - name: Compile and install ld10k1 (dependency)
+      run: |
+        cd alsa-tools/ld10k1
+        ./gitcompile --prefix=/usr
+        make install
+    - name: Configure and build
+      run: |
+        cd alsa-tools
+        ./gitcompile
+    - name: Create package
+      run: |
+        cd alsa-tools
+        make alsa-dist
+        mkdir ../artifacts
+        mv alsa-tools*.tar.bz2 ../artifacts
+    - name: Archive package
+      uses: actions/upload-artifact@v4
+      with:
+        name: alsa-tools-test-package
+        path: artifacts/
+
+  ubuntu_last_build:
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:latest
+    steps:
+    - name: Prepare
+      run: |
+        export DEBIAN_FRONTEND=noninteractive
+        apt-get update
+        apt-get -y install apt-utils
+        apt-get -y full-upgrade
+        apt-get install -y git build-essential pkg-config m4 autoconf automake libtool ibgtk2.0-dev libgtk-3-dev libfltk1.3-dev
+
+    - name: Checkout alsa-lib
+      uses: actions/checkout@v4
+      with:
+        repository: alsa-project/alsa-lib
+        ref: master
+    - name: Configure alsa-lib
+      run: |
+        libtoolize --force --copy --automake
+        aclocal
+        autoheader
+        automake --foreign --copy --add-missing
+        autoconf
+        export CFLAGS="-O2 -Wall -W -Wunused-const-variable=0 -pipe -g"
+        ./configure
+    - name: Build alsa-lib
+      run: |
+        make
+    - name: Install alsa-lib
+      run: |
+        make install
+
+    - name: Checkout
+      uses: actions/checkout@v4
+    - name: Remove qlo10k1
+      run: |
+        mv Makefile Makefile.old
+        sed -e 's/qlo10k1//' < Makefile.old > Makefile
+    - name: Compile and install as10k1 (dependency)
+      run: |
+        cd as10k1
+        ./gitcompile --prefix=/usr
+        make install
+    - name: Compile and install ld10k1 (dependency)
+      run: |
+        cd ld10k1
+        ./gitcompile --prefix=/usr
+        make install
+    - name: Configure and build
+      run: |
+        ./gitcompile
