@@ -93,7 +93,7 @@ static char const *labels_aio_ss_input[18] = {
   "AES.L",  "AES.R",
   "A 1", "A 2", "A 3", "A 4",
   "A 5", "A 6", "A 7", "A 8",
-  "AEB 1", "AEB 2", "AEB 3," "AEB 4"
+  "AEB 1", "AEB 2", "AEB 3", "AEB 4"
 };
 
 static char const *labels_aio_ss_playback[20] = {
