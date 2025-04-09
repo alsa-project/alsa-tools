@@ -243,7 +243,7 @@ int midi_init(char *appname, int channel, int midi_enhanced)
 void mixer_adjust(GtkAdjustment *adj, gpointer data);
 void mixer_set_mute(int stream, int left, int right);
 
-void midi_process(gpointer data, gint source, GdkInputCondition condition)
+gboolean midi_process(GIOChannel *gio, GIOCondition condition, gpointer data)
 {
   snd_seq_event_t *ev;
   static GtkAdjustment *adj=0;
@@ -306,6 +306,7 @@ void midi_process(gpointer data, gint source, GdkInputCondition condition)
       snd_seq_free_event(ev);
     }
   while (snd_seq_event_input_pending(seq, 0) > 0);
+  return TRUE;
 }
 
 /* ************************************************* */

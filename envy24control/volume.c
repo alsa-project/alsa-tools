@@ -217,7 +217,7 @@ void dac_volume_adjust(GtkAdjustment *adj, gpointer data)
 {
 	int idx = (int)(long)data;
 	snd_ctl_elem_value_t *val;
-	int err, ival = -(int)adj->value;
+	int err, ival = -(int)gtk_adjustment_get_value(adj);
 	char text[16];
 
 	snd_ctl_elem_value_alloca(&val);
@@ -235,7 +235,7 @@ void adc_volume_adjust(GtkAdjustment *adj, gpointer data)
 {
 	int idx = (int)(long)data;
 	snd_ctl_elem_value_t *val;
-	int err, ival = -(int)adj->value;
+	int err, ival = -(int)gtk_adjustment_get_value(adj);
 	char text[16];
 
 	snd_ctl_elem_value_alloca(&val);
@@ -253,7 +253,7 @@ void ipga_volume_adjust(GtkAdjustment *adj, gpointer data)
 {
 	int idx = (int)(long)data;
 	snd_ctl_elem_value_t *val;
-	int err, ival = -(int)adj->value;
+	int err, ival = -(int)gtk_adjustment_get_value(adj);
 	char text[16];
 
 	snd_ctl_elem_value_alloca(&val);
