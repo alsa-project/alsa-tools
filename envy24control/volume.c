@@ -23,7 +23,7 @@
 #include "envy24control.h"
 
 #define toggle_set(widget, state) \
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), state);
+	gtk_check_button_set_active(GTK_CHECK_BUTTON(widget), state);
 
 #define DAC_VOLUME_NAME	"DAC Volume"
 #define ADC_VOLUME_NAME	"ADC Volume"
