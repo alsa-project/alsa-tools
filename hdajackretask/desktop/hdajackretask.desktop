@@ -1,7 +1,9 @@
 [Desktop Entry]
 Name=HDAJackRetask
-GenericName=Retask the audio jacks for the HDA sound driver
+Comment=Retask the audio jacks for the HDA sound driver
+Comment[fr]=Réassignement des jacks audio pour le pilote audio HDA
 Exec=hdajackretask
+Icon=hdajackretask
 Terminal=false
 Type=Application
 Categories=AudioVideo;
