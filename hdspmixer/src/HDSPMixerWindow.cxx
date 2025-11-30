@@ -274,15 +274,15 @@ static int handler_cb(int event)
 {
     HDSPMixerWindow *w = NULL;
     Fl_Window *fl_win = Fl::first_window();
-    while (1) {
-	if (fl_win->label()) {
-	    if (strncmp("HDSPMixer", fl_win->label(), 9) == 0) {
-		w = (HDSPMixerWindow *)fl_win;
-		break;
+    while (fl_win) {
+	    if (fl_win->label()) {
+	        if (strncmp("HDSPMixer", fl_win->label(), 9) == 0) {
+	            w = (HDSPMixerWindow *)fl_win;
+	            break;
+	        }
 	    }
+	    fl_win = Fl::next_window(fl_win);
 	}
-	if ((fl_win = Fl::next_window(fl_win))) return 0;
-    }
     if (!w) return 0;
     int key = Fl::event_key();
     switch (event) {
