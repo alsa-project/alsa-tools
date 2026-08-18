@@ -42,8 +42,6 @@ INSTALL:
 or
 	./configure
 
-If you use GTK+-1.2, pass --with-gtk2=no.
-
 	make install
 
 
