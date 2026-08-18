@@ -23,3 +23,21 @@ GtkWidget *create_enum_elem_radio(char *elem_name,ctl_elem_info_val_t *iv);
 
 GtkWidget *create_loopback_toggle();
 GtkWidget *create_level_box();
+
+static inline GtkWidget *__gtk_hbox_new(gboolean homogeneous, gint spacing)
+{
+  GtkWidget *box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, spacing);
+  gtk_box_set_homogeneous(GTK_BOX(box), homogeneous);
+  return box;
+}
+/* override for deprecation */
+#define gtk_hbox_new	__gtk_hbox_new
+
+static inline GtkWidget*__gtk_vbox_new(gboolean homogeneous, gint spacing)
+{
+  GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, spacing);
+  gtk_box_set_homogeneous(GTK_BOX(box), homogeneous);
+  return box;
+}
+/* override for deprecation */
+#define gtk_vbox_new	__gtk_vbox_new

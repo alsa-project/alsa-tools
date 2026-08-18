@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
 		err="No RME Digi Soundcard found...";
 	gtk_init(&argc, &argv);	
 	window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
-	gtk_signal_connect(GTK_OBJECT(window),"destroy",GTK_SIGNAL_FUNC(destroy),NULL);
+	g_signal_connect(G_OBJECT(window),"destroy",G_CALLBACK(destroy),NULL);
 	if(err)
 	{
 		err_lbl=gtk_label_new(err);
@@ -130,7 +130,7 @@ void elem_radio_toggled(GtkRadioButton *r,gpointer p)
 	ctl_elem_info_val_t *iv;
 	
 	iv=(ctl_elem_info_val_t *)p;
-	l=gtk_radio_button_group(r);
+	l=gtk_radio_button_get_group(r);
 	i=snd_ctl_elem_info_get_items(iv->info);
 	while(l)
 	{
@@ -170,8 +170,8 @@ GtkWidget *create_enum_elem_radio(char *elem_name,ctl_elem_info_val_t *iv)
 		snd_ctl_elem_info_set_item(iv->info, i);
 		snd_ctl_elem_info(ctl,iv->info);
 		r=gtk_radio_button_new_with_label(group,snd_ctl_elem_info_get_item_name(iv->info));
-		group=gtk_radio_button_group(GTK_RADIO_BUTTON(r));
-		gtk_signal_connect(GTK_OBJECT(r),"toggled",GTK_SIGNAL_FUNC(elem_radio_toggled),(gpointer)iv);
+		group=gtk_radio_button_get_group(GTK_RADIO_BUTTON(r));
+		g_signal_connect(G_OBJECT(r),"toggled",G_CALLBACK(elem_radio_toggled),(gpointer)iv);
 		if(i==snd_ctl_elem_value_get_integer(iv->val,0))
 			active=r;
 		gtk_box_pack_start(GTK_BOX(box),r,TRUE,FALSE,0);

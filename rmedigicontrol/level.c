@@ -26,15 +26,15 @@ static char *val2char(gdouble val)
 }
 static void changed(GtkAdjustment *a,gpointer p)
 {
-	snd_ctl_elem_value_set_integer(val,0,((100-a->value)*snd_ctl_elem_info_get_max(info))/100);
-	snd_ctl_elem_value_set_integer(val,1,((100-a->value)*snd_ctl_elem_info_get_max(info))/100);
+	snd_ctl_elem_value_set_integer(val,0,((100-gtk_adjustment_get_value(a))*snd_ctl_elem_info_get_max(info))/100);
+	snd_ctl_elem_value_set_integer(val,1,((100-gtk_adjustment_get_value(a))*snd_ctl_elem_info_get_max(info))/100);
 	snd_ctl_elem_write(ctl,val);
-	gtk_label_set_text(p,val2char(a->value));
+	gtk_label_set_text(p,val2char(gtk_adjustment_get_value(a)));
 }
 
 GtkWidget *create_level_box()
 {
-	GtkObject *adjust;
+	GtkAdjustment *adjust;
 	GtkWidget *box,*slider1,*label1,*vlabel;
 	char *elem_name="DAC Playback Volume";
 	
@@ -52,11 +52,11 @@ GtkWidget *create_level_box()
 	snd_ctl_elem_value_set_name(val,elem_name);
 	snd_ctl_elem_read(ctl,val);
 
-	adjust=GTK_OBJECT(gtk_adjustment_new(100-(snd_ctl_elem_value_get_integer(val,0)*100)/snd_ctl_elem_info_get_max(info),0,100,1,5,0));
+	adjust=GTK_ADJUSTMENT(gtk_adjustment_new(100-(snd_ctl_elem_value_get_integer(val,0)*100)/snd_ctl_elem_info_get_max(info),0,100,1,5,0));
 
-	vlabel=gtk_label_new(val2char((GTK_ADJUSTMENT(adjust))->value));
-	gtk_signal_connect(adjust,"value_changed",GTK_SIGNAL_FUNC(changed),vlabel);
-	slider1=gtk_vscale_new(GTK_ADJUSTMENT(adjust));
+	vlabel=gtk_label_new(val2char(gtk_adjustment_get_value(GTK_ADJUSTMENT(adjust))));
+	g_signal_connect(adjust,"value_changed",G_CALLBACK(changed),vlabel);
+	slider1=gtk_scale_new(GTK_ORIENTATION_VERTICAL, GTK_ADJUSTMENT(adjust));
 	gtk_scale_set_draw_value(GTK_SCALE(slider1),FALSE);
 	gtk_scale_set_digits(GTK_SCALE(slider1),0);
 	

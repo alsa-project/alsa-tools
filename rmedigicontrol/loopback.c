@@ -39,7 +39,7 @@ GtkWidget *create_loopback_toggle()
 	
 	t=gtk_check_button_new_with_label(elem_name);
 
-	gtk_signal_connect(GTK_OBJECT(t),"toggled",GTK_SIGNAL_FUNC(loopback_toggled),NULL);
+	g_signal_connect(G_OBJECT(t),"toggled",G_CALLBACK(loopback_toggled),NULL);
 	if(snd_ctl_elem_value_get_integer(val,0))
 		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(t),TRUE);
 
