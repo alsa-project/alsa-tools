@@ -86,6 +86,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <gtk/gtk.h>
+#include <cairo.h>
 #include <gdk/gdk.h>
 #include <alsa/asoundlib.h>
 
@@ -136,7 +137,7 @@ struct mixerControl_s {
   GtkWidget *window;
   GtkWidget *volume[ECHO_MAXAUDIOOUTPUTS];
   GtkWidget *label[ECHO_MAXAUDIOOUTPUTS];
-  GtkObject *adj[ECHO_MAXAUDIOOUTPUTS];
+  GtkAdjustment *adj[ECHO_MAXAUDIOOUTPUTS];
   GtkWidget *outsel[ECHO_MAXAUDIOOUTPUTS];
   GtkWidget *inpsel[ECHO_MAXAUDIOINPUTS];
   GtkWidget *vchsel[ECHO_MAXAUDIOOUTPUTS];
@@ -150,7 +151,7 @@ struct VolumeControl_s {
   GtkWidget *window;
   GtkWidget *volume[ECHO_MAXAUDIOOUTPUTS];
   GtkWidget *label[ECHO_MAXAUDIOOUTPUTS];
-  GtkObject *adj[ECHO_MAXAUDIOOUTPUTS];
+  GtkAdjustment *adj[ECHO_MAXAUDIOOUTPUTS];
   int Gain[ECHO_MAXAUDIOOUTPUTS];
 } lineinControl, lineoutControl, pcmoutControl;
 
@@ -167,16 +168,45 @@ struct SwitchControl_s {
   GtkWidget *Button;
 } PhantomPower, Automute;
 
-GtkWidget *clocksrc_menuitem[ECHO_CLOCKS];
+static GtkListStore *clocksrc_store = NULL;
 GtkWidget *dmodeOpt, *clocksrcOpt, *spdifmodeOpt, *phantomChkbutton, *autoclockChkbutton;
 GtkWidget *window, *Mainwindow, *Miscwindow, *LVwindow, *VUwindow, *GMwindow;
 GtkWidget *VUdarea, *Mixdarea;
 gint VUtimer, Mixtimer, clocksrctimer;
 
-GdkGC *gc=0;
-static GdkPixmap *VUpixmap = NULL;
-static GdkPixmap *Mixpixmap = NULL;
-GdkFont *fnt;
+static cairo_surface_t *VUpixmap = NULL;
+static cairo_surface_t *Mixpixmap = NULL;
+
+static GtkWidget *__gtk_hbox_new(gboolean homogeneous, gint spacing)
+{
+  GtkWidget *box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, spacing);
+  gtk_box_set_homogeneous(GTK_BOX(box), homogeneous);
+  return box;
+}
+/* override for deprecation */
+#define gtk_hbox_new	__gtk_hbox_new
+
+static GtkWidget*__gtk_vbox_new(gboolean homogeneous, gint spacing)
+{
+  GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, spacing);
+  gtk_box_set_homogeneous(GTK_BOX(box), homogeneous);
+  return box;
+}
+/* override for deprecation */
+#define gtk_vbox_new	__gtk_vbox_new
+
+static void cairo_set_source_pixel(cairo_t *cr, guint32 pixel) {
+  double r = ((pixel >> 16) & 0xFF) / 255.0;
+  double g = ((pixel >> 8) & 0xFF) / 255.0;
+  double b = (pixel & 0xFF) / 255.0;
+  cairo_set_source_rgb(cr, r, g, b);
+}
+
+static void set_combo_active(GtkWidget *combo, int val, GCallback callback) {
+  g_signal_handlers_block_by_func(combo, callback, NULL);
+  gtk_combo_box_set_active(GTK_COMBO_BOX(combo), val);
+  g_signal_handlers_unblock_by_func(combo, callback, NULL);
+}
 
 void Clock_source_activate(GtkWidget *widget, gpointer clk);
 
@@ -563,26 +593,26 @@ gint CheckInputs(gpointer unused) {
 
   for (clk=0; clk<nclocksrc; clk++) {
     valid=!!(ClockMask & (1<<clk));
-    gtk_widget_set_sensitive(clocksrc_menuitem[clk], valid);
+    GtkTreeIter iter;
+    if (clocksrc_store && gtk_tree_model_iter_nth_child(GTK_TREE_MODEL(clocksrc_store), &iter, NULL, clk)) {
+      gtk_list_store_set(clocksrc_store, &iter, 1, valid, -1);
+    }
     if (clk==AutoClock && valid)
       source=AutoClock;
   }
 
   if (source>=0 && source!=clocksrcVal) {
     // Set the clock source, but do not change the value of AutoClock
-    Clock_source_activate(clocksrc_menuitem[source], (gpointer)(long)(source|DONT_CHANGE));
-    gtk_option_menu_set_history(GTK_OPTION_MENU(clocksrcOpt), clocksrcVal);
+    SetEnum(clocksrcId, source);
+    clocksrcVal = source;
+    set_combo_active(clocksrcOpt, source, G_CALLBACK(Clock_source_activate));
   }
   return(TRUE);
 }
 
 
 
-void DrawBar(int x, int y, int level, int peak, int gain) {
-  GdkColor Bars={0x00FF00, 0, 0, 0};
-  GdkColor Bars1={0x000000, 0, 0, 0};
-  GdkColor Peak={0x1BABFF, 0, 0, 0};
-  GdkColor Level={0xC0B000, 0, 0, 0};
+void DrawBar(cairo_t *cr, int x, int y, int level, int peak, int gain) {
   int db;
 
   x=XMETER+XCELLTOT*x;
@@ -591,30 +621,35 @@ void DrawBar(int x, int y, int level, int peak, int gain) {
   if (level>ECHOGAIN_MUTED) {
     // Draw the "integer" part of the bar
     db=level>>2;
-    gdk_gc_set_foreground(gc, &Bars);
-    gdk_draw_rectangle(Mixpixmap, gc, TRUE, x, y-db, GM_BARWIDTH, YCELLDIM+db);
+    cairo_set_source_pixel(cr, 0x00FF00);
+    cairo_rectangle(cr, x, y-db, GM_BARWIDTH, YCELLDIM+db);
+    cairo_fill(cr);
 
     // Draw the antialiased part
-    Bars1.pixel=(level&3) << (6 + 8);	// 4 levels (256/4==64==2^6) of green (2^8)
-    if (Bars1.pixel) {
-      gdk_gc_set_foreground(gc, &Bars1);
-      gdk_draw_rectangle(Mixpixmap, gc, TRUE, x, y-db-1, GM_BARWIDTH, 1);
+    guint32 bars1_pixel = (level&3) << (6 + 8);
+    if (bars1_pixel) {
+      cairo_set_source_pixel(cr, bars1_pixel);
+      cairo_rectangle(cr, x, y-db-1, GM_BARWIDTH, 1);
+      cairo_fill(cr);
     }
   }
 
   // Draw the peak
   if (peak>ECHOGAIN_MUTED) {
     db=peak>>2;
-    gdk_gc_set_foreground(gc, &Peak);
-    gdk_draw_rectangle(Mixpixmap, gc, TRUE, x, y-db, GM_BARWIDTH, 1);
+    cairo_set_source_pixel(cr, 0x1BABFF);
+    cairo_rectangle(cr, x, y-db, GM_BARWIDTH, 1);
+    cairo_fill(cr);
   }
 
   // Draw the mixer gain
   if (gain>=ECHOGAIN_MUTED) {
     db=gain>>2;
-    gdk_gc_set_foreground(gc, &Level);
-    gdk_draw_rectangle(Mixpixmap, gc, TRUE, x-XMETER+XVOLUME, y, 1, YCELLDIM);
-    gdk_draw_rectangle(Mixpixmap, gc, TRUE, x-XMETER+XVOLUME-2, y-db, 5, 1);
+    cairo_set_source_pixel(cr, 0xC0B000);
+    cairo_rectangle(cr, x-XMETER+XVOLUME, y, 1, YCELLDIM);
+    cairo_fill(cr);
+    cairo_rectangle(cr, x-XMETER+XVOLUME-2, y-db, 5, 1);
+    cairo_fill(cr);
   }
 }
 
@@ -622,7 +657,6 @@ void DrawBar(int x, int y, int level, int peak, int gain) {
 
 // Draw the matrix mixer
 gint DrawMixer(gpointer unused) {
-  GdkRectangle update_rect;
   int InLevel[ECHO_MAXAUDIOINPUTS];
   int InPeak[ECHO_MAXAUDIOINPUTS];
   int OutLevel[ECHO_MAXAUDIOOUTPUTS];
@@ -631,87 +665,93 @@ gint DrawMixer(gpointer unused) {
   int VirPeak[ECHO_MAXAUDIOOUTPUTS];
   char str[16];
   int i, o, dB;
-  GdkColor Grid={0x787878, 0, 0, 0};
-  GdkColor Labels={0x9694C4, 0, 0, 0};
-  GdkColor Hilight={0x000078, 0, 0, 0};
-  GdkColor Hilight2={0x600000, 0, 0, 0};
 
   if (!Mixpixmap)
     return(TRUE);
 
-  update_rect.x = 0;
-  update_rect.y = 0;
-  update_rect.width = Mixwidth;
-  update_rect.height = Mixheight;
   GetVUmeters(InLevel, InPeak, OutLevel, OutPeak, VirLevel, VirPeak);
 
-  if (!gc)
-    gc=gdk_gc_new(gtk_widget_get_parent_window(Mixdarea));
+  cairo_t *cr = cairo_create(Mixpixmap);
 
-  gdk_draw_rectangle(Mixpixmap, Mixdarea->style->black_gc, TRUE, 0, 0, Mixwidth, Mixheight);
+  cairo_set_source_rgb(cr, 0, 0, 0);
+  cairo_rectangle(cr, 0, 0, Mixwidth, Mixheight);
+  cairo_fill(cr);
 
   // Highlight
-  gdk_gc_set_foreground(gc, &Hilight);
-  gdk_draw_rectangle(Mixpixmap, gc, TRUE, 0, YCELLTOT*mixerControl.input, XCELLTOT*(mixerControl.output+1), YCELLTOT);
-  gdk_draw_rectangle(Mixpixmap, gc, TRUE, XCELLTOT*(mixerControl.output+1), YCELLTOT*mixerControl.input, XCELLTOT, Mixheight);
+  cairo_set_source_pixel(cr, 0x000078);
+  cairo_rectangle(cr, 0, YCELLTOT*mixerControl.input, XCELLTOT*(mixerControl.output+1), YCELLTOT);
+  cairo_fill(cr);
+  cairo_rectangle(cr, XCELLTOT*(mixerControl.output+1), YCELLTOT*mixerControl.input, XCELLTOT, Mixheight);
+  cairo_fill(cr);
   if (vmixerId) {
-    gdk_gc_set_foreground(gc, &Hilight2);
-    gdk_draw_rectangle(Mixpixmap, gc, TRUE, 0, YCELLTOT*(GMixerSection.VmixerFirst+vmixerControl.input), XCELLTOT*(vmixerControl.output+1), YCELLTOT);
-    gdk_draw_rectangle(Mixpixmap, gc, TRUE, XCELLTOT*(vmixerControl.output+1), YCELLTOT*(GMixerSection.VmixerFirst+vmixerControl.input), XCELLTOT, Mixheight);
+    cairo_set_source_pixel(cr, 0x600000);
+    cairo_rectangle(cr, 0, YCELLTOT*(GMixerSection.VmixerFirst+vmixerControl.input), XCELLTOT*(vmixerControl.output+1), YCELLTOT);
+    cairo_fill(cr);
+    cairo_rectangle(cr, XCELLTOT*(vmixerControl.output+1), YCELLTOT*(GMixerSection.VmixerFirst+vmixerControl.input), XCELLTOT, Mixheight);
+    cairo_fill(cr);
   }
 
   // Draw the grid
+  cairo_select_font_face(cr, "monospace", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+  cairo_set_font_size(cr, 10.0);
 
-  gdk_gc_set_font(gc, fnt);
   // Horizontal lines and input channel labels
   for (i=0; i<GMixerSection.LineOut; i++) {
-    gdk_gc_set_foreground(gc, &Grid);
-    gdk_draw_rectangle(Mixpixmap, gc, TRUE, 0, YCELLTOT*(i+1)-1, Mixwidth, 1);
+    cairo_set_source_pixel(cr, 0x787878);
+    cairo_rectangle(cr, 0, YCELLTOT*(i+1)-1, Mixwidth, 1);
+    cairo_fill(cr);
     if (i<fdIn)
       sprintf(str, "A%d", i);		// Analog
     else if (i<nIn)
       sprintf(str, "D%d", i-fdIn);	// Digital
     else
       sprintf(str, "V%d", i-nIn);	// Virtual
-    gdk_gc_set_foreground(gc, &Labels);
-    gdk_draw_string(Mixpixmap, fnt, gc, 1, YCELLTOT*i+(YCELLTOT/2)+4, str);
+    cairo_set_source_pixel(cr, 0x9694C4);
+    cairo_move_to(cr, 1, YCELLTOT*i+(YCELLTOT/2)+4);
+    cairo_show_text(cr, str);
   }
 
   // Vertical lines and output channel labels
   for (o=0; o<nLOut; o++) {
-    gdk_gc_set_foreground(gc, &Grid);
-    gdk_draw_rectangle(Mixpixmap, gc, TRUE, XCELLTOT*(o+1), 0, 1, Mixheight);
+    cairo_set_source_pixel(cr, 0x787878);
+    cairo_rectangle(cr, XCELLTOT*(o+1), 0, 1, Mixheight);
+    cairo_fill(cr);
     if (o<fdOut)
       sprintf(str, "A%d", o);
     else
       sprintf(str, "D%d", o-fdOut);
-    gdk_gc_set_foreground(gc, &Labels);
-    gdk_draw_string(Mixpixmap, fnt, gc, XCELLTOT*(o+1)+(XCELLTOT/2)-6, YCELLTOT*GMixerSection.LineOut+YCELLTOT+8, str);
+    cairo_set_source_pixel(cr, 0x9694C4);
+    cairo_move_to(cr, XCELLTOT*(o+1)+(XCELLTOT/2)-6, YCELLTOT*GMixerSection.LineOut+YCELLTOT+8);
+    cairo_show_text(cr, str);
   }
-  gdk_draw_string(Mixpixmap, fnt, gc, 1, 8, "In");
-  gdk_draw_string(Mixpixmap, fnt, gc, 1, YCELLTOT*GMixerSection.LineOut+YCELLTOT+8, "Out");
-  gdk_gc_set_foreground(gc, &Grid);
-  gdk_draw_rectangle(Mixpixmap, gc, TRUE, 0, YCELLTOT*(GMixerSection.LineOut+1)-1, Mixwidth, 1);
+  cairo_set_source_pixel(cr, 0x9694C4);
+  cairo_move_to(cr, 1, 8);
+  cairo_show_text(cr, "In");
+  cairo_move_to(cr, 1, YCELLTOT*GMixerSection.LineOut+YCELLTOT+8);
+  cairo_show_text(cr, "Out");
+  cairo_set_source_pixel(cr, 0x787878);
+  cairo_rectangle(cr, 0, YCELLTOT*(GMixerSection.LineOut+1)-1, Mixwidth, 1);
+  cairo_fill(cr);
 
   // Draw input levels and peaks
   for (i=0; i<GMixerSection.Inputs; i++)
-    DrawBar(0, i, InLevel[i], InPeak[i], DONT_DRAW);
+    DrawBar(cr, 0, i, InLevel[i], InPeak[i], DONT_DRAW);
 
   // Draw vchannels levels and peaks (Vmixer cards only)
   if (vmixerId) {
     for (i=0; i<vmixerControl.inputs; i++)
-      DrawBar(0, i+GMixerSection.VmixerFirst, VirLevel[i], VirPeak[i], DONT_DRAW);
+      DrawBar(cr, 0, i+GMixerSection.VmixerFirst, VirLevel[i], VirPeak[i], DONT_DRAW);
   }
 
   // Draw output levels, peaks and volumes
   for (o=0; o<GMixerSection.Outputs; o++)
-    DrawBar(o+1, GMixerSection.LineOut, OutLevel[o], OutPeak[o], lineoutControl.Gain[o]);
+    DrawBar(cr, o+1, GMixerSection.LineOut, OutLevel[o], OutPeak[o], lineoutControl.Gain[o]);
 
   // Draw monitor mixer elements
   for (o=0; o<GMixerSection.Outputs; o++) {
     for (i=0; i<GMixerSection.Inputs; i++) {
       dB=Add_dB(mixerControl.mixer[o][i].Gain, InLevel[i]);
-      DrawBar(o+1, i, dB, DONT_DRAW, mixerControl.mixer[o][i].Gain);
+      DrawBar(cr, o+1, i, dB, DONT_DRAW, mixerControl.mixer[o][i].Gain);
     }
   }
 
@@ -720,11 +760,12 @@ gint DrawMixer(gpointer unused) {
     for (o=0; o<GMixerSection.Outputs; o++)
       for (i=0; i<vmixerControl.inputs; i++) {
         dB=Add_dB(vmixerControl.mixer[o][i].Gain, VirLevel[i]);
-        DrawBar(o+1, i+GMixerSection.VmixerFirst, dB, DONT_DRAW, vmixerControl.mixer[o][i].Gain);
+        DrawBar(cr, o+1, i+GMixerSection.VmixerFirst, dB, DONT_DRAW, vmixerControl.mixer[o][i].Gain);
       }
   }
 
-  gtk_widget_draw(Mixdarea, &update_rect);
+  cairo_destroy(cr);
+  gtk_widget_queue_draw(Mixdarea);
   return(TRUE);
 }
 
@@ -732,7 +773,6 @@ gint DrawMixer(gpointer unused) {
 
 // Draw the VU-meter
 gint DrawVUmeters(gpointer unused) {
-  GdkRectangle update_rect;
   int InLevel[ECHO_MAXAUDIOINPUTS];
   int InPeak[ECHO_MAXAUDIOINPUTS];
   int OutLevel[ECHO_MAXAUDIOOUTPUTS];
@@ -741,77 +781,80 @@ gint DrawVUmeters(gpointer unused) {
   int VirPeak[ECHO_MAXAUDIOOUTPUTS];
   static int InClip[ECHO_MAXAUDIOINPUTS];
   static int OutClip[ECHO_MAXAUDIOOUTPUTS];
+  static int first = 1;
   int i, x, dB;
   char str[16];
-  GdkColor Selected={0xC86060, 0, 0, 0};
-  GdkColor Grid={0x9694C4, 0, 0, 0};
-  GdkColor Grid2={0x646383, 0, 0, 0};
-  GdkColor dBValues={0x00B000, 0, 0, 0};
-  GdkColor AnBars={0x00E0B8, 0, 0, 0};
-  GdkColor DiBars={0x98E000, 0, 0, 0};
-  GdkColor ClipPeak={0, 0, 0, 0};
-  GdkColor Peak={0x00FF00, 0, 0, 0};
+  guint32 ClipPeakPixel;
 
   if (!VUpixmap)
     return(TRUE);
 
-  update_rect.x = 0;
-  update_rect.y = 0;
-  update_rect.width = VUwidth;
-  update_rect.height = VUheight;
   GetVUmeters(InLevel, InPeak, OutLevel, OutPeak, VirLevel, VirPeak);
 
-  if (!gc) {
-    gc=gdk_gc_new(gtk_widget_get_parent_window(VUdarea));
+  if (first) {
     for (i=0; i<nIn; i++)
       InClip[i]=0;
     for (i=0; i<nLOut; i++)
       OutClip[i]=0;
+    first = 0;
   }
+
+  cairo_t *cr = cairo_create(VUpixmap);
 
   // Clear the image
-  gdk_draw_rectangle(VUpixmap, VUdarea->style->black_gc, TRUE, 0, 0, VUwidth, VUheight);
+  cairo_set_source_rgb(cr, 0, 0, 0);
+  cairo_rectangle(cr, 0, 0, VUwidth, VUheight);
+  cairo_fill(cr);
 
   // Draw the dB scale and the grid
-  gdk_gc_set_font(gc, fnt);
-  gdk_gc_set_foreground(gc, &Peak);
-  gdk_draw_string(VUpixmap, fnt, gc, 2, VU_YGRAF-12+4, "  dB");
+  cairo_select_font_face(cr, "monospace", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+  cairo_set_font_size(cr, 10.0);
+  cairo_set_source_pixel(cr, 0x00FF00); // Peak
+  cairo_move_to(cr, 2, VU_YGRAF-12+4);
+  cairo_show_text(cr, "  dB");
   for (i=0; i<=120; i+=12) {
     sprintf(str, "%4d", -i);
-    gdk_gc_set_foreground(gc, &dBValues);
-    gdk_draw_string(VUpixmap, fnt, gc, 2, VU_YGRAF+i+4, str);
-    gdk_gc_set_foreground(gc, &Grid);
-    gdk_draw_rectangle(VUpixmap, gc, TRUE, VU_XGRAF, VU_YGRAF+i, VUwidth-VU_XGRAF, 1);
+    cairo_set_source_pixel(cr, 0x00B000); // dBValues
+    cairo_move_to(cr, 2, VU_YGRAF+i+4);
+    cairo_show_text(cr, str);
+    cairo_set_source_pixel(cr, 0x9694C4); // Grid
+    cairo_rectangle(cr, VU_XGRAF, VU_YGRAF+i, VUwidth-VU_XGRAF, 1);
+    cairo_fill(cr);
   }
-  gdk_gc_set_foreground(gc, &Grid2);
-  gdk_draw_rectangle(VUpixmap, gc, TRUE, VU_XGRAF, VU_YGRAF+128, VUwidth-VU_XGRAF, 1);
+  cairo_set_source_pixel(cr, 0x646383); // Grid2
+  cairo_rectangle(cr, VU_XGRAF, VU_YGRAF+128, VUwidth-VU_XGRAF, 1);
+  cairo_fill(cr);
 
   x=VU_XGRAF+VU_BARSEP;
 
   // Draw inputs
   for (i=0; i<nIn; i++) {
     if (i<fdIn)
-      gdk_gc_set_foreground(gc, &AnBars);
+      cairo_set_source_pixel(cr, 0x00E0B8); // AnBars
     else
-      gdk_gc_set_foreground(gc, &DiBars);
+      cairo_set_source_pixel(cr, 0x98E000); // DiBars
     dB=InLevel[i];
-    gdk_draw_rectangle(VUpixmap, gc, TRUE, x, VU_YGRAF-dB, VU_BARWIDTH, 129+VU_YGRAF-(VU_YGRAF-dB));
+    cairo_rectangle(cr, x, VU_YGRAF-dB, VU_BARWIDTH, 129+VU_YGRAF-(VU_YGRAF-dB));
+    cairo_fill(cr);
 
     dB=InPeak[i];
     if (dB==0)
       InClip[i]=64;
     if (InClip[i]) {
       InClip[i]--;
-      ClipPeak.pixel=(InClip[i]<<18)+((255-(InClip[i]*3))<<8);
-      gdk_gc_set_foreground(gc, &ClipPeak);
+      ClipPeakPixel=(InClip[i]<<18)+((255-(InClip[i]*3))<<8);
+      cairo_set_source_pixel(cr, ClipPeakPixel);
     } else {
-      gdk_gc_set_foreground(gc, &Peak);
+      cairo_set_source_pixel(cr, 0x00FF00); // Peak
     }
-    gdk_draw_rectangle(VUpixmap, gc, TRUE, x, VU_YGRAF-dB, VU_BARWIDTH, 1);
+    cairo_rectangle(cr, x, VU_YGRAF-dB, VU_BARWIDTH, 1);
+    cairo_fill(cr);
     if (mixerControl.input==i) {
-      gdk_gc_set_foreground(gc, &Selected);
-      gdk_draw_rectangle(VUpixmap, gc, TRUE, x+1, VU_YGRAF+128+3, VU_BARWIDTH-2, 1);
-      gdk_draw_rectangle(VUpixmap, gc, TRUE, x, VU_YGRAF+128+4, VU_BARWIDTH, 1);
+      cairo_set_source_pixel(cr, 0xC86060); // Selected
+      cairo_rectangle(cr, x+1, VU_YGRAF+128+3, VU_BARWIDTH-2, 1);
+      cairo_fill(cr);
+      cairo_rectangle(cr, x, VU_YGRAF+128+4, VU_BARWIDTH, 1);
+      cairo_fill(cr);
     }
     x+=VU_BARWIDTH+VU_BARSEP;
   }
@@ -820,32 +863,37 @@ gint DrawVUmeters(gpointer unused) {
   x+=VU_BARWIDTH+VU_BARSEP;
   for (i=0; i<nLOut; i++) {
     if (i<fdOut)
-      gdk_gc_set_foreground(gc, &AnBars);
+      cairo_set_source_pixel(cr, 0x00E0B8); // AnBars
     else
-      gdk_gc_set_foreground(gc, &DiBars);
+      cairo_set_source_pixel(cr, 0x98E000); // DiBars
     dB=OutLevel[i];
-    gdk_draw_rectangle(VUpixmap, gc, TRUE, x, VU_YGRAF-dB, VU_BARWIDTH, 129+VU_YGRAF-(VU_YGRAF-dB));
+    cairo_rectangle(cr, x, VU_YGRAF-dB, VU_BARWIDTH, 129+VU_YGRAF-(VU_YGRAF-dB));
+    cairo_fill(cr);
 
     dB=OutPeak[i];
     if (dB==0)
       OutClip[i]=64;
     if (OutClip[i]) {
       OutClip[i]--;
-      ClipPeak.pixel=(OutClip[i]<<18)+((255-(OutClip[i]*3))<<8);
-      gdk_gc_set_foreground(gc, &ClipPeak);
+      ClipPeakPixel=(OutClip[i]<<18)+((255-(OutClip[i]*3))<<8);
+      cairo_set_source_pixel(cr, ClipPeakPixel);
     } else {
-      gdk_gc_set_foreground(gc, &Peak);
+      cairo_set_source_pixel(cr, 0x00FF00); // Peak
     }
-    gdk_draw_rectangle(VUpixmap, gc, TRUE, x, VU_YGRAF-dB, VU_BARWIDTH, 1);
+    cairo_rectangle(cr, x, VU_YGRAF-dB, VU_BARWIDTH, 1);
+    cairo_fill(cr);
     if (mixerControl.output==i) {
-      gdk_gc_set_foreground(gc, &Selected);
-      gdk_draw_rectangle(VUpixmap, gc, TRUE, x+1, VU_YGRAF+128+3, VU_BARWIDTH-2, 1);
-      gdk_draw_rectangle(VUpixmap, gc, TRUE, x, VU_YGRAF+128+4, VU_BARWIDTH, 1);
+      cairo_set_source_pixel(cr, 0xC86060); // Selected
+      cairo_rectangle(cr, x+1, VU_YGRAF+128+3, VU_BARWIDTH-2, 1);
+      cairo_fill(cr);
+      cairo_rectangle(cr, x, VU_YGRAF+128+4, VU_BARWIDTH, 1);
+      cairo_fill(cr);
     }
     x+=VU_BARWIDTH+VU_BARSEP;
   }
 
-  gtk_widget_draw(VUdarea, &update_rect);
+  cairo_destroy(cr);
+  gtk_widget_queue_draw(VUdarea);
 
   return(TRUE);
 }
@@ -985,8 +1033,10 @@ static gint Gmixer_motion_notify(GtkWidget *widget, GdkEventMotion *event) {
   GdkModifierType state;
   float val;
 
-  if (event->is_hint)
-    gdk_window_get_pointer(event->window, &x, &y, &state);
+  if (event->is_hint) {
+    GdkDevice *device = gdk_event_get_device((GdkEvent *)event);
+    gdk_window_get_device_position(event->window, device, &x, &y, &state);
+  }
   else {
     x=event->x;
     y=event->y;
@@ -1040,7 +1090,7 @@ void Monitor_volume_changed(GtkWidget *widget, gpointer cnl) {
   char str[16];
 
   UI_DEBUG(("Monitor_volume_changed()  %d %d\n",mixerControl.input,mixerControl.output));
-  val=rval=INVERT((int)GTK_ADJUSTMENT(widget)->value);
+  val=rval=INVERT((int)gtk_adjustment_get_value(GTK_ADJUSTMENT(widget)));
 
   ch=(int)(long)cnl;
 
@@ -1103,13 +1153,13 @@ void PCM_volume_changed(GtkWidget *widget, gpointer ch) {
     // Input
     channel=(int)(long)ch;
     vol=&lineinControl;
-    rval=val=IN_INVERT((int)GTK_ADJUSTMENT(widget)->value);
+    rval=val=IN_INVERT((int)gtk_adjustment_get_value(GTK_ADJUSTMENT(widget)));
     sprintf(str, "%+4.1f", 0.5*val);
   } else {
     // Output
     channel=(int)(long)ch-ECHO_MAXAUDIOINPUTS;
     vol=&pcmoutControl;
-    val=rval=INVERT((int)GTK_ADJUSTMENT(widget)->value);
+    val=rval=INVERT((int)gtk_adjustment_get_value(GTK_ADJUSTMENT(widget)));
     pcmoutControl.Gain[channel]=val;
     // Emulate the line-out volume if this card can't do it in hw.
     if (!lineoutId) {
@@ -1137,7 +1187,7 @@ void PCM_volume_changed(GtkWidget *widget, gpointer ch) {
     vol->Gain[channel]=val;
   }
   if (Gang)
-    gtk_adjustment_set_value(GTK_ADJUSTMENT(vol->adj[channel^1]), (gfloat)GTK_ADJUSTMENT(widget)->value);
+    gtk_adjustment_set_value(GTK_ADJUSTMENT(vol->adj[channel^1]), (gfloat)gtk_adjustment_get_value(GTK_ADJUSTMENT(widget)));
 }
 
 
@@ -1219,7 +1269,7 @@ void LineOut_volume_changed(GtkWidget *widget, gpointer ch) {
 
   channel=(int)(long)ch;
 
-  val=INVERT((int)GTK_ADJUSTMENT(widget)->value);
+  val=INVERT((int)gtk_adjustment_get_value(GTK_ADJUSTMENT(widget)));
   lineoutControl.Gain[channel]=val;
 
   gtk_label_set_text(GTK_LABEL(lineoutControl.label[channel]), strOutGain(str, val));
@@ -1248,7 +1298,7 @@ void LineOut_volume_changed(GtkWidget *widget, gpointer ch) {
   }
 
   if (Gang)
-    gtk_adjustment_set_value(GTK_ADJUSTMENT(lineoutControl.adj[channel^1]), (gfloat)GTK_ADJUSTMENT(widget)->value);
+    gtk_adjustment_set_value(GTK_ADJUSTMENT(lineoutControl.adj[channel^1]), (gfloat)gtk_adjustment_get_value(GTK_ADJUSTMENT(widget)));
 }
 
 
@@ -1259,7 +1309,7 @@ void Vmixer_volume_changed(GtkWidget *widget, gpointer ch) {
   int o, v;
 
   channel=(int)(long)ch;
-  val=rval=INVERT((int)GTK_ADJUSTMENT(widget)->value);
+  val=rval=INVERT((int)gtk_adjustment_get_value(GTK_ADJUSTMENT(widget)));
 
 #ifdef REVERSE
   v=channel;
@@ -1407,114 +1457,109 @@ void AutoClock_toggled(GtkWidget *widget, gpointer unused) {
     AutoClock=clocksrcVal;
     snprintf(str, 31, "Autoclock [%s]", clocksrcName[AutoClock]);
     str[31]=0;
-    gtk_label_set_text(GTK_LABEL(GTK_BIN(widget)->child), str);
+    gtk_label_set_text(GTK_LABEL(gtk_bin_get_child(GTK_BIN(widget))), str);
   } else {
     AutoClock=-1;
-    gtk_label_set_text(GTK_LABEL(GTK_BIN(widget)->child), "Autoclock");
+    gtk_label_set_text(GTK_LABEL(gtk_bin_get_child(GTK_BIN(widget))), "Autoclock");
   }
 
 }
 
 
 
-void Digital_mode_activate(GtkWidget *widget, gpointer mode) {
-  int adat;
-
-  if (SetEnum(dmodeId, (int)(long)mode)<0) {
-    // Restore old value if it failed
-    gtk_option_menu_set_history(GTK_OPTION_MENU(dmodeOpt), dmodeVal);
+void Digital_mode_activate(GtkWidget *widget, gpointer data) {
+  int mode = gtk_combo_box_get_active(GTK_COMBO_BOX(widget));
+  if (mode < 0 || mode == dmodeVal) return;
+  if (SetEnum(dmodeId, mode) < 0) {
+    set_combo_active(widget, dmodeVal, G_CALLBACK(Digital_mode_activate));
     return;
   }
+  dmodeVal = mode;
+  clocksrcVal = GetEnum(clocksrcId);
+  set_combo_active(clocksrcOpt, clocksrcVal, G_CALLBACK(Clock_source_activate));
 
-  dmodeVal=(int)(long)mode;
-  // When I change the digital mode, the clock source can change too
-  clocksrcVal=GetEnum(clocksrcId);
-  gtk_option_menu_set_history(GTK_OPTION_MENU(clocksrcOpt), clocksrcVal);
-
-  adat=!memcmp(dmodeName[dmodeVal], "ADAT", 4);
+  int adat=!memcmp(dmodeName[dmodeVal], "ADAT", 4);
   SetSensitivity(adat);
   if (adat) {
     GMixerSection.Inputs=nIn;
     GMixerSection.Outputs=nLOut;
   } else {
-    GMixerSection.Inputs=fdIn+2;	// S/PDIF has only 2 channels
+    GMixerSection.Inputs=fdIn+2;
     GMixerSection.Outputs=fdOut+2;
   }
 }
 
-
-
-void Clock_source_activate(GtkWidget *widget, gpointer clk) {
-  unsigned int source;
-
-  source=(unsigned int)(long)clk & 0xff;
-  if (SetEnum(clocksrcId, source)<0) {
-    gtk_option_menu_set_history(GTK_OPTION_MENU(clocksrcOpt), clocksrcVal);
+void Clock_source_activate(GtkWidget *widget, gpointer data) {
+  int clk = gtk_combo_box_get_active(GTK_COMBO_BOX(widget));
+  if (clk < 0 || clk == clocksrcVal) return;
+  if (SetEnum(clocksrcId, clk) < 0) {
+    set_combo_active(widget, clocksrcVal, G_CALLBACK(Clock_source_activate));
   } else {
-    clocksrcVal=(int)(long)clk & 0xff;
-    // Change only when the user triggers it
-    if (((int)(long)clk & DONT_CHANGE)==0 && AutoClock>=0) {
-      AutoClock=clocksrcVal;
+    clocksrcVal = clk;
+    if (AutoClock >= 0) {
+      AutoClock = clocksrcVal;
       AutoClock_toggled(autoclockChkbutton, NULL);
     }
   }
 }
 
-
-
-void SPDIF_mode_activate(GtkWidget *widget, gpointer mode) {
-
-  SetEnum(spdifmodeId, (int)(long)mode);	// This one should never fail
-  spdifmodeVal=(int)(long)mode;
+void SPDIF_mode_activate(GtkWidget *widget, gpointer data) {
+  int mode = gtk_combo_box_get_active(GTK_COMBO_BOX(widget));
+  if (mode < 0 || mode == spdifmodeVal) return;
+  if (SetEnum(spdifmodeId, mode) < 0) {
+    set_combo_active(widget, spdifmodeVal, G_CALLBACK(SPDIF_mode_activate));
+  } else {
+    spdifmodeVal = mode;
+  }
 }
 
 
 
-// Create a new backing pixmap of the appropriate size
-static gint VU_configure_event(GtkWidget *widget, GdkEventConfigure *event) {
+static gboolean VU_configure_event(GtkWidget *widget, GdkEventConfigure *event, gpointer data) {
+  GtkAllocation allocation;
+  gtk_widget_get_allocation(widget, &allocation);
 
   if (VUpixmap)
-    gdk_pixmap_unref(VUpixmap);
-  VUpixmap=gdk_pixmap_new(widget->window, widget->allocation.width, widget->allocation.height, -1);
-  gdk_draw_rectangle(VUpixmap, widget->style->black_gc, TRUE, 0, 0, widget->allocation.width, widget->allocation.height);
+    cairo_surface_destroy(VUpixmap);
+  VUpixmap=cairo_image_surface_create(CAIRO_FORMAT_ARGB32, allocation.width, allocation.height);
+
+  cairo_t *cr = cairo_create(VUpixmap);
+  cairo_set_source_rgb(cr, 0, 0, 0);
+  cairo_rectangle(cr, 0, 0, allocation.width, allocation.height);
+  cairo_fill(cr);
+  cairo_destroy(cr);
   return(TRUE);
 }
 
-
-
-// Redraw the screen from the backing pixmap
-static gint VU_expose(GtkWidget *widget, GdkEventExpose *event) {
-
-  if (VUpixmap)
-    gdk_draw_pixmap(widget->window, widget->style->fg_gc[GTK_WIDGET_STATE(widget)], VUpixmap,
-                    event->area.x, event->area.y,
-                    event->area.x, event->area.y,
-                    event->area.width, event->area.height);
+static gboolean VU_draw(GtkWidget *widget, cairo_t *cr, gpointer data) {
+  if (VUpixmap) {
+    cairo_set_source_surface(cr, VUpixmap, 0, 0);
+    cairo_paint(cr);
+  }
   return(FALSE);
 }
 
-
-
-// Create a new backing pixmap of the appropriate size
-static gint Gmixer_configure_event(GtkWidget *widget, GdkEventConfigure *event) {
+static gboolean Gmixer_configure_event(GtkWidget *widget, GdkEventConfigure *event, gpointer data) {
+  GtkAllocation allocation;
+  gtk_widget_get_allocation(widget, &allocation);
 
   if (Mixpixmap)
-    gdk_pixmap_unref(Mixpixmap);
-  Mixpixmap=gdk_pixmap_new(widget->window, widget->allocation.width, widget->allocation.height, -1);
-  gdk_draw_rectangle(Mixpixmap, widget->style->black_gc, TRUE, 0, 0, widget->allocation.width, widget->allocation.height);
+    cairo_surface_destroy(Mixpixmap);
+  Mixpixmap=cairo_image_surface_create(CAIRO_FORMAT_ARGB32, allocation.width, allocation.height);
+
+  cairo_t *cr = cairo_create(Mixpixmap);
+  cairo_set_source_rgb(cr, 0, 0, 0);
+  cairo_rectangle(cr, 0, 0, allocation.width, allocation.height);
+  cairo_fill(cr);
+  cairo_destroy(cr);
   return(TRUE);
 }
 
-
-
-// Redraw the screen from the backing pixmap
-static gint Gmixer_expose(GtkWidget *widget, GdkEventExpose *event) {
-
-  if (Mixpixmap)
-    gdk_draw_pixmap(widget->window, widget->style->fg_gc[GTK_WIDGET_STATE(widget)], Mixpixmap,
-                    event->area.x, event->area.y,
-                    event->area.x, event->area.y,
-                    event->area.width, event->area.height);
+static gboolean Gmixer_draw(GtkWidget *widget, cairo_t *cr, gpointer data) {
+  if (Mixpixmap) {
+    cairo_set_source_surface(cr, Mixpixmap, 0, 0);
+    cairo_paint(cr);
+  }
   return(FALSE);
 }
 
@@ -1523,10 +1568,10 @@ static gint Gmixer_expose(GtkWidget *widget, GdkEventExpose *event) {
 gint CloseWindow(GtkWidget *widget, GdkEvent *event, gpointer geom) {
   struct geometry *g=geom;
 
-  gdk_window_get_root_origin(widget->window, &g->x, &g->y);
-  gdk_window_get_size(widget->window, &g->w, &g->h);
+  gdk_window_get_root_origin(gtk_widget_get_window(widget), &g->x, &g->y);
+  g->w = gdk_window_get_width(gtk_widget_get_window(widget)); g->h = gdk_window_get_height(gtk_widget_get_window(widget));
   gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(g->toggler), FALSE);	// This hides the window
-  //gtk_widget_set_uposition(widget, g->x, g->y);
+  //gtk_window_move(GTK_WINDOW(widget), g->x, g->y);
   return(TRUE);		// Do not destroy it
 }
 
@@ -1536,14 +1581,14 @@ gint Mainwindow_delete(GtkWidget *widget, GdkEvent *event, gpointer geom) {
   struct geometry *g=geom;
 
   if (VUwindow) {
-    gdk_window_get_root_origin(VUwindow->window, &VUw_geom.x, &VUw_geom.y);
+    gdk_window_get_root_origin(gtk_widget_get_window(VUwindow), &VUw_geom.x, &VUw_geom.y);
     gtk_widget_destroy(VUwindow);
   }
   if (GMwindow) {
-    gdk_window_get_root_origin(GMwindow->window, &GMw_geom.x, &GMw_geom.y);
+    gdk_window_get_root_origin(gtk_widget_get_window(GMwindow), &GMw_geom.x, &GMw_geom.y);
     gtk_widget_destroy(GMwindow);
   }
-  gdk_window_get_root_origin(Mainwindow->window, &g->x, &g->y);
+  gdk_window_get_root_origin(gtk_widget_get_window(Mainwindow), &g->x, &g->y);
   gtk_main_quit();
   return(FALSE);
 }
@@ -1553,7 +1598,7 @@ gint Mainwindow_delete(GtkWidget *widget, GdkEvent *event, gpointer geom) {
 gint VUwindow_delete(GtkWidget *widget, GdkEvent *event, gpointer geom) {
   struct geometry *g=geom;
 
-  gdk_window_get_root_origin(widget->window, &g->x, &g->y);
+  gdk_window_get_root_origin(gtk_widget_get_window(widget), &g->x, &g->y);
   g->st=0;
   gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(g->toggler), FALSE);
   return(FALSE);
@@ -1564,7 +1609,7 @@ gint VUwindow_delete(GtkWidget *widget, GdkEvent *event, gpointer geom) {
 gint VUwindow_destroy(GtkWidget *widget, gpointer unused) {
 
   SetVUmeters(0);
-  gtk_timeout_remove(VUtimer);
+  g_source_remove(VUtimer);
   //@@@del gc and fnt
   VUwindow=0;
   return(TRUE);
@@ -1575,7 +1620,7 @@ gint VUwindow_destroy(GtkWidget *widget, gpointer unused) {
 gint GMwindow_delete(GtkWidget *widget, GdkEvent *event, gpointer geom) {
   struct geometry *g=geom;
 
-  gdk_window_get_root_origin(widget->window, &g->x, &g->y);
+  gdk_window_get_root_origin(gtk_widget_get_window(widget), &g->x, &g->y);
   g->st=0;
   gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(g->toggler), FALSE);
   return(FALSE);
@@ -1586,7 +1631,7 @@ gint GMwindow_delete(GtkWidget *widget, GdkEvent *event, gpointer geom) {
 gint GMwindow_destroy(GtkWidget *widget, gpointer unused) {
 
   SetVUmeters(0);
-  gtk_timeout_remove(Mixtimer);
+  g_source_remove(Mixtimer);
   //@@@del gc and fnt
   GMwindow=0;
   return(TRUE);
@@ -1608,25 +1653,23 @@ void VUmeters_button_click(GtkWidget *widget, gpointer unused) {
     VUwindow=gtk_window_new(GTK_WINDOW_TOPLEVEL);
     sprintf(str, "%s VU-meters", cardId);
     gtk_window_set_title (GTK_WINDOW (VUwindow), str);
-    gtk_window_set_wmclass(GTK_WINDOW(VUwindow), "vumeters", "Emixer");
-    gtk_signal_connect(GTK_OBJECT(VUwindow), "destroy", GTK_SIGNAL_FUNC(VUwindow_destroy), NULL);
-    gtk_signal_connect(GTK_OBJECT(VUwindow), "delete_event", GTK_SIGNAL_FUNC(VUwindow_delete), (gpointer)&VUw_geom);
-    gtk_window_set_policy(GTK_WINDOW(VUwindow), FALSE, FALSE, TRUE);
+        g_signal_connect(G_OBJECT(VUwindow), "destroy", G_CALLBACK(VUwindow_destroy), NULL);
+    g_signal_connect(G_OBJECT(VUwindow), "delete_event", G_CALLBACK(VUwindow_delete), (gpointer)&VUw_geom);
+    gtk_window_set_resizable(GTK_WINDOW(VUwindow), FALSE);
     if (VUw_geom.st!=NOPOS)
-      gtk_widget_set_uposition(VUwindow, VUw_geom.x, VUw_geom.y);
+      gtk_window_move(GTK_WINDOW(VUwindow), VUw_geom.x, VUw_geom.y);
     gtk_widget_show(VUwindow);
 
     VUdarea=gtk_drawing_area_new();
     gtk_widget_set_events(VUdarea, GDK_EXPOSURE_MASK);
-    gtk_drawing_area_size(GTK_DRAWING_AREA(VUdarea), VUwidth, VUheight);
+    gtk_widget_set_size_request(VUdarea, VUwidth, VUheight);
     gtk_container_add(GTK_CONTAINER(VUwindow), VUdarea);
 
     gtk_widget_show(VUdarea);
-    gtk_signal_connect(GTK_OBJECT(VUdarea), "expose_event", (GtkSignalFunc)VU_expose, NULL);
-    gtk_signal_connect(GTK_OBJECT(VUdarea), "configure_event", (GtkSignalFunc)VU_configure_event, NULL);
-    VUtimer=gtk_timeout_add(30, DrawVUmeters, 0);	// The hw updates the meters about 30 times/s
-    gdk_window_clear_area(VUdarea->window, 0, 0, VUwidth, VUheight);
-    VUw_geom.st=1;
+    g_signal_connect(G_OBJECT(VUdarea), "draw", G_CALLBACK(VU_draw), NULL);
+    g_signal_connect(G_OBJECT(VUdarea), "configure-event", G_CALLBACK(VU_configure_event), NULL);
+    VUtimer=g_timeout_add(30, DrawVUmeters, 0);	// The hw updates the meters about 30 times/s
+        VUw_geom.st=1;
   }
 }
 
@@ -1646,28 +1689,26 @@ void GMixer_button_click(GtkWidget *widget, gpointer unused) {
     GMwindow=gtk_window_new(GTK_WINDOW_TOPLEVEL);
     sprintf(str, "%s Mixer", cardId);
     gtk_window_set_title (GTK_WINDOW (GMwindow), str);
-    gtk_window_set_wmclass(GTK_WINDOW(GMwindow), "gridmixer", "Emixer");
-    gtk_signal_connect(GTK_OBJECT(GMwindow), "destroy", GTK_SIGNAL_FUNC(GMwindow_destroy), NULL);
-    gtk_signal_connect(GTK_OBJECT(GMwindow), "delete_event", GTK_SIGNAL_FUNC(GMwindow_delete), (gpointer)&GMw_geom);
-    gtk_window_set_policy(GTK_WINDOW(GMwindow), FALSE, FALSE, TRUE);
+        g_signal_connect(G_OBJECT(GMwindow), "destroy", G_CALLBACK(GMwindow_destroy), NULL);
+    g_signal_connect(G_OBJECT(GMwindow), "delete_event", G_CALLBACK(GMwindow_delete), (gpointer)&GMw_geom);
+    gtk_window_set_resizable(GTK_WINDOW(GMwindow), FALSE);
     if (GMw_geom.st!=NOPOS)
-      gtk_widget_set_uposition(GMwindow, GMw_geom.x, GMw_geom.y);
+      gtk_window_move(GTK_WINDOW(GMwindow), GMw_geom.x, GMw_geom.y);
     gtk_widget_show(GMwindow);
 
     Mixdarea=gtk_drawing_area_new();
     gtk_widget_set_events(Mixdarea, GDK_EXPOSURE_MASK | GDK_LEAVE_NOTIFY_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK);
-    gtk_drawing_area_size(GTK_DRAWING_AREA(Mixdarea), Mixwidth, Mixheight);
+    gtk_widget_set_size_request(Mixdarea, Mixwidth, Mixheight);
     gtk_container_add(GTK_CONTAINER(GMwindow), Mixdarea);
 
     gtk_widget_show(Mixdarea);
-    gtk_signal_connect(GTK_OBJECT(Mixdarea), "expose_event", (GtkSignalFunc)Gmixer_expose, NULL);
-    gtk_signal_connect(GTK_OBJECT(Mixdarea), "configure_event", (GtkSignalFunc)Gmixer_configure_event, NULL);
-    gtk_signal_connect(GTK_OBJECT(Mixdarea), "motion_notify_event", (GtkSignalFunc)Gmixer_motion_notify, NULL);
-    gtk_signal_connect(GTK_OBJECT(Mixdarea), "button_press_event", (GtkSignalFunc)Gmixer_button_press, NULL);
-    gtk_signal_connect(GTK_OBJECT(Mixdarea), "button_release_event", (GtkSignalFunc)Gmixer_button_release, NULL);
-    Mixtimer=gtk_timeout_add(30, DrawMixer, 0);		// The hw updates the meters about 30 times/s
-    gdk_window_clear_area(Mixdarea->window, 0, 0, Mixwidth, Mixheight);
-    GMw_geom.st=1;
+    g_signal_connect(G_OBJECT(Mixdarea), "draw", G_CALLBACK(Gmixer_draw), NULL);
+    g_signal_connect(G_OBJECT(Mixdarea), "configure-event", G_CALLBACK(Gmixer_configure_event), NULL);
+    g_signal_connect(G_OBJECT(Mixdarea), "motion-notify-event", G_CALLBACK(Gmixer_motion_notify), NULL);
+    g_signal_connect(G_OBJECT(Mixdarea), "button-press-event", G_CALLBACK(Gmixer_button_press), NULL);
+    g_signal_connect(G_OBJECT(Mixdarea), "button-release-event", G_CALLBACK(Gmixer_button_release), NULL);
+    Mixtimer=g_timeout_add(30, DrawMixer, 0);		// The hw updates the meters about 30 times/s
+        GMw_geom.st=1;
   }
 }
 
@@ -1868,7 +1909,7 @@ int main(int argc, char *argv[]) {
   GtkWidget *hbox, *vbox;
   GtkWidget *mainbox;
   GtkWidget *vbsel, *frame, *button;
-  GtkWidget *label, *menu, *menuitem;
+  GtkWidget *label;
   GSList *bgroup;
   int err, i, o, n, cardnum, value;
   char hwname[16], cardname[32], load, save;
@@ -2012,11 +2053,7 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
     }
   }
   gtk_init(&argc, &argv);
-  fnt=gdk_font_load("-misc-fixed-medium-r-*-*-10-*-*-*-*-*-*-*");
-  if (!fnt) {
-    printf("Cannot find the font\n");
-    exit(1);
-  }
+
 
   /* Now assemble the control windows */
 
@@ -2026,11 +2063,10 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
   Miscwindow=gtk_window_new(GTK_WINDOW_TOPLEVEL);
   sprintf(str, "%s Misc controls", cardId);
   gtk_window_set_title(GTK_WINDOW(Miscwindow), str);
-  gtk_window_set_wmclass(GTK_WINDOW(Miscwindow), "misc", "Emixer");
-  gtk_signal_connect(GTK_OBJECT(Miscwindow), "delete_event", GTK_SIGNAL_FUNC(CloseWindow), (gpointer)&Miscw_geom);
+    g_signal_connect(G_OBJECT(Miscwindow), "delete_event", G_CALLBACK(CloseWindow), (gpointer)&Miscw_geom);
   gtk_container_set_border_width(GTK_CONTAINER(Miscwindow), BORDER);
   if (Miscw_geom.st!=NOPOS) {
-    gtk_widget_set_uposition(Miscwindow, Miscw_geom.x, Miscw_geom.y);
+    gtk_window_move(GTK_WINDOW(Miscwindow), Miscw_geom.x, Miscw_geom.y);
     gtk_window_set_default_size(GTK_WINDOW(Miscwindow), Miscw_geom.w, Miscw_geom.h);
   }
 
@@ -2054,7 +2090,7 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
       gtk_box_pack_start(GTK_BOX(hbox), button, TRUE, FALSE, 1);
       gtk_widget_show(button);
       gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), NominalIn.Level[i]);	// Forces handler call
-      gtk_signal_connect(GTK_OBJECT(button), "toggled", GTK_SIGNAL_FUNC(Nominal_level_toggled), (gpointer)(long)i);
+      g_signal_connect(G_OBJECT(button), "toggled", G_CALLBACK(Nominal_level_toggled), (gpointer)(long)i);
       gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), !NominalIn.Level[i]);
     }
   }
@@ -2075,7 +2111,7 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
       gtk_box_pack_start(GTK_BOX(hbox), button, TRUE, FALSE, 1);
       gtk_widget_show(button);
       gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), NominalOut.Level[i]);
-      gtk_signal_connect(GTK_OBJECT(button), "toggled", GTK_SIGNAL_FUNC(Nominal_level_toggled), (gpointer)(long)(i+ECHO_MAXAUDIOINPUTS));
+      g_signal_connect(G_OBJECT(button), "toggled", G_CALLBACK(Nominal_level_toggled), (gpointer)(long)(i+ECHO_MAXAUDIOINPUTS));
       gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), !NominalOut.Level[i]);
     }
   }
@@ -2090,19 +2126,14 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
     gtk_widget_show(hbox);
     gtk_container_add(GTK_CONTAINER(frame), hbox);
 
-    dmodeOpt=gtk_option_menu_new();
+    dmodeOpt = gtk_combo_box_text_new();
     gtk_widget_show(dmodeOpt);
-    menu=gtk_menu_new();
-    gtk_widget_show(menu);
     for (i=0; i<ndmodes; i++) {
-      menuitem=gtk_menu_item_new_with_label(dmodeName[i]);
-      gtk_widget_show(menuitem);
-      gtk_signal_connect(GTK_OBJECT(menuitem), "activate", G_CALLBACK(Digital_mode_activate), (gpointer)(long)i);
-      gtk_menu_append(GTK_MENU(menu), menuitem);
+      gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(dmodeOpt), dmodeName[i]);
     }
-    gtk_option_menu_set_menu(GTK_OPTION_MENU(dmodeOpt), menu);
+    g_signal_connect(G_OBJECT(dmodeOpt), "changed", G_CALLBACK(Digital_mode_activate), NULL);
     gtk_box_pack_start(GTK_BOX(hbox), dmodeOpt, TRUE, TRUE, 0);
-    gtk_option_menu_set_history(GTK_OPTION_MENU(dmodeOpt), dmodeVal=GetEnum(dmodeId));
+    set_combo_active(dmodeOpt, dmodeVal=GetEnum(dmodeId), G_CALLBACK(Digital_mode_activate));
   }
 
 
@@ -2115,21 +2146,25 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
     gtk_widget_show(hbox);
     gtk_container_add(GTK_CONTAINER(frame), hbox);
 
-    clocksrcOpt=gtk_option_menu_new();
+    clocksrc_store = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_BOOLEAN);
+    clocksrcOpt = gtk_combo_box_new_with_model(GTK_TREE_MODEL(clocksrc_store));
+    g_object_unref(clocksrc_store);
+    GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
+    gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(clocksrcOpt), renderer, TRUE);
+    gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(clocksrcOpt), renderer,
+                                   "text", 0,
+                                   "sensitive", 1,
+                                   NULL);
     gtk_widget_show(clocksrcOpt);
-    menu=gtk_menu_new();
-    gtk_widget_show(menu);
     for (i=0; i<nclocksrc; i++) {
-      clocksrc_menuitem[i]=gtk_menu_item_new_with_label(clocksrcName[i]);
-      gtk_widget_show(clocksrc_menuitem[i]);
-      gtk_widget_set_sensitive(clocksrc_menuitem[i], FALSE);
-      gtk_signal_connect(GTK_OBJECT(clocksrc_menuitem[i]), "activate", G_CALLBACK(Clock_source_activate), (gpointer)(long)i);
-      gtk_menu_append(GTK_MENU(menu), clocksrc_menuitem[i]);
+      GtkTreeIter iter;
+      gtk_list_store_append(clocksrc_store, &iter);
+      gtk_list_store_set(clocksrc_store, &iter, 0, clocksrcName[i], 1, FALSE, -1);
     }
-    gtk_option_menu_set_menu(GTK_OPTION_MENU(clocksrcOpt), menu);
+    g_signal_connect(G_OBJECT(clocksrcOpt), "changed", G_CALLBACK(Clock_source_activate), NULL);
     gtk_box_pack_start(GTK_BOX(hbox), clocksrcOpt, TRUE, TRUE, 0);
-    gtk_option_menu_set_history(GTK_OPTION_MENU(clocksrcOpt), clocksrcVal=GetEnum(clocksrcId));
-    clocksrctimer=gtk_timeout_add(2000, CheckInputs, 0);
+    set_combo_active(clocksrcOpt, clocksrcVal=GetEnum(clocksrcId), G_CALLBACK(Clock_source_activate));
+    clocksrctimer=g_timeout_add(2000, CheckInputs, 0);
   }
 
 
@@ -2142,19 +2177,14 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
     gtk_widget_show(hbox);
     gtk_container_add(GTK_CONTAINER(frame), hbox);
 
-    spdifmodeOpt=gtk_option_menu_new();
+    spdifmodeOpt = gtk_combo_box_text_new();
     gtk_widget_show(spdifmodeOpt);
-    menu=gtk_menu_new();
-    gtk_widget_show(menu);
     for (i=0; i<nspdifmodes; i++) {
-      menuitem=gtk_menu_item_new_with_label(spdifmodeName[i]);
-      gtk_widget_show(menuitem);
-      gtk_signal_connect(GTK_OBJECT(menuitem), "activate", G_CALLBACK(SPDIF_mode_activate), (gpointer)(long)i);
-      gtk_menu_append(GTK_MENU(menu), menuitem);
+      gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(spdifmodeOpt), spdifmodeName[i]);
     }
-    gtk_option_menu_set_menu(GTK_OPTION_MENU(spdifmodeOpt), menu);
+    g_signal_connect(G_OBJECT(spdifmodeOpt), "changed", G_CALLBACK(SPDIF_mode_activate), NULL);
     gtk_box_pack_start(GTK_BOX(hbox), spdifmodeOpt, TRUE, TRUE, 0);
-    gtk_option_menu_set_history(GTK_OPTION_MENU(spdifmodeOpt), spdifmodeVal=GetEnum(spdifmodeId));
+    set_combo_active(spdifmodeOpt, spdifmodeVal=GetEnum(spdifmodeId), G_CALLBACK(SPDIF_mode_activate));
   }
 
 
@@ -2174,7 +2204,7 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
       gtk_box_pack_start(GTK_BOX(hbox), button, TRUE, FALSE, 0);
       ReadControl(&i, 1, PhantomPower.id, SND_CTL_ELEM_IFACE_MIXER);
       gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), i);
-      gtk_signal_connect(GTK_OBJECT(button), "toggled", G_CALLBACK(Switch_toggled), (gpointer)&PhantomPower);
+      g_signal_connect(G_OBJECT(button), "toggled", G_CALLBACK(Switch_toggled), (gpointer)&PhantomPower);
       PhantomPower.Button=button;
     }
 
@@ -2185,7 +2215,7 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
       gtk_box_pack_start(GTK_BOX(hbox), button, TRUE, FALSE, 0);
       ReadControl(&i, 1, Automute.id, SND_CTL_ELEM_IFACE_CARD);
       gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), i);
-      gtk_signal_connect(GTK_OBJECT(button), "toggled", G_CALLBACK(Switch_toggled), (gpointer)&Automute);
+      g_signal_connect(G_OBJECT(button), "toggled", G_CALLBACK(Switch_toggled), (gpointer)&Automute);
       Automute.Button=button;
     }
 
@@ -2194,7 +2224,7 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
       autoclockChkbutton=gtk_check_button_new_with_label("Autoclock");
       gtk_widget_show(autoclockChkbutton);
       gtk_box_pack_start(GTK_BOX(hbox), autoclockChkbutton, TRUE, FALSE, 0);
-      gtk_signal_connect(GTK_OBJECT(autoclockChkbutton), "toggled", G_CALLBACK(AutoClock_toggled), NULL);
+      g_signal_connect(G_OBJECT(autoclockChkbutton), "toggled", G_CALLBACK(AutoClock_toggled), NULL);
       AutoClock=-1;
     }
   }
@@ -2205,11 +2235,10 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
   pcmoutControl.window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
   sprintf(str, "%s PCM volume", cardId);
   gtk_window_set_title(GTK_WINDOW (pcmoutControl.window), str);
-  gtk_window_set_wmclass(GTK_WINDOW(pcmoutControl.window), "pcm", "Emixer");
-  gtk_signal_connect(GTK_OBJECT(pcmoutControl.window), "delete_event", GTK_SIGNAL_FUNC(CloseWindow), (gpointer)&PVw_geom);
+    g_signal_connect(G_OBJECT(pcmoutControl.window), "delete_event", G_CALLBACK(CloseWindow), (gpointer)&PVw_geom);
   gtk_container_set_border_width(GTK_CONTAINER(pcmoutControl.window), BORDER);
   if (PVw_geom.st!=NOPOS) {
-    gtk_widget_set_uposition(pcmoutControl.window, PVw_geom.x, PVw_geom.y);
+    gtk_window_move(GTK_WINDOW(pcmoutControl.window), PVw_geom.x, PVw_geom.y);
     gtk_window_set_default_size(GTK_WINDOW(pcmoutControl.window), PVw_geom.w, PVw_geom.h);
   }
 
@@ -2242,18 +2271,18 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
       // Volume
       value = INVERT(pcmoutControl.Gain[i]);
       pcmoutControl.adj[i]=gtk_adjustment_new(!value, ECHOGAIN_MINOUT, ECHOGAIN_MAXOUT, SHORTSTEP, LONGSTEP, 0);
-      pcmoutControl.volume[i]=gtk_vscale_new(GTK_ADJUSTMENT(pcmoutControl.adj[i]));
+      pcmoutControl.volume[i]=gtk_scale_new(GTK_ORIENTATION_VERTICAL, pcmoutControl.adj[i]);
       gtk_widget_show(pcmoutControl.volume[i]);
       gtk_box_pack_start(GTK_BOX(vbox), pcmoutControl.volume[i], TRUE, TRUE, 0);
       gtk_scale_set_draw_value(GTK_SCALE(pcmoutControl.volume[i]), 0);
-      gtk_signal_connect(GTK_OBJECT(pcmoutControl.adj[i]), "value_changed", GTK_SIGNAL_FUNC(PCM_volume_changed), (gpointer)(long)(i+ECHO_MAXAUDIOINPUTS));
+      g_signal_connect(G_OBJECT(pcmoutControl.adj[i]), "value_changed", G_CALLBACK(PCM_volume_changed), (gpointer)(long)(i+ECHO_MAXAUDIOINPUTS));
       // Value label
       pcmoutControl.label[i]=gtk_label_new("xxx");
       gtk_widget_show(pcmoutControl.label[i]);
       gtk_box_pack_start(GTK_BOX(vbox), pcmoutControl.label[i], FALSE, FALSE, 0);
-      gtk_adjustment_set_value(GTK_ADJUSTMENT(pcmoutControl.adj[i]), value);
+      gtk_adjustment_set_value(pcmoutControl.adj[i], value);
     }
-    gtk_widget_set_usize(GTK_WIDGET(pcmoutControl.volume[0]), 0, 170);		// Set minimum y size
+    gtk_widget_set_size_request(GTK_WIDGET(pcmoutControl.volume[0]), -1, 170);		// Set minimum y size
   }
 
 
@@ -2262,11 +2291,10 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
   LVwindow=gtk_window_new(GTK_WINDOW_TOPLEVEL);
   sprintf(str, "%s Line volume", cardId);
   gtk_window_set_title(GTK_WINDOW (LVwindow), str);
-  gtk_window_set_wmclass(GTK_WINDOW(LVwindow), "line", "Emixer");
-  gtk_signal_connect(GTK_OBJECT(LVwindow), "delete_event", GTK_SIGNAL_FUNC(CloseWindow), (gpointer)&LVw_geom);
+    g_signal_connect(G_OBJECT(LVwindow), "delete_event", G_CALLBACK(CloseWindow), (gpointer)&LVw_geom);
   gtk_container_set_border_width(GTK_CONTAINER(LVwindow), BORDER);
   if (LVw_geom.st!=NOPOS) {
-    gtk_widget_set_uposition(LVwindow, LVw_geom.x, LVw_geom.y);
+    gtk_window_move(GTK_WINDOW(LVwindow), LVw_geom.x, LVw_geom.y);
     gtk_window_set_default_size(GTK_WINDOW(LVwindow), LVw_geom.w, LVw_geom.h);
   }
 
@@ -2295,18 +2323,18 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
       // Volume (resolution is 0.5 dB)
       value = IN_INVERT(lineinControl.Gain[i]);
       lineinControl.adj[i]=gtk_adjustment_new(!value, ECHOGAIN_MININP, ECHOGAIN_MAXINP, SHORTSTEP, LONGSTEP*2, 0);
-      lineinControl.volume[i]=gtk_vscale_new(GTK_ADJUSTMENT(lineinControl.adj[i]));
+      lineinControl.volume[i]=gtk_scale_new(GTK_ORIENTATION_VERTICAL, lineinControl.adj[i]);
       gtk_widget_show(lineinControl.volume[i]);
       gtk_box_pack_start(GTK_BOX(vbox), lineinControl.volume[i], TRUE, TRUE, 0);
       gtk_scale_set_draw_value(GTK_SCALE(lineinControl.volume[i]), 0);
-      gtk_signal_connect(GTK_OBJECT(lineinControl.adj[i]), "value_changed", GTK_SIGNAL_FUNC(PCM_volume_changed), (gpointer)(long)i);
+      g_signal_connect(G_OBJECT(lineinControl.adj[i]), "value_changed", G_CALLBACK(PCM_volume_changed), (gpointer)(long)i);
       // Value label
       lineinControl.label[i]=gtk_label_new("xxx");
       gtk_widget_show(lineinControl.label[i]);
       gtk_box_pack_start(GTK_BOX(vbox), lineinControl.label[i], FALSE, FALSE, 0);
-      gtk_adjustment_set_value(GTK_ADJUSTMENT(lineinControl.adj[i]), value);
+      gtk_adjustment_set_value(lineinControl.adj[i], value);
     }
-    gtk_widget_set_usize(GTK_WIDGET(lineinControl.volume[0]), 0, 170);	// Set minimum y size
+    gtk_widget_set_size_request(GTK_WIDGET(lineinControl.volume[0]), -1, 170);	// Set minimum y size
   }
 
 
@@ -2334,18 +2362,18 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
       // Volume
       value = INVERT(lineoutControl.Gain[i]);
       lineoutControl.adj[i]=gtk_adjustment_new(!value, ECHOGAIN_MINOUT, ECHOGAIN_MAXOUT, SHORTSTEP, LONGSTEP, 0);
-      lineoutControl.volume[i]=gtk_vscale_new(GTK_ADJUSTMENT(lineoutControl.adj[i]));
+      lineoutControl.volume[i]=gtk_scale_new(GTK_ORIENTATION_VERTICAL, lineoutControl.adj[i]);
       gtk_widget_show(lineoutControl.volume[i]);
       gtk_box_pack_start(GTK_BOX(vbox), lineoutControl.volume[i], TRUE, TRUE, 0);
       gtk_scale_set_draw_value(GTK_SCALE(lineoutControl.volume[i]), 0);
-      gtk_signal_connect(GTK_OBJECT(lineoutControl.adj[i]), "value_changed", GTK_SIGNAL_FUNC(LineOut_volume_changed), (gpointer)(long)i);
+      g_signal_connect(G_OBJECT(lineoutControl.adj[i]), "value_changed", G_CALLBACK(LineOut_volume_changed), (gpointer)(long)i);
       // Value label
       lineoutControl.label[i]=gtk_label_new("xxx");
       gtk_widget_show(lineoutControl.label[i]);
       gtk_box_pack_start(GTK_BOX(vbox), lineoutControl.label[i], FALSE, FALSE, 0);
-      gtk_adjustment_set_value(GTK_ADJUSTMENT(lineoutControl.adj[i]), value);
+      gtk_adjustment_set_value(lineoutControl.adj[i], value);
     }
-    gtk_widget_set_usize(GTK_WIDGET(lineoutControl.volume[0]), 0, 170);		// Set minimum y size
+    gtk_widget_set_size_request(GTK_WIDGET(lineoutControl.volume[0]), -1, 170);		// Set minimum y size
   }
 
 
@@ -2356,13 +2384,12 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
     mixerControl.window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
     sprintf(str, "%s Monitor mixer", cardId);
     gtk_window_set_title(GTK_WINDOW(mixerControl.window), str);
-    gtk_window_set_wmclass(GTK_WINDOW(mixerControl.window), "mixer", "Emixer");
-    gtk_signal_connect(GTK_OBJECT(mixerControl.window), "delete_event", GTK_SIGNAL_FUNC(CloseWindow), (gpointer)&Mixerw_geom);
+        g_signal_connect(G_OBJECT(mixerControl.window), "delete_event", G_CALLBACK(CloseWindow), (gpointer)&Mixerw_geom);
     gtk_container_set_border_width(GTK_CONTAINER(mixerControl.window), BORDER);
     if (Mixerw_geom.st!=NOPOS) {
-      gtk_widget_set_uposition(mixerControl.window, Mixerw_geom.x, Mixerw_geom.y);
+      gtk_window_move(GTK_WINDOW(mixerControl.window), Mixerw_geom.x, Mixerw_geom.y);
       gtk_window_set_default_size(GTK_WINDOW(mixerControl.window), Mixerw_geom.w, Mixerw_geom.h);
-//      gdk_window_move_resize(mixerControl.window->window, Mixerw_geom.x, Mixerw_geom.y, Mixerw_geom.w, Mixerw_geom.h);
+//      gdk_window_move_resize(gtk_widget_get_window(mixerControl.window), Mixerw_geom.x, Mixerw_geom.y, Mixerw_geom.w, Mixerw_geom.h);
 /*      gtk_widget_set_usize(mixerControl.window, Mixerw_geom.w, Mixerw_geom.h);
       gtk_widget_set_usize(mixerControl.window, -1, -1);*/
     }
@@ -2394,18 +2421,18 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
       gtk_box_pack_start(GTK_BOX(vbox), label, FALSE, FALSE, 0);
       // Volume
       mixerControl.adj[i]=gtk_adjustment_new(0, ECHOGAIN_MINOUT, ECHOGAIN_MAXOUT, SHORTSTEP, LONGSTEP, 0);
-      mixerControl.volume[i]=gtk_vscale_new(GTK_ADJUSTMENT(mixerControl.adj[i]));
+      mixerControl.volume[i]=gtk_scale_new(GTK_ORIENTATION_VERTICAL, mixerControl.adj[i]);
       gtk_widget_show(mixerControl.volume[i]);
       gtk_box_pack_start(GTK_BOX(vbox), mixerControl.volume[i], TRUE, TRUE, 0);
       gtk_scale_set_draw_value(GTK_SCALE(mixerControl.volume[i]), 0);
-      gtk_signal_connect(GTK_OBJECT(mixerControl.volume[i]), "grab_focus", GTK_SIGNAL_FUNC(Monitor_volume_clicked), (gpointer)i);
-      gtk_signal_connect(GTK_OBJECT(mixerControl.adj[i]), "value_changed", GTK_SIGNAL_FUNC(Monitor_volume_changed), (gpointer)i);
+      g_signal_connect(G_OBJECT(mixerControl.volume[i]), "grab_focus", G_CALLBACK(Monitor_volume_clicked), (gpointer)i);
+      g_signal_connect(G_OBJECT(mixerControl.adj[i]), "value_changed", G_CALLBACK(Monitor_volume_changed), (gpointer)i);
       // Value label
       mixerControl.label[i]=gtk_label_new("xxx");
       gtk_widget_show(mixerControl.label[i]);
       gtk_box_pack_start(GTK_BOX(vbox), mixerControl.label[i], FALSE, FALSE, 0);
     }
-    gtk_widget_set_usize(GTK_WIDGET(mixerControl.volume[0]), 0, 170);		// Set minimum y size
+    gtk_widget_set_size_request(GTK_WIDGET(mixerControl.volume[0]), -1, 170);		// Set minimum y size
 
     // Output channel selectors
     frame=gtk_frame_new("Mixer output");
@@ -2422,11 +2449,11 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
       else
         sprintf(str, "Di-%d", i-fdOut);
       if (i)
-        bgroup=gtk_radio_button_group(GTK_RADIO_BUTTON(mixerControl.outsel[i-1]));
+        bgroup=gtk_radio_button_get_group(GTK_RADIO_BUTTON(mixerControl.outsel[i-1]));
       mixerControl.outsel[i]=gtk_radio_button_new_with_label(bgroup, str);
       gtk_widget_show(mixerControl.outsel[i]);
       gtk_box_pack_start(GTK_BOX(vbsel), mixerControl.outsel[i], FALSE, FALSE, 0);
-      gtk_signal_connect(GTK_OBJECT(mixerControl.outsel[i]), "toggled", GTK_SIGNAL_FUNC(Mixer_Output_selector_clicked), (gpointer)i);
+      g_signal_connect(G_OBJECT(mixerControl.outsel[i]), "toggled", G_CALLBACK(Mixer_Output_selector_clicked), (gpointer)i);
     }
     mixerControl.input=0;
     mixerControl.output=-1;
@@ -2449,11 +2476,11 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
       else
         sprintf(str, "Di-%d", i-fdIn);
       if (i)
-        bgroup=gtk_radio_button_group(GTK_RADIO_BUTTON(mixerControl.inpsel[i-1]));
+        bgroup=gtk_radio_button_get_group(GTK_RADIO_BUTTON(mixerControl.inpsel[i-1]));
       mixerControl.inpsel[i]=gtk_radio_button_new_with_label(bgroup, str);
       gtk_widget_show(mixerControl.inpsel[i]);
       gtk_box_pack_start(GTK_BOX(vbsel), mixerControl.inpsel[i], FALSE, FALSE, 0);
-      gtk_signal_connect(GTK_OBJECT(mixerControl.inpsel[i]), "toggled", GTK_SIGNAL_FUNC(Mixer_Input_selector_clicked), (gpointer)(long)i);
+      g_signal_connect(G_OBJECT(mixerControl.inpsel[i]), "toggled", G_CALLBACK(Mixer_Input_selector_clicked), (gpointer)(long)i);
     }
 
     // Mixer volume widgets
@@ -2478,18 +2505,18 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
       gtk_box_pack_start(GTK_BOX(vbox), label, FALSE, FALSE, 0);
       // Volume
       mixerControl.adj[i]=gtk_adjustment_new(0, ECHOGAIN_MINOUT, ECHOGAIN_MAXOUT, SHORTSTEP, LONGSTEP, 0);
-      mixerControl.volume[i]=gtk_vscale_new(GTK_ADJUSTMENT(mixerControl.adj[i]));
+      mixerControl.volume[i]=gtk_scale_new(GTK_ORIENTATION_VERTICAL, mixerControl.adj[i]);
       gtk_widget_show(mixerControl.volume[i]);
       gtk_box_pack_start(GTK_BOX(vbox), mixerControl.volume[i], TRUE, TRUE, 0);
       gtk_scale_set_draw_value(GTK_SCALE(mixerControl.volume[i]), 0);
-      gtk_signal_connect(GTK_OBJECT(mixerControl.volume[i]), "grab_focus", GTK_SIGNAL_FUNC(Monitor_volume_clicked), (gpointer)(long)i);
-      gtk_signal_connect(GTK_OBJECT(mixerControl.adj[i]), "value_changed", GTK_SIGNAL_FUNC(Monitor_volume_changed), (gpointer)(long)i);
+      g_signal_connect(G_OBJECT(mixerControl.volume[i]), "grab_focus", G_CALLBACK(Monitor_volume_clicked), (gpointer)(long)i);
+      g_signal_connect(G_OBJECT(mixerControl.adj[i]), "value_changed", G_CALLBACK(Monitor_volume_changed), (gpointer)(long)i);
       // Value label
       mixerControl.label[i]=gtk_label_new("xxx");
       gtk_widget_show(mixerControl.label[i]);
       gtk_box_pack_start(GTK_BOX(vbox), mixerControl.label[i], FALSE, FALSE, 0);
     }
-    gtk_widget_set_usize(GTK_WIDGET(mixerControl.volume[0]), 0, 170);		// Set minimum y size
+    gtk_widget_set_size_request(GTK_WIDGET(mixerControl.volume[0]), -1, 170);		// Set minimum y size
     mixerControl.input=-1;
     mixerControl.output=0;
     Mixer_Input_selector_clicked(0, 0);
@@ -2503,11 +2530,10 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
     vmixerControl.window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
     sprintf(str, "%s Vmixer", cardId);
     gtk_window_set_title(GTK_WINDOW(vmixerControl.window), str);
-    gtk_window_set_wmclass(GTK_WINDOW(vmixerControl.window), "vmixer", "Emixer");
-    gtk_signal_connect(GTK_OBJECT(vmixerControl.window), "delete_event", GTK_SIGNAL_FUNC(CloseWindow), (gpointer)&Vmixerw_geom);
+        g_signal_connect(G_OBJECT(vmixerControl.window), "delete_event", G_CALLBACK(CloseWindow), (gpointer)&Vmixerw_geom);
     gtk_container_set_border_width(GTK_CONTAINER(vmixerControl.window), BORDER);
     if (Vmixerw_geom.st!=NOPOS) {
-      gtk_widget_set_uposition(vmixerControl.window, Vmixerw_geom.x, Vmixerw_geom.y);
+      gtk_window_move(GTK_WINDOW(vmixerControl.window), Vmixerw_geom.x, Vmixerw_geom.y);
       gtk_window_set_default_size(GTK_WINDOW(vmixerControl.window), Vmixerw_geom.w, Vmixerw_geom.h);
     }
 
@@ -2536,18 +2562,18 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
       gtk_box_pack_start(GTK_BOX(vbox), label, FALSE, FALSE, 0);
       // Volume
       vmixerControl.adj[i]=gtk_adjustment_new(0, ECHOGAIN_MINOUT, ECHOGAIN_MAXOUT, SHORTSTEP, LONGSTEP, 0);
-      vmixerControl.volume[i]=gtk_vscale_new(GTK_ADJUSTMENT(vmixerControl.adj[i]));
+      vmixerControl.volume[i]=gtk_scale_new(GTK_ORIENTATION_VERTICAL, vmixerControl.adj[i]);
       gtk_widget_show(vmixerControl.volume[i]);
       gtk_box_pack_start(GTK_BOX(vbox), vmixerControl.volume[i], TRUE, TRUE, 0);
       gtk_scale_set_draw_value(GTK_SCALE(vmixerControl.volume[i]), 0);
-      gtk_signal_connect(GTK_OBJECT(vmixerControl.volume[i]), "grab_focus", GTK_SIGNAL_FUNC(Vmixer_volume_clicked), (gpointer)i);
-      gtk_signal_connect(GTK_OBJECT(vmixerControl.adj[i]), "value_changed", GTK_SIGNAL_FUNC(Vmixer_volume_changed), (gpointer)i);
+      g_signal_connect(G_OBJECT(vmixerControl.volume[i]), "grab_focus", G_CALLBACK(Vmixer_volume_clicked), (gpointer)i);
+      g_signal_connect(G_OBJECT(vmixerControl.adj[i]), "value_changed", G_CALLBACK(Vmixer_volume_changed), (gpointer)i);
       // Value label
       vmixerControl.label[i]=gtk_label_new("xxx");
       gtk_widget_show(vmixerControl.label[i]);
       gtk_box_pack_start(GTK_BOX(vbox), vmixerControl.label[i], FALSE, FALSE, 0);
     }
-    gtk_widget_set_usize(GTK_WIDGET(vmixerControl.volume[0]), 0, 170);		// Set minimum y size
+    gtk_widget_set_size_request(GTK_WIDGET(vmixerControl.volume[0]), -1, 170);		// Set minimum y size
 
     // Input channel selectors
     frame=gtk_frame_new("Output");
@@ -2564,11 +2590,11 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
       else
         sprintf(str, "D%d", i);
       if (i)
-        bgroup=gtk_radio_button_group(GTK_RADIO_BUTTON(vmixerControl.outsel[i-1]));
+        bgroup=gtk_radio_button_get_group(GTK_RADIO_BUTTON(vmixerControl.outsel[i-1]));
       vmixerControl.outsel[i]=gtk_radio_button_new_with_label(bgroup, str);
       gtk_widget_show(vmixerControl.outsel[i]);
       gtk_box_pack_start(GTK_BOX(vbsel), vmixerControl.outsel[i], FALSE, FALSE, 0);
-      gtk_signal_connect(GTK_OBJECT(vmixerControl.outsel[i]), "toggled", GTK_SIGNAL_FUNC(Vmixer_output_selector_clicked), (gpointer)i);
+      g_signal_connect(G_OBJECT(vmixerControl.outsel[i]), "toggled", G_CALLBACK(Vmixer_output_selector_clicked), (gpointer)i);
     }
     vmixerControl.output=-1;
     Vmixer_output_selector_clicked(0, 0);
@@ -2587,11 +2613,11 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
     for (i=0; i<vmixerControl.inputs; i++) {
       sprintf(str, "V%d", i);
       if (i)
-        bgroup=gtk_radio_button_group(GTK_RADIO_BUTTON(vmixerControl.vchsel[i-1]));
+        bgroup=gtk_radio_button_get_group(GTK_RADIO_BUTTON(vmixerControl.vchsel[i-1]));
       vmixerControl.vchsel[i]=gtk_radio_button_new_with_label(bgroup, str);
       gtk_widget_show(vmixerControl.vchsel[i]);
       gtk_box_pack_start(GTK_BOX(vbsel), vmixerControl.vchsel[i], FALSE, FALSE, 0);
-      gtk_signal_connect(GTK_OBJECT(vmixerControl.vchsel[i]), "toggled", GTK_SIGNAL_FUNC(Vmixer_vchannel_selector_clicked), (gpointer)(long)i);
+      g_signal_connect(G_OBJECT(vmixerControl.vchsel[i]), "toggled", G_CALLBACK(Vmixer_vchannel_selector_clicked), (gpointer)(long)i);
     }
 
     // Vmixer volume widgets
@@ -2616,18 +2642,18 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
       gtk_box_pack_start(GTK_BOX(vbox), label, FALSE, FALSE, 0);
       // Volume
       vmixerControl.adj[i]=gtk_adjustment_new(0, ECHOGAIN_MINOUT, ECHOGAIN_MAXOUT, SHORTSTEP, LONGSTEP, 0);
-      vmixerControl.volume[i]=gtk_vscale_new(GTK_ADJUSTMENT(vmixerControl.adj[i]));
+      vmixerControl.volume[i]=gtk_scale_new(GTK_ORIENTATION_VERTICAL, vmixerControl.adj[i]);
       gtk_widget_show(vmixerControl.volume[i]);
       gtk_box_pack_start(GTK_BOX(vbox), vmixerControl.volume[i], TRUE, TRUE, 0);
       gtk_scale_set_draw_value(GTK_SCALE(vmixerControl.volume[i]), 0);
-      gtk_signal_connect(GTK_OBJECT(vmixerControl.volume[i]), "grab_focus", GTK_SIGNAL_FUNC(Vmixer_volume_clicked), (gpointer)(long)i);
-      gtk_signal_connect(GTK_OBJECT(vmixerControl.adj[i]), "value_changed", GTK_SIGNAL_FUNC(Vmixer_volume_changed), (gpointer)(long)i);
+      g_signal_connect(G_OBJECT(vmixerControl.volume[i]), "grab_focus", G_CALLBACK(Vmixer_volume_clicked), (gpointer)(long)i);
+      g_signal_connect(G_OBJECT(vmixerControl.adj[i]), "value_changed", G_CALLBACK(Vmixer_volume_changed), (gpointer)(long)i);
       // Value label
       vmixerControl.label[i]=gtk_label_new("xxx");
       gtk_widget_show(vmixerControl.label[i]);
       gtk_box_pack_start(GTK_BOX(vbox), vmixerControl.label[i], FALSE, FALSE, 0);
     }
-    gtk_widget_set_usize(GTK_WIDGET(vmixerControl.volume[0]), 0, 170);		// Set minimum y size
+    gtk_widget_set_size_request(GTK_WIDGET(vmixerControl.volume[0]), -1, 170);		// Set minimum y size
     vmixerControl.input=-1;
     Vmixer_vchannel_selector_clicked(0, 0);
 #endif
@@ -2639,12 +2665,11 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
   Mainwindow=gtk_window_new(GTK_WINDOW_TOPLEVEL);
   sprintf(str, EM_VERSION, cardId);
   gtk_window_set_title(GTK_WINDOW(Mainwindow), str);
-  gtk_window_set_wmclass(GTK_WINDOW(Mainwindow), "emixer", "Emixer");
-  gtk_signal_connect(GTK_OBJECT(Mainwindow), "delete_event", GTK_SIGNAL_FUNC(Mainwindow_delete), (gpointer)&Mainw_geom);
+    g_signal_connect(G_OBJECT(Mainwindow), "delete_event", G_CALLBACK(Mainwindow_delete), (gpointer)&Mainw_geom);
   gtk_container_set_border_width(GTK_CONTAINER(Mainwindow), BORDER);
   gtk_widget_show(Mainwindow);
   if (Mainw_geom.x!=NOPOS) {
-    gtk_widget_set_uposition(Mainwindow, Mainw_geom.x, Mainw_geom.y);
+    gtk_window_move(GTK_WINDOW(Mainwindow), Mainw_geom.x, Mainw_geom.y);
     gtk_window_set_default_size(GTK_WINDOW(Mainwindow), Mainw_geom.w, Mainw_geom.h);
   }
 
@@ -2664,7 +2689,7 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
   gtk_box_pack_start(GTK_BOX(hbox), button, TRUE, TRUE, 0);
   gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), 1);
   gtk_widget_show(button);
-  gtk_signal_connect(GTK_OBJECT(button), "toggled", G_CALLBACK(Gang_button_toggled), 0);
+  g_signal_connect(G_OBJECT(button), "toggled", G_CALLBACK(Gang_button_toggled), 0);
 
   // Controls frame
   frame=gtk_frame_new("Controls");
@@ -2679,7 +2704,7 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
     button=gtk_toggle_button_new_with_label("VU");
     gtk_widget_show(button);
     gtk_box_pack_start(GTK_BOX(hbox), button, TRUE, TRUE, 1);
-    gtk_signal_connect(GTK_OBJECT(button), "toggled", G_CALLBACK(VUmeters_button_click), 0);
+    g_signal_connect(G_OBJECT(button), "toggled", G_CALLBACK(VUmeters_button_click), 0);
     VUw_geom.toggler=button;
     if (VUw_geom.st==1)
       gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), TRUE);
@@ -2689,7 +2714,7 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
   button=gtk_toggle_button_new_with_label("Line");
   gtk_widget_show(button);
   gtk_box_pack_start(GTK_BOX(hbox), button, TRUE, TRUE, 1);
-  gtk_signal_connect(GTK_OBJECT(button), "toggled", G_CALLBACK(ToggleWindow), (gpointer)LVwindow);
+  g_signal_connect(G_OBJECT(button), "toggled", G_CALLBACK(ToggleWindow), (gpointer)LVwindow);
   LVw_geom.toggler=button;
   if (LVw_geom.st==1)
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), TRUE);
@@ -2699,7 +2724,7 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
     button=gtk_toggle_button_new_with_label("Misc");
     gtk_widget_show(button);
     gtk_box_pack_start(GTK_BOX(hbox), button, TRUE, TRUE, 1);
-    gtk_signal_connect(GTK_OBJECT(button), "toggled", G_CALLBACK(ToggleWindow), (gpointer)Miscwindow);
+    g_signal_connect(G_OBJECT(button), "toggled", G_CALLBACK(ToggleWindow), (gpointer)Miscwindow);
     Miscw_geom.toggler=button;
     if (Miscw_geom.st==1)
       gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), TRUE);
@@ -2710,7 +2735,7 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
     button=gtk_toggle_button_new_with_label("GrMix");
     gtk_widget_show(button);
     gtk_box_pack_start(GTK_BOX(hbox), button, TRUE, TRUE, 1);
-    gtk_signal_connect(GTK_OBJECT(button), "toggled", G_CALLBACK(GMixer_button_click), 0);
+    g_signal_connect(G_OBJECT(button), "toggled", G_CALLBACK(GMixer_button_click), 0);
     GMw_geom.toggler=button;
     if (GMw_geom.st==1)
       gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), TRUE);
@@ -2719,7 +2744,7 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
     button=gtk_toggle_button_new_with_label("Mixer");
     gtk_widget_show(button);
     gtk_box_pack_start(GTK_BOX(hbox), button, TRUE, TRUE, 1);
-    gtk_signal_connect(GTK_OBJECT(button), "toggled", G_CALLBACK(ToggleWindow), (gpointer)mixerControl.window);
+    g_signal_connect(G_OBJECT(button), "toggled", G_CALLBACK(ToggleWindow), (gpointer)mixerControl.window);
     Mixerw_geom.toggler=button;
     if (Mixerw_geom.st==1)
       gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), TRUE);
@@ -2730,7 +2755,7 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
     button=gtk_toggle_button_new_with_label("Vmixer");
     gtk_widget_show(button);
     gtk_box_pack_start(GTK_BOX(hbox), button, TRUE, TRUE, 1);
-    gtk_signal_connect(GTK_OBJECT(button), "toggled", G_CALLBACK(ToggleWindow), (gpointer)vmixerControl.window);
+    g_signal_connect(G_OBJECT(button), "toggled", G_CALLBACK(ToggleWindow), (gpointer)vmixerControl.window);
     Vmixerw_geom.toggler=button;
     if (Vmixerw_geom.st==1)
       gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), TRUE);
@@ -2741,7 +2766,7 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
     button=gtk_toggle_button_new_with_label("PCM");
     gtk_widget_show(button);
     gtk_box_pack_start(GTK_BOX(hbox), button, TRUE, TRUE, 1);
-    gtk_signal_connect(GTK_OBJECT(button), "toggled", G_CALLBACK(ToggleWindow), (gpointer)pcmoutControl.window);
+    g_signal_connect(G_OBJECT(button), "toggled", G_CALLBACK(ToggleWindow), (gpointer)pcmoutControl.window);
     PVw_geom.toggler=button;
     if (PVw_geom.st==1)
       gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), TRUE);
@@ -2797,41 +2822,41 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
         fprintf(f, "-- xxWindow <x> <y> <width> <height> <visible>\n");
         fprintf(f, "MainWindow %d %d %d %d\n", Mainw_geom.x, Mainw_geom.y, Mainw_geom.w, Mainw_geom.h);
         if (VUwindow)
-          gdk_window_get_root_origin(VUwindow->window, &VUw_geom.x, &VUw_geom.y);
+          gdk_window_get_root_origin(gtk_widget_get_window(VUwindow), &VUw_geom.x, &VUw_geom.y);
         fprintf(f, "VUmetersWindow %d %d %d\n", VUw_geom.x, VUw_geom.y, VUw_geom.st);
         if (GMwindow)
-          gdk_window_get_root_origin(GMwindow->window, &VUw_geom.x, &VUw_geom.y);
+          gdk_window_get_root_origin(gtk_widget_get_window(GMwindow), &VUw_geom.x, &VUw_geom.y);
         fprintf(f, "GfxMixerWindow %d %d %d\n", GMw_geom.x, GMw_geom.y, GMw_geom.st);
         if (pcmoutId) {
-          if (pcmoutControl.window->window) {
-            gdk_window_get_root_origin(pcmoutControl.window->window, &PVw_geom.x, &PVw_geom.y);
-            gdk_window_get_size(pcmoutControl.window->window, &PVw_geom.w, &PVw_geom.h);
+          if (gtk_widget_get_window(pcmoutControl.window)) {
+            gdk_window_get_root_origin(gtk_widget_get_window(pcmoutControl.window), &PVw_geom.x, &PVw_geom.y);
+            PVw_geom.w = gdk_window_get_width(gtk_widget_get_window(pcmoutControl.window)); PVw_geom.h = gdk_window_get_height(gtk_widget_get_window(pcmoutControl.window));
           }
-          fprintf(f, "PcmVolumeWindow %d %d %d %d %d\n", PVw_geom.x, PVw_geom.y, PVw_geom.w, PVw_geom.h, !!GTK_WIDGET_VISIBLE(pcmoutControl.window));
+          fprintf(f, "PcmVolumeWindow %d %d %d %d %d\n", PVw_geom.x, PVw_geom.y, PVw_geom.w, PVw_geom.h, !!gtk_widget_get_visible(pcmoutControl.window));
         }
-        if (LVwindow->window) {
-          gdk_window_get_root_origin(LVwindow->window, &LVw_geom.x, &LVw_geom.y);
-          gdk_window_get_size(LVwindow->window, &LVw_geom.w, &LVw_geom.h);
+        if (gtk_widget_get_window(LVwindow)) {
+          gdk_window_get_root_origin(gtk_widget_get_window(LVwindow), &LVw_geom.x, &LVw_geom.y);
+          LVw_geom.w = gdk_window_get_width(gtk_widget_get_window(LVwindow)); LVw_geom.h = gdk_window_get_height(gtk_widget_get_window(LVwindow));
         }
-        fprintf(f, "LineVolumeWindow %d %d %d %d %d\n", LVw_geom.x, LVw_geom.y, LVw_geom.w, LVw_geom.h, !!GTK_WIDGET_VISIBLE(LVwindow));
-        if (Miscwindow->window) {
-          gdk_window_get_root_origin(Miscwindow->window, &Miscw_geom.x, &Miscw_geom.y);
-          gdk_window_get_size(Miscwindow->window, &Miscw_geom.w, &Miscw_geom.h);
+        fprintf(f, "LineVolumeWindow %d %d %d %d %d\n", LVw_geom.x, LVw_geom.y, LVw_geom.w, LVw_geom.h, !!gtk_widget_get_visible(LVwindow));
+        if (gtk_widget_get_window(Miscwindow)) {
+          gdk_window_get_root_origin(gtk_widget_get_window(Miscwindow), &Miscw_geom.x, &Miscw_geom.y);
+          Miscw_geom.w = gdk_window_get_width(gtk_widget_get_window(Miscwindow)); Miscw_geom.h = gdk_window_get_height(gtk_widget_get_window(Miscwindow));
         }
-        fprintf(f, "MiscControlsWindow %d %d %d %d %d\n", Miscw_geom.x, Miscw_geom.y, Miscw_geom.w, Miscw_geom.h, !!GTK_WIDGET_VISIBLE(Miscwindow));
+        fprintf(f, "MiscControlsWindow %d %d %d %d %d\n", Miscw_geom.x, Miscw_geom.y, Miscw_geom.w, Miscw_geom.h, !!gtk_widget_get_visible(Miscwindow));
         if (mixerId) {
-          if (mixerControl.window->window) {
-            gdk_window_get_root_origin(mixerControl.window->window, &Mixerw_geom.x, &Mixerw_geom.y);
-            gdk_window_get_size(mixerControl.window->window, &Mixerw_geom.w, &Mixerw_geom.h);
+          if (gtk_widget_get_window(mixerControl.window)) {
+            gdk_window_get_root_origin(gtk_widget_get_window(mixerControl.window), &Mixerw_geom.x, &Mixerw_geom.y);
+            Mixerw_geom.w = gdk_window_get_width(gtk_widget_get_window(mixerControl.window)); Mixerw_geom.h = gdk_window_get_height(gtk_widget_get_window(mixerControl.window));
           }
-          fprintf(f, "MixerWindow %d %d %d %d %d\n", Mixerw_geom.x, Mixerw_geom.y, Mixerw_geom.w, Mixerw_geom.h, !!GTK_WIDGET_VISIBLE(mixerControl.window));
+          fprintf(f, "MixerWindow %d %d %d %d %d\n", Mixerw_geom.x, Mixerw_geom.y, Mixerw_geom.w, Mixerw_geom.h, !!gtk_widget_get_visible(mixerControl.window));
         }
         if (vmixerId) {
-          if (vmixerControl.window->window) {
-            gdk_window_get_root_origin(vmixerControl.window->window, &Vmixerw_geom.x, &Vmixerw_geom.y);
-            gdk_window_get_size(vmixerControl.window->window, &Vmixerw_geom.w, &Vmixerw_geom.h);
+          if (gtk_widget_get_window(vmixerControl.window)) {
+            gdk_window_get_root_origin(gtk_widget_get_window(vmixerControl.window), &Vmixerw_geom.x, &Vmixerw_geom.y);
+            Vmixerw_geom.w = gdk_window_get_width(gtk_widget_get_window(vmixerControl.window)); Vmixerw_geom.h = gdk_window_get_height(gtk_widget_get_window(vmixerControl.window));
           }
-          fprintf(f, "VmixerWindow %d %d %d %d %d\n", Vmixerw_geom.x, Vmixerw_geom.y, Vmixerw_geom.w, Vmixerw_geom.h, !!GTK_WIDGET_VISIBLE(vmixerControl.window));
+          fprintf(f, "VmixerWindow %d %d %d %d %d\n", Vmixerw_geom.x, Vmixerw_geom.y, Vmixerw_geom.w, Vmixerw_geom.h, !!gtk_widget_get_visible(vmixerControl.window));
         }
         fprintf(f, "\n");
         fclose(f);
@@ -2841,11 +2866,11 @@ printf("components = %s\n", snd_ctl_card_info_get_components(hw_info));*/
 
   if (VUwindow) {
     SetVUmeters(0);
-    gtk_timeout_remove(VUtimer);
+    g_source_remove(VUtimer);
   }
   if (GMwindow) {
     SetVUmeters(0);
-    gtk_timeout_remove(Mixtimer);
+    g_source_remove(Mixtimer);
   }
   snd_ctl_close(ctlhandle);
   return(0);
